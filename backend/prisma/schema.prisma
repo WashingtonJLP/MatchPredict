@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum FixtureStatus {
+  NS
+  LIVE
+  FT
+  POSTPONED
+  CANCELLED
+}
+
+enum WinnerType {
+  HOME
+  AWAY
+  DRAW
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  name     String
+  email    String @unique
+  password String
+
+  role Role @default(USER)
+
+  avatarUrl String? @map("avatar_url")
+
+  predictions Prediction[]
+  standings   Standing[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model League {
+  id String @id @default(uuid()) @db.Uuid
+
+  apiLeagueId Int @unique @map("api_league_id")
+
+  name    String
+  country String
+  logo    String
+
+  isActive Boolean @default(true) @map("is_active")
+
+  seasons Season[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("leagues")
+}
+
+model Season {
+  id String @id @default(uuid()) @db.Uuid
+
+  leagueId String @map("league_id") @db.Uuid
+
+  name String
+
+  isActive Boolean @default(true) @map("is_active")
+
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+
+  league League @relation(fields: [leagueId], references: [id])
+
+  fixtures  Fixture[]
+  standings Standing[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([leagueId])
+  @@map("seasons")
+}
+
+model Team {
+  id String @id @default(uuid()) @db.Uuid
+
+  apiTeamId Int @unique @map("api_team_id")
+
+  name    String
+  logo    String
+  country String
+
+  homeFixtures Fixture[] @relation("HomeTeam")
+  awayFixtures Fixture[] @relation("AwayTeam")
+
+  players Player[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("teams")
+}
+
+model Fixture {
+  id String @id @default(uuid()) @db.Uuid
+
+  apiFixtureId Int @unique @map("api_fixture_id")
+
+  seasonId String @map("season_id") @db.Uuid
+
+  homeTeamId String @map("home_team_id") @db.Uuid
+  awayTeamId String @map("away_team_id") @db.Uuid
+
+  round Int
+
+  kickoff DateTime
+
+  status FixtureStatus @default(NS)
+
+  homeGoals Int? @map("home_goals")
+  awayGoals Int? @map("away_goals")
+
+  winnerType WinnerType? @map("winner_type")
+
+  season Season @relation(fields: [seasonId], references: [id])
+
+  homeTeam Team @relation("HomeTeam", fields: [homeTeamId], references: [id])
+
+  awayTeam Team @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  predictions Prediction[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([seasonId])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@index([kickoff])
+  @@map("fixtures")
+}
+
+model Prediction {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId    String @map("user_id") @db.Uuid
+  fixtureId String @map("fixture_id") @db.Uuid
+
+  homeGoals Int @map("home_goals")
+  awayGoals Int @map("away_goals")
+
+  mvpPlayerId String? @map("mvp_player_id") @db.Uuid
+
+  scorePoints Int @default(0) @map("score_points")
+  mvpPoints   Int @default(0) @map("mvp_points")
+  totalPoints Int @default(0) @map("total_points")
+
+  exactScore    Boolean @default(false) @map("exact_score")
+  correctWinner Boolean @default(false) @map("correct_winner")
+  correctMvp    Boolean @default(false) @map("correct_mvp")
+
+  user User @relation(fields: [userId], references: [id])
+
+  fixture Fixture @relation(fields: [fixtureId], references: [id])
+
+  mvpPlayer Player? @relation(fields: [mvpPlayerId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, fixtureId])
+  @@index([fixtureId])
+  @@index([userId])
+  @@index([mvpPlayerId])
+  @@map("predictions")
+}
+
+model Standing {
+  id String @id @default(uuid()) @db.Uuid
+
+  seasonId String @map("season_id") @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+
+  scorePoints Int @default(0) @map("score_points")
+  mvpPoints   Int @default(0) @map("mvp_points")
+  totalPoints Int @default(0) @map("total_points")
+
+  exactScores    Int @default(0) @map("exact_scores")
+  correctWinners Int @default(0) @map("correct_winners")
+  correctMvps    Int @default(0) @map("correct_mvps")
+
+  wrongPredictions Int @default(0) @map("wrong_predictions")
+
+  position Int @default(1)
+
+  user User @relation(fields: [userId], references: [id])
+
+  season Season @relation(fields: [seasonId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([seasonId, userId])
+  @@index([seasonId])
+  @@map("standings")
+}
+
+model SyncLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  entity String
+
+  status String
+
+  message String?
+
+  startedAt DateTime @map("started_at")
+
+  finishedAt DateTime? @map("finished_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("sync_logs")
+}
+
+model Player {
+  id String @id @default(uuid()) @db.Uuid
+
+  apiPlayerId Int @unique @map("api_player_id")
+
+  teamId String @map("team_id") @db.Uuid
+
+  name String
+
+  photo String?
+
+  position String?
+
+  team Team @relation(fields: [teamId], references: [id])
+
+  predictions Prediction[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([teamId])
+  @@map("players")
+}
