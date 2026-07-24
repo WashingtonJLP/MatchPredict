@@ -70,6 +70,8 @@ model Season {
 
   leagueId String @map("league_id") @db.Uuid
 
+  year Int
+
   name String
 
   isActive Boolean @default(true) @map("is_active")
@@ -85,7 +87,10 @@ model Season {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([leagueId, year])
+
   @@index([leagueId])
+
   @@map("seasons")
 }
 
