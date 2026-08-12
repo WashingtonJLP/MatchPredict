@@ -5,8 +5,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { FootballModule } from './modules/football/football.module';
-
-
+import { PredictionsModule } from './modules/predictions/predictions.module';
 
 @Module({
   imports: [
@@ -23,7 +22,7 @@ import { FootballModule } from './modules/football/football.module';
 
     FootballModule,
 
- 
+    PredictionsModule,
   ],
 })
 export class AppModule {}

@@ -14,4 +14,14 @@ export class FootballController {
   syncTeams() {
     return this.footballService.syncTeams();
   }
+
+  @Post('sync/fixtures')
+  syncFixtures() {
+    return this.footballService.syncFixtures();
+  }
+
+  @Post('sync/results')
+  syncResults() {
+    return this.footballService.syncResults();
+  }
 }

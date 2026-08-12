@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { FixtureStatus, Team, WinnerType } from '@prisma/client';
 import { AxiosError } from 'axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -44,6 +45,67 @@ type EspnSeasonResponse = {
   shortDisplayName?: string;
   startDate: string;
   year: number;
+};
+
+type EspnRef = {
+  $ref: string;
+};
+
+type EspnEventsResponse = {
+  count: number;
+  items?: EspnRef[];
+};
+
+type EspnEventResponse = {
+  competitions?: EspnRef;
+  date: string;
+  id: string;
+};
+
+type EspnCompetitionResponse = {
+  competitors?: EspnRef[];
+  date?: string;
+  status?: EspnRef;
+};
+
+type EspnStatusResponse = {
+  type?: {
+    completed?: boolean;
+    name?: string;
+    state?: string;
+  };
+};
+
+type EspnCompetitorResponse = {
+  homeAway?: 'home' | 'away';
+  id: string;
+  score?: EspnRef;
+  winner?: boolean;
+};
+
+type EspnScoreResponse = {
+  value?: number;
+};
+
+type FixtureSyncData = {
+  apiFixtureId: number;
+  awayGoals: number | null;
+  awayTeamId: string;
+  homeGoals: number | null;
+  homeTeamId: string;
+  kickoff: Date;
+  round: number;
+  seasonId: string;
+  status: FixtureStatus;
+  winnerType: WinnerType | null;
+};
+
+type FixtureResultData = {
+  awayGoals: number | null;
+  homeGoals: number | null;
+  kickoff: Date;
+  status: FixtureStatus;
+  winnerType: WinnerType | null;
 };
 
 @Injectable()
@@ -182,6 +244,139 @@ export class FootballService {
     };
   }
 
+  async syncFixtures() {
+    const season = await this.getActiveSeason();
+    const espnEvents = await this.getSeasonEvents(season.year);
+    const eventRefs = espnEvents.items ?? [];
+    const apiFixtureIds = eventRefs
+      .map((eventRef) => this.extractIdFromRef(eventRef.$ref))
+      .filter((eventId): eventId is number => eventId !== null);
+    const existingFixtures = await this.prisma.fixture.findMany({
+      where: {
+        apiFixtureId: {
+          in: apiFixtureIds,
+        },
+      },
+      select: {
+        apiFixtureId: true,
+      },
+    });
+    const existingFixtureIds = new Set(
+      existingFixtures.map((fixture) => fixture.apiFixtureId),
+    );
+    const teamsByApiId = await this.getTeamsByApiId();
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const eventRef of eventRefs) {
+      const fixtureData = await this.buildFixtureSyncData(
+        eventRef.$ref,
+        season.id,
+        teamsByApiId,
+      );
+
+      if (!fixtureData) {
+        skipped++;
+        continue;
+      }
+
+      await this.prisma.fixture.upsert({
+        where: {
+          apiFixtureId: fixtureData.apiFixtureId,
+        },
+        update: {
+          seasonId: fixtureData.seasonId,
+          homeTeamId: fixtureData.homeTeamId,
+          awayTeamId: fixtureData.awayTeamId,
+          round: fixtureData.round,
+          kickoff: fixtureData.kickoff,
+          status: fixtureData.status,
+          homeGoals: fixtureData.homeGoals,
+          awayGoals: fixtureData.awayGoals,
+          winnerType: fixtureData.winnerType,
+        },
+        create: fixtureData,
+      });
+
+      if (existingFixtureIds.has(fixtureData.apiFixtureId)) {
+        updated++;
+      } else {
+        created++;
+      }
+    }
+
+    return {
+      fixturesFound: espnEvents.count,
+      created,
+      updated,
+      skipped,
+    };
+  }
+
+  async syncResults() {
+    const pendingFixtures = await this.prisma.fixture.findMany({
+      where: {
+        status: {
+          not: FixtureStatus.FT,
+        },
+      },
+      select: {
+        apiFixtureId: true,
+        awayGoals: true,
+        homeGoals: true,
+        id: true,
+        kickoff: true,
+        status: true,
+        winnerType: true,
+      },
+    });
+    let updated = 0;
+    let finished = 0;
+    let unchanged = 0;
+
+    for (const fixture of pendingFixtures) {
+      const resultData = await this.getFixtureResultData(fixture.apiFixtureId);
+
+      if (!resultData) {
+        unchanged++;
+        continue;
+      }
+
+      const hasChanges =
+        fixture.status !== resultData.status ||
+        fixture.kickoff.getTime() !== resultData.kickoff.getTime() ||
+        fixture.homeGoals !== resultData.homeGoals ||
+        fixture.awayGoals !== resultData.awayGoals ||
+        fixture.winnerType !== resultData.winnerType;
+
+      if (!hasChanges) {
+        unchanged++;
+        continue;
+      }
+
+      await this.prisma.fixture.update({
+        where: {
+          id: fixture.id,
+        },
+        data: resultData,
+      });
+
+      updated++;
+
+      if (resultData.status === FixtureStatus.FT) {
+        finished++;
+      }
+    }
+
+    return {
+      checked: pendingFixtures.length,
+      updated,
+      finished,
+      unchanged,
+    };
+  }
+
   private async getEspn<TResponse = unknown>(path: string): Promise<TResponse> {
     const baseUrl = this.configService.get<string>('ESPN_API_URL');
 
@@ -242,6 +437,26 @@ export class FootballService {
     }
   }
 
+  private async getEspnCoreRef<TResponse = unknown>(
+    url: string,
+  ): Promise<TResponse> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<TResponse>(url),
+      );
+
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const status = axiosError.response?.status;
+      const statusText = axiosError.response?.statusText;
+
+      throw new BadGatewayException(
+        `Falha ao consultar ESPN Core${status ? ` (${status} ${statusText ?? ''})` : ''}.`,
+      );
+    }
+  }
+
   private async getEspnLeague(): Promise<EspnLeague> {
     const response = await this.getEspn<EspnTeamsResponse>(
       `/sports/soccer/${this.espnLeague}/teams`,
@@ -274,6 +489,215 @@ export class FootballService {
     return season;
   }
 
+  private async getActiveSeason() {
+    const league = await this.prisma.league.findFirst({
+      where: {
+        isActive: true,
+      },
+    });
+
+    if (!league) {
+      throw new NotFoundException('Liga ativa não encontrada.');
+    }
+
+    const season = await this.prisma.season.findFirst({
+      where: {
+        leagueId: league.id,
+        isActive: true,
+      },
+    });
+
+    if (!season) {
+      throw new NotFoundException('Temporada ativa não encontrada.');
+    }
+
+    return season;
+  }
+
+  private async getSeasonEvents(year: number): Promise<EspnEventsResponse> {
+    const events = await this.getEspnCore<EspnEventsResponse>(
+      `/sports/soccer/leagues/${this.espnLeague}/seasons/${year}/types/1/events?limit=1000`,
+    );
+
+    if (!Array.isArray(events.items)) {
+      throw new BadGatewayException('Lista de eventos da ESPN inválida.');
+    }
+
+    return events;
+  }
+
+  private async getTeamsByApiId(): Promise<Map<number, Team>> {
+    const teams = await this.prisma.team.findMany();
+
+    return new Map(teams.map((team) => [team.apiTeamId, team]));
+  }
+
+  private async buildFixtureSyncData(
+    eventRef: string,
+    seasonId: string,
+    teamsByApiId: Map<number, Team>,
+  ): Promise<FixtureSyncData | null> {
+    const event = await this.getEspnCoreRef<EspnEventResponse>(eventRef);
+
+    if (!event.id || !event.date || !event.competitions?.$ref) {
+      console.warn(`Fixture ESPN ignorada por evento inválido: ${eventRef}`);
+      return null;
+    }
+
+    const apiFixtureId = Number(event.id);
+
+    if (!Number.isInteger(apiFixtureId)) {
+      console.warn(`Fixture ESPN ignorada por ID inválido: ${event.id}`);
+      return null;
+    }
+
+    const competition = await this.getEspnCoreRef<EspnCompetitionResponse>(
+      event.competitions.$ref,
+    );
+    const competitors = await this.getFixtureCompetitors(competition);
+    const homeCompetitor = competitors.find(
+      (competitor) => competitor.homeAway === 'home',
+    );
+    const awayCompetitor = competitors.find(
+      (competitor) => competitor.homeAway === 'away',
+    );
+
+    if (!homeCompetitor || !awayCompetitor) {
+      console.warn(
+        `Fixture ESPN ${apiFixtureId} ignorada sem mandante/visitante.`,
+      );
+      return null;
+    }
+
+    const homeApiTeamId = Number(homeCompetitor.id);
+    const awayApiTeamId = Number(awayCompetitor.id);
+    const homeTeam = teamsByApiId.get(homeApiTeamId);
+    const awayTeam = teamsByApiId.get(awayApiTeamId);
+
+    if (!homeTeam || !awayTeam) {
+      console.warn(
+        `Fixture ESPN ${apiFixtureId} ignorada por time ausente. home=${homeApiTeamId} away=${awayApiTeamId}`,
+      );
+      return null;
+    }
+
+    const status = await this.getFixtureStatus(competition);
+    const [homeGoals, awayGoals] = await Promise.all([
+      this.getCompetitorScore(homeCompetitor),
+      this.getCompetitorScore(awayCompetitor),
+    ]);
+    const fixtureStatus = this.mapFixtureStatus(status);
+
+    return {
+      apiFixtureId,
+      seasonId,
+      homeTeamId: homeTeam.id,
+      awayTeamId: awayTeam.id,
+      round: 0,
+      kickoff: new Date(competition.date ?? event.date),
+      status: fixtureStatus,
+      homeGoals: this.shouldPersistGoals(fixtureStatus) ? homeGoals : null,
+      awayGoals: this.shouldPersistGoals(fixtureStatus) ? awayGoals : null,
+      winnerType: this.resolveWinnerType(
+        homeCompetitor,
+        awayCompetitor,
+        status,
+        homeGoals,
+        awayGoals,
+      ),
+    };
+  }
+
+  private async getFixtureResultData(
+    apiFixtureId: number,
+  ): Promise<FixtureResultData | null> {
+    const event = await this.getEspnCore<EspnEventResponse>(
+      `/sports/soccer/leagues/${this.espnLeague}/events/${apiFixtureId}`,
+    );
+
+    if (!event.date || !event.competitions?.$ref) {
+      console.warn(
+        `Resultado ESPN ignorado por evento inválido: ${apiFixtureId}`,
+      );
+      return null;
+    }
+
+    const competition = await this.getEspnCoreRef<EspnCompetitionResponse>(
+      event.competitions.$ref,
+    );
+    const competitors = await this.getFixtureCompetitors(competition);
+    const homeCompetitor = competitors.find(
+      (competitor) => competitor.homeAway === 'home',
+    );
+    const awayCompetitor = competitors.find(
+      (competitor) => competitor.homeAway === 'away',
+    );
+
+    if (!homeCompetitor || !awayCompetitor) {
+      console.warn(
+        `Resultado ESPN ${apiFixtureId} ignorado sem mandante/visitante.`,
+      );
+      return null;
+    }
+
+    const status = await this.getFixtureStatus(competition);
+    const fixtureStatus = this.mapFixtureStatus(status);
+    const [homeGoals, awayGoals] = await Promise.all([
+      this.getCompetitorScore(homeCompetitor),
+      this.getCompetitorScore(awayCompetitor),
+    ]);
+
+    return {
+      kickoff: new Date(competition.date ?? event.date),
+      status: fixtureStatus,
+      homeGoals: this.shouldPersistGoals(fixtureStatus) ? homeGoals : null,
+      awayGoals: this.shouldPersistGoals(fixtureStatus) ? awayGoals : null,
+      winnerType: this.resolveWinnerType(
+        homeCompetitor,
+        awayCompetitor,
+        status,
+        homeGoals,
+        awayGoals,
+      ),
+    };
+  }
+
+  private async getFixtureCompetitors(
+    competition: EspnCompetitionResponse,
+  ): Promise<EspnCompetitorResponse[]> {
+    const competitorRefs = competition.competitors ?? [];
+
+    return Promise.all(
+      competitorRefs.map((competitorRef) =>
+        this.getEspnCoreRef<EspnCompetitorResponse>(competitorRef.$ref),
+      ),
+    );
+  }
+
+  private async getFixtureStatus(
+    competition: EspnCompetitionResponse,
+  ): Promise<EspnStatusResponse | null> {
+    if (!competition.status?.$ref) {
+      return null;
+    }
+
+    return this.getEspnCoreRef<EspnStatusResponse>(competition.status.$ref);
+  }
+
+  private async getCompetitorScore(
+    competitor: EspnCompetitorResponse,
+  ): Promise<number | null> {
+    if (!competitor.score?.$ref) {
+      return null;
+    }
+
+    const score = await this.getEspnCoreRef<EspnScoreResponse>(
+      competitor.score.$ref,
+    );
+
+    return typeof score.value === 'number' ? score.value : null;
+  }
+
   private resolveLeagueLogo(logos?: EspnLogo[]): string {
     return (
       logos?.find((logo) => logo.rel?.includes('default'))?.href ??
@@ -302,6 +726,66 @@ export class FootballService {
       season.abbreviation ??
       String(season.year)
     );
+  }
+
+  private mapFixtureStatus(status: EspnStatusResponse | null): FixtureStatus {
+    if (status?.type?.completed) {
+      return FixtureStatus.FT;
+    }
+
+    if (status?.type?.state === 'in') {
+      return FixtureStatus.LIVE;
+    }
+
+    if (status?.type?.name === 'STATUS_POSTPONED') {
+      return FixtureStatus.POSTPONED;
+    }
+
+    if (
+      status?.type?.name === 'STATUS_CANCELED' ||
+      status?.type?.name === 'STATUS_CANCELLED'
+    ) {
+      return FixtureStatus.CANCELLED;
+    }
+
+    return FixtureStatus.NS;
+  }
+
+  private shouldPersistGoals(status: FixtureStatus): boolean {
+    return status === FixtureStatus.FT || status === FixtureStatus.LIVE;
+  }
+
+  private resolveWinnerType(
+    homeCompetitor: EspnCompetitorResponse,
+    awayCompetitor: EspnCompetitorResponse,
+    status: EspnStatusResponse | null,
+    homeGoals: number | null,
+    awayGoals: number | null,
+  ): WinnerType | null {
+    if (!status?.type?.completed) {
+      return null;
+    }
+
+    if (homeCompetitor.winner) {
+      return WinnerType.HOME;
+    }
+
+    if (awayCompetitor.winner) {
+      return WinnerType.AWAY;
+    }
+
+    if (homeGoals !== null && awayGoals !== null && homeGoals === awayGoals) {
+      return WinnerType.DRAW;
+    }
+
+    return null;
+  }
+
+  private extractIdFromRef(ref: string): number | null {
+    const [, eventId] = ref.match(/\/events\/(\d+)/) ?? [];
+    const parsedId = Number(eventId);
+
+    return Number.isInteger(parsedId) ? parsedId : null;
   }
 
   private get espnLeague(): string {
