@@ -6,11 +6,9 @@ import { FootballService } from './football.service';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 
 @Module({
-  imports: [
-    HttpModule,
-    PrismaModule,
-  ],
+  imports: [HttpModule, PrismaModule],
   controllers: [FootballController],
   providers: [FootballService],
+  exports: [FootballService],
 })
 export class FootballModule {}

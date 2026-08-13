@@ -32,6 +32,35 @@ type EspnTeam = {
   name?: string;
 };
 
+type EspnAthlete = {
+  displayName?: string;
+  fullName?: string;
+  headshot?: {
+    href?: string;
+  };
+  id?: string;
+  jersey?: string;
+  name?: string;
+  number?: number | string;
+  position?: {
+    abbreviation?: string;
+    displayName?: string;
+    name?: string;
+  };
+};
+
+type EspnRosterGroup = {
+  athletes?: EspnAthlete[];
+  items?: EspnAthlete[];
+};
+
+type EspnTeamAthletesResponse = {
+  athletes?: Array<EspnAthlete | EspnRosterGroup>;
+  team?: {
+    athletes?: Array<EspnAthlete | EspnRosterGroup>;
+  };
+};
+
 type EspnTeamsResponse = {
   sports?: Array<{
     leagues?: EspnLeague[];
@@ -106,6 +135,15 @@ type FixtureResultData = {
   kickoff: Date;
   status: FixtureStatus;
   winnerType: WinnerType | null;
+};
+
+type PlayerSyncData = {
+  apiPlayerId: number;
+  name: string;
+  number: number | null;
+  photo: string | null;
+  position: string | null;
+  teamId: string;
 };
 
 @Injectable()
@@ -377,6 +415,75 @@ export class FootballService {
     };
   }
 
+  async syncPlayers() {
+    const teams = await this.prisma.team.findMany({
+      select: {
+        apiTeamId: true,
+        id: true,
+      },
+    });
+    const apiPlayerIds = new Set<number>();
+    const playerDataByApiId = new Map<number, PlayerSyncData>();
+
+    for (const team of teams) {
+      const athletes = await this.getTeamAthletes(team.apiTeamId);
+
+      for (const athlete of athletes) {
+        const playerData = this.toPlayerSyncData(athlete, team.id);
+
+        if (!playerData) {
+          continue;
+        }
+
+        apiPlayerIds.add(playerData.apiPlayerId);
+        playerDataByApiId.set(playerData.apiPlayerId, playerData);
+      }
+    }
+
+    const existingPlayers = await this.prisma.player.findMany({
+      where: {
+        apiPlayerId: {
+          in: [...apiPlayerIds],
+        },
+      },
+      select: {
+        apiPlayerId: true,
+      },
+    });
+    const existingPlayerIds = new Set(
+      existingPlayers.map((player) => player.apiPlayerId),
+    );
+    let created = 0;
+    let updated = 0;
+
+    for (const playerData of playerDataByApiId.values()) {
+      await this.prisma.player.upsert({
+        where: {
+          apiPlayerId: playerData.apiPlayerId,
+        },
+        update: {
+          teamId: playerData.teamId,
+          name: playerData.name,
+          number: playerData.number,
+          position: playerData.position,
+          photo: playerData.photo,
+        },
+        create: playerData,
+      });
+
+      if (existingPlayerIds.has(playerData.apiPlayerId)) {
+        updated++;
+      } else {
+        created++;
+      }
+    }
+
+    return {
+      created,
+      updated,
+    };
+  }
+
   private async getEspn<TResponse = unknown>(path: string): Promise<TResponse> {
     const baseUrl = this.configService.get<string>('ESPN_API_URL');
 
@@ -530,6 +637,100 @@ export class FootballService {
     const teams = await this.prisma.team.findMany();
 
     return new Map(teams.map((team) => [team.apiTeamId, team]));
+  }
+
+  private async getTeamAthletes(apiTeamId: number): Promise<EspnAthlete[]> {
+    const teamDetails = await this.getEspnTeamDetails(apiTeamId);
+    const teamAthletes = this.extractAthletes(teamDetails);
+
+    if (teamAthletes.length > 0) {
+      return teamAthletes;
+    }
+
+    const roster = await this.getEspnTeamRoster(apiTeamId);
+
+    return this.extractAthletes(roster);
+  }
+
+  private getEspnTeamDetails(
+    apiTeamId: number,
+  ): Promise<EspnTeamAthletesResponse> {
+    return this.getEspn<EspnTeamAthletesResponse>(
+      `/sports/soccer/${this.espnLeague}/teams/${apiTeamId}`,
+    );
+  }
+
+  private getEspnTeamRoster(
+    apiTeamId: number,
+  ): Promise<EspnTeamAthletesResponse> {
+    return this.getEspn<EspnTeamAthletesResponse>(
+      `/sports/soccer/${this.espnLeague}/teams/${apiTeamId}/roster`,
+    );
+  }
+
+  private extractAthletes(response: EspnTeamAthletesResponse): EspnAthlete[] {
+    const entries = response.athletes ?? response.team?.athletes ?? [];
+
+    return entries.flatMap((entry) => {
+      if (this.isEspnAthlete(entry)) {
+        return [entry];
+      }
+
+      return entry.items ?? entry.athletes ?? [];
+    });
+  }
+
+  private isEspnAthlete(
+    entry: EspnAthlete | EspnRosterGroup,
+  ): entry is EspnAthlete {
+    return 'id' in entry;
+  }
+
+  private toPlayerSyncData(
+    athlete: EspnAthlete,
+    teamId: string,
+  ): PlayerSyncData | null {
+    const apiPlayerId = Number(athlete.id);
+
+    if (!Number.isInteger(apiPlayerId)) {
+      return null;
+    }
+
+    const name = athlete.displayName ?? athlete.fullName ?? athlete.name;
+
+    if (!name) {
+      return null;
+    }
+
+    return {
+      apiPlayerId,
+      teamId,
+      name,
+      number: this.resolvePlayerNumber(athlete),
+      position: this.resolvePlayerPosition(athlete),
+      photo: athlete.headshot?.href ?? null,
+    };
+  }
+
+  private resolvePlayerNumber(athlete: EspnAthlete): number | null {
+    const number = athlete.number ?? athlete.jersey;
+
+    if (number === undefined || number === null || number === '') {
+      return null;
+    }
+
+    const parsedNumber = Number(number);
+
+    return Number.isInteger(parsedNumber) ? parsedNumber : null;
+  }
+
+  private resolvePlayerPosition(athlete: EspnAthlete): string | null {
+    return (
+      athlete.position?.displayName ??
+      athlete.position?.name ??
+      athlete.position?.abbreviation ??
+      null
+    );
   }
 
   private async buildFixtureSyncData(

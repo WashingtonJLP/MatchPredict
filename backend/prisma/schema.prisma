@@ -135,6 +135,8 @@ model Fixture {
 
   winnerType WinnerType? @map("winner_type")
 
+  processedAt DateTime? @map("processed_at")
+
   season Season @relation(fields: [seasonId], references: [id])
 
   homeTeam Team @relation("HomeTeam", fields: [homeTeamId], references: [id])
@@ -244,6 +246,8 @@ model Player {
   teamId String @map("team_id") @db.Uuid
 
   name String
+
+  number Int?
 
   photo String?
 
