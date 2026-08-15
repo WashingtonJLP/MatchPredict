@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import {
+  activeSeasonWhere,
+  latestCreatedOrderBy,
+  standingRankingOrderBy,
+} from '../../common/prisma/query-presets';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 const standingWithUser = Prisma.validator<Prisma.StandingDefaultArgs>()({
@@ -70,15 +75,8 @@ export class StandingsService {
 
   private async findActiveSeasonId(): Promise<string> {
     const season = await this.prisma.season.findFirst({
-      where: {
-        isActive: true,
-        league: {
-          isActive: true,
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: activeSeasonWhere,
+      orderBy: latestCreatedOrderBy,
       select: {
         id: true,
       },
@@ -96,23 +94,7 @@ export class StandingsService {
       where: {
         seasonId,
       },
-      orderBy: [
-        {
-          totalPoints: 'desc',
-        },
-        {
-          exactScores: 'desc',
-        },
-        {
-          correctWinners: 'desc',
-        },
-        {
-          wrongPredictions: 'asc',
-        },
-        {
-          createdAt: 'asc',
-        },
-      ],
+      orderBy: standingRankingOrderBy,
       include: standingWithUser.include,
     });
   }

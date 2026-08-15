@@ -3,6 +3,7 @@ import {
   BadGatewayException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -148,6 +149,7 @@ type PlayerSyncData = {
 
 @Injectable()
 export class FootballService {
+  private readonly logger = new Logger(FootballService.name);
   private readonly defaultLeague = 'eng.1';
   private readonly defaultCountry = 'England';
 
@@ -741,14 +743,16 @@ export class FootballService {
     const event = await this.getEspnCoreRef<EspnEventResponse>(eventRef);
 
     if (!event.id || !event.date || !event.competitions?.$ref) {
-      console.warn(`Fixture ESPN ignorada por evento inválido: ${eventRef}`);
+      this.logger.warn(
+        `Fixture ESPN ignorada por evento inválido: ${eventRef}`,
+      );
       return null;
     }
 
     const apiFixtureId = Number(event.id);
 
     if (!Number.isInteger(apiFixtureId)) {
-      console.warn(`Fixture ESPN ignorada por ID inválido: ${event.id}`);
+      this.logger.warn(`Fixture ESPN ignorada por ID inválido: ${event.id}`);
       return null;
     }
 
@@ -764,7 +768,7 @@ export class FootballService {
     );
 
     if (!homeCompetitor || !awayCompetitor) {
-      console.warn(
+      this.logger.warn(
         `Fixture ESPN ${apiFixtureId} ignorada sem mandante/visitante.`,
       );
       return null;
@@ -776,7 +780,7 @@ export class FootballService {
     const awayTeam = teamsByApiId.get(awayApiTeamId);
 
     if (!homeTeam || !awayTeam) {
-      console.warn(
+      this.logger.warn(
         `Fixture ESPN ${apiFixtureId} ignorada por time ausente. home=${homeApiTeamId} away=${awayApiTeamId}`,
       );
       return null;
@@ -817,7 +821,7 @@ export class FootballService {
     );
 
     if (!event.date || !event.competitions?.$ref) {
-      console.warn(
+      this.logger.warn(
         `Resultado ESPN ignorado por evento inválido: ${apiFixtureId}`,
       );
       return null;
@@ -835,7 +839,7 @@ export class FootballService {
     );
 
     if (!homeCompetitor || !awayCompetitor) {
-      console.warn(
+      this.logger.warn(
         `Resultado ESPN ${apiFixtureId} ignorado sem mandante/visitante.`,
       );
       return null;

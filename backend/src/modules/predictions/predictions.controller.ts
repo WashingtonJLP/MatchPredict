@@ -15,6 +15,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreatePredictionDto } from './dto/create-prediction.dto';
 import { UpdatePredictionDto } from './dto/update-prediction.dto';
@@ -36,7 +37,7 @@ export class PredictionsController {
   @ApiResponse({ status: 201, description: 'Palpite criado.' })
   @ApiResponse({ status: 409, description: 'Palpite duplicado ou tardio.' })
   create(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() createPredictionDto: CreatePredictionDto,
   ) {
     return this.predictionsService.create(user.id, createPredictionDto);
@@ -45,7 +46,7 @@ export class PredictionsController {
   @Get('my')
   @ApiOperation({ summary: 'Listar meus palpites' })
   @ApiResponse({ status: 200, description: 'Lista de palpites do usuário.' })
-  findMy(@CurrentUser() user: any) {
+  findMy(@CurrentUser() user: AuthenticatedUser) {
     return this.predictionsService.findMy(user.id);
   }
 
@@ -85,7 +86,7 @@ export class PredictionsController {
   })
   @ApiResponse({ status: 409, description: 'Partida já iniciada.' })
   update(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body() updatePredictionDto: UpdatePredictionDto,
   ) {
@@ -100,7 +101,7 @@ export class PredictionsController {
     description: 'Palpite pertence a outro usuário.',
   })
   @ApiResponse({ status: 409, description: 'Partida já iniciada.' })
-  remove(@CurrentUser() user: any, @Param('id') id: string) {
+  remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.predictionsService.remove(user.id, id);
   }
 }

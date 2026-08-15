@@ -5,10 +5,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ScoreEngineService } from '../../common/score-engine/score-engine.service';
 import { CreatePredictionDto } from './dto/create-prediction.dto';
 import { UpdatePredictionDto } from './dto/update-prediction.dto';
+
+const predictionWithFixtureTeams =
+  Prisma.validator<Prisma.PredictionDefaultArgs>()({
+    include: {
+      fixture: {
+        include: {
+          homeTeam: true,
+          awayTeam: true,
+        },
+      },
+    },
+  });
 
 @Injectable()
 export class PredictionsService {
@@ -44,7 +57,7 @@ export class PredictionsService {
         homeGoals: createPredictionDto.homeGoals,
         awayGoals: createPredictionDto.awayGoals,
       },
-      include: this.predictionInclude,
+      include: predictionWithFixtureTeams.include,
     });
   }
 
@@ -56,7 +69,7 @@ export class PredictionsService {
       orderBy: {
         createdAt: 'desc',
       },
-      include: this.predictionInclude,
+      include: predictionWithFixtureTeams.include,
     });
   }
 
@@ -110,7 +123,7 @@ export class PredictionsService {
         homeGoals: updatePredictionDto.homeGoals,
         awayGoals: updatePredictionDto.awayGoals,
       },
-      include: this.predictionInclude,
+      include: predictionWithFixtureTeams.include,
     });
   }
 
@@ -163,7 +176,7 @@ export class PredictionsService {
         id: prediction.id,
       },
       data: score,
-      include: this.predictionInclude,
+      include: predictionWithFixtureTeams.include,
     });
   }
 
@@ -211,16 +224,5 @@ export class PredictionsService {
         'Não é possível registrar, alterar ou excluir palpites após o início da partida.',
       );
     }
-  }
-
-  private get predictionInclude() {
-    return {
-      fixture: {
-        include: {
-          homeTeam: true,
-          awayTeam: true,
-        },
-      },
-    };
   }
 }
