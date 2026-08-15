@@ -5,6 +5,7 @@ import { Mail, Trophy, UserRound } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { SectionTitle } from "@/components/shared/section-title";
@@ -36,7 +37,7 @@ export default function DashboardPage() {
             <LoadingCard rows={2} />
           </div>
         ) : meQuery.isError ? (
-          <EmptyState
+          <ErrorState
             icon={UserRound}
             title="Nao foi possivel carregar seu perfil"
             description="Tente recarregar a pagina ou entrar novamente."
@@ -74,7 +75,7 @@ export default function DashboardPage() {
           {standingsQuery.isLoading ? (
             <LoadingCard rows={6} />
           ) : standingsQuery.isError ? (
-            <EmptyState
+            <ErrorState
               icon={Trophy}
               title="Ranking indisponivel"
               description="Nao foi possivel carregar a classificacao agora."

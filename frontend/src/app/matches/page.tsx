@@ -5,12 +5,15 @@ import { useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
+import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
 import { MatchCard } from "@/features/matches/components/match-card";
 import { PredictionModal } from "@/features/matches/components/prediction-modal";
 import { useFixtures } from "@/hooks/use-fixtures";
+import { getApiErrorMessage } from "@/lib/api-error";
 import type {
   FixtureStatusValue,
   FixturesQuery,
@@ -18,6 +21,10 @@ import type {
 } from "@/types/fixture";
 
 const filterOptions = [
+  {
+    label: "Todas",
+    value: "all",
+  },
   {
     label: "Hoje",
     value: "today",
@@ -87,6 +94,13 @@ function buildDateRange(filter: DateFilter) {
     };
   }
 
+  if (filter === "all") {
+    return {
+      from: undefined,
+      to: undefined,
+    };
+  }
+
   return {
     from: now.toISOString(),
     to: undefined,
@@ -94,9 +108,10 @@ function buildDateRange(filter: DateFilter) {
 }
 
 export default function MatchesPage() {
-  const [dateFilter, setDateFilter] = useState<DateFilter>("upcoming");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [status, setStatus] = useState<FixtureStatusValue | "">("");
   const [round, setRound] = useState("");
+  const [teamId, setTeamId] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedFixture, setSelectedFixture] = useState<MatchFixture | null>(
@@ -109,10 +124,11 @@ export default function MatchesPage() {
       limit: 12,
       status: status || undefined,
       round: round ? Number(round) : undefined,
+      teamId: teamId.trim() || undefined,
       from: dateRange.from,
       to: dateRange.to,
     }),
-    [dateRange.from, dateRange.to, page, round, status],
+    [dateRange.from, dateRange.to, page, round, status, teamId],
   );
   const fixturesQuery = useFixtures(fixturesQueryParams);
   const fixtures = useMemo(() => {
@@ -144,7 +160,7 @@ export default function MatchesPage() {
         />
 
         <section className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
-          <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1.2fr_0.9fr_0.7fr]">
+          <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1.2fr_0.8fr_0.7fr_0.8fr]">
             <label className="relative block">
               <Search
                 className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
@@ -184,6 +200,16 @@ export default function MatchesPage() {
               placeholder="Rodada"
               className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-4 focus:ring-ring/15"
             />
+
+            <input
+              value={teamId}
+              onChange={(event) => {
+                setTeamId(event.target.value);
+                setPage(1);
+              }}
+              placeholder="ID do time"
+              className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-4 focus:ring-ring/15"
+            />
           </div>
 
           <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
@@ -212,10 +238,13 @@ export default function MatchesPage() {
             ))}
           </div>
         ) : fixturesQuery.isError ? (
-          <EmptyState
+          <ErrorState
             icon={CalendarDays}
             title="Nao foi possivel carregar as partidas"
-            description="Tente novamente em instantes ou verifique sua conexao com a API."
+            description={getApiErrorMessage(
+              fixturesQuery.error,
+              "Tente novamente em instantes ou verifique sua conexao com a API.",
+            )}
           />
         ) : fixtures.length === 0 ? (
           <EmptyState
@@ -236,33 +265,12 @@ export default function MatchesPage() {
         )}
 
         {fixturesQuery.data ? (
-          <div className="flex flex-col items-stretch justify-between gap-4 rounded-3xl border border-border bg-card px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:px-5">
-            <p className="text-center text-sm text-muted-foreground sm:text-left">
-              Pagina {fixturesQuery.data.meta.page} de{" "}
-              {fixturesQuery.data.meta.totalPages || 1} -{" "}
-              {fixturesQuery.data.meta.total} partidas
-            </p>
-            <div className="grid grid-cols-2 gap-2 sm:flex">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 rounded-xl font-semibold"
-                disabled={page <= 1}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-              >
-                Anterior
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 rounded-xl font-semibold"
-                disabled={page >= fixturesQuery.data.meta.totalPages}
-                onClick={() => setPage((current) => current + 1)}
-              >
-                Proxima
-              </Button>
-            </div>
-          </div>
+          <Pagination
+            page={fixturesQuery.data.meta.page}
+            total={fixturesQuery.data.meta.total}
+            totalPages={fixturesQuery.data.meta.totalPages}
+            onPageChange={setPage}
+          />
         ) : null}
 
         <PredictionModal

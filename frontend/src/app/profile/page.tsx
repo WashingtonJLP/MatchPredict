@@ -4,9 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Mail, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { UserAvatar } from "@/components/shared/user-avatar";
@@ -15,6 +16,7 @@ import {
   type ProfileFormData,
 } from "@/features/auth/auth-schemas";
 import { useMe, useUpdateProfile } from "@/hooks/use-user";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export default function ProfilePage() {
   const meQuery = useMe();
@@ -42,8 +44,15 @@ export default function ProfilePage() {
 
   async function onSubmit(data: ProfileFormData) {
     setSuccess(false);
-    await updateProfile.mutateAsync(data);
-    setSuccess(true);
+    try {
+      await updateProfile.mutateAsync(data);
+      setSuccess(true);
+      toast.success("Perfil atualizado.");
+    } catch (err) {
+      toast.error(
+        getApiErrorMessage(err, "Nao foi possivel atualizar o perfil."),
+      );
+    }
   }
 
   return (
@@ -57,7 +66,7 @@ export default function ProfilePage() {
         {meQuery.isLoading ? (
           <LoadingCard rows={5} />
         ) : meQuery.isError ? (
-          <EmptyState
+          <ErrorState
             icon={UserRound}
             title="Perfil indisponivel"
             description="Nao foi possivel carregar seus dados agora."

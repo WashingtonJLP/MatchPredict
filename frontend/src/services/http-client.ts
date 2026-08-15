@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "sonner";
 
 import { clearStoredToken, getStoredToken } from "@/lib/auth-storage";
 
@@ -24,6 +25,7 @@ httpClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
       clearStoredToken();
+      toast.error("Sessao expirada. Entre novamente.");
       window.location.href = "/login";
     }
 

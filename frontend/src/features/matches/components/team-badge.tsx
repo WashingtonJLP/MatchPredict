@@ -1,3 +1,4 @@
+import { TeamLogo } from "@/features/matches/components/team-logo";
 import type { Team } from "@/types/prediction";
 
 type TeamBadgeProps = {
@@ -12,20 +13,7 @@ export function TeamBadge({ team, align = "left" }: TeamBadgeProps) {
         align === "right" ? "flex-row-reverse text-right" : ""
       }`}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-background sm:size-11">
-        {team.logo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={team.logo}
-            alt={team.name}
-            className="size-7 object-contain"
-          />
-        ) : (
-          <span className="text-sm font-bold text-muted-foreground">
-            {team.name.slice(0, 2).toUpperCase()}
-          </span>
-        )}
-      </span>
+      <TeamLogo team={team} />
       <span className="truncate text-sm font-semibold text-foreground sm:text-base">
         {team.name}
       </span>

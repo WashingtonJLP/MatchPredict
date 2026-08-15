@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   function handleLogout() {
     setIsDrawerOpen(false);
+    toast.success("Logout realizado.");
     logout();
   }
 

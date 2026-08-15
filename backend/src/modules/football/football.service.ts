@@ -87,8 +87,13 @@ type EspnEventsResponse = {
   items?: EspnRef[];
 };
 
+type EspnTeamsListResponse = {
+  count: number;
+  items?: EspnRef[];
+};
+
 type EspnEventResponse = {
-  competitions?: EspnRef;
+  competitions?: EspnRef | EspnRef[];
   date: string;
   id: string;
 };
@@ -256,9 +261,13 @@ export class FootballService {
   }
 
   async syncTeams() {
-    const espnLeague = await this.getEspnLeague();
-    const teams = espnLeague.teams ?? [];
-    const teamIds = teams.map((item) => Number(item.team.id));
+    const season = await this.getActiveSeason();
+    const espnTeams = await this.getSeasonTeams(season.year);
+    const teamRefs = espnTeams.items ?? [];
+    const teams = await Promise.all(
+      teamRefs.map((teamRef) => this.getEspnCoreRef<EspnTeam>(teamRef.$ref)),
+    );
+    const teamIds = teams.map((team) => Number(team.id));
     const existingTeams = await this.prisma.team.findMany({
       where: {
         apiTeamId: {
@@ -275,8 +284,7 @@ export class FootballService {
     let created = 0;
     let updated = 0;
 
-    for (const item of teams) {
-      const team = item.team;
+    for (const team of teams) {
       const apiTeamId = Number(team.id);
 
       if (!Number.isInteger(apiTeamId)) {
@@ -754,6 +762,18 @@ export class FootballService {
     return events;
   }
 
+  private async getSeasonTeams(year: number): Promise<EspnTeamsListResponse> {
+    const teams = await this.getEspnCore<EspnTeamsListResponse>(
+      `/sports/soccer/leagues/${this.espnLeague}/seasons/${year}/teams?limit=1000`,
+    );
+
+    if (!Array.isArray(teams.items)) {
+      throw new BadGatewayException('Lista de times da ESPN invÃ¡lida.');
+    }
+
+    return teams;
+  }
+
   private async getTeamsByApiId(): Promise<Map<number, Team>> {
     const teams = await this.prisma.team.findMany();
 
@@ -860,8 +880,9 @@ export class FootballService {
     teamsByApiId: Map<number, Team>,
   ): Promise<FixtureSyncData | null> {
     const event = await this.getEspnCoreRef<EspnEventResponse>(eventRef);
+    const competitionRef = this.getCompetitionRef(event);
 
-    if (!event.id || !event.date || !event.competitions?.$ref) {
+    if (!event.id || !event.date || !competitionRef) {
       this.logger.warn(
         `Fixture ESPN ignorada por evento inválido: ${eventRef}`,
       );
@@ -876,7 +897,7 @@ export class FootballService {
     }
 
     const competition = await this.getEspnCoreRef<EspnCompetitionResponse>(
-      event.competitions.$ref,
+      competitionRef,
     );
     const competitors = await this.getFixtureCompetitors(competition);
     const homeCompetitor = competitors.find(
@@ -938,8 +959,9 @@ export class FootballService {
     const event = await this.getEspnCore<EspnEventResponse>(
       `/sports/soccer/leagues/${this.espnLeague}/events/${apiFixtureId}`,
     );
+    const competitionRef = this.getCompetitionRef(event);
 
-    if (!event.date || !event.competitions?.$ref) {
+    if (!event.date || !competitionRef) {
       this.logger.warn(
         `Resultado ESPN ignorado por evento inválido: ${apiFixtureId}`,
       );
@@ -947,7 +969,7 @@ export class FootballService {
     }
 
     const competition = await this.getEspnCoreRef<EspnCompetitionResponse>(
-      event.competitions.$ref,
+      competitionRef,
     );
     const competitors = await this.getFixtureCompetitors(competition);
     const homeCompetitor = competitors.find(
@@ -996,6 +1018,16 @@ export class FootballService {
         this.getEspnCoreRef<EspnCompetitorResponse>(competitorRef.$ref),
       ),
     );
+  }
+
+  private getCompetitionRef(event: EspnEventResponse): string | null {
+    const competitions = event.competitions;
+
+    if (Array.isArray(competitions)) {
+      return competitions[0]?.$ref ?? null;
+    }
+
+    return competitions?.$ref ?? null;
   }
 
   private async getFixtureStatus(

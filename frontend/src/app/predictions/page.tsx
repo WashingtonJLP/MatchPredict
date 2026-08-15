@@ -5,6 +5,7 @@ import { ClipboardList } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { useMyPredictions } from "@/hooks/use-predictions";
@@ -32,7 +33,7 @@ export default function PredictionsPage() {
         {predictionsQuery.isLoading ? (
           <LoadingCard rows={7} />
         ) : predictionsQuery.isError ? (
-          <EmptyState
+          <ErrorState
             icon={ClipboardList}
             title="Palpites indisponiveis"
             description="Nao foi possivel carregar seus palpites agora."

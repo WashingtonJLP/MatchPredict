@@ -10,6 +10,9 @@ describe('FootballService', () => {
   let service: FootballService;
   let httpGet: jest.Mock;
   let teamFindMany: jest.Mock;
+  let teamUpsert: jest.Mock;
+  let leagueFindFirst: jest.Mock;
+  let seasonFindFirst: jest.Mock;
   let playerFindMany: jest.Mock;
   let playerUpsert: jest.Mock;
   let fixtureFindMany: jest.Mock;
@@ -18,6 +21,9 @@ describe('FootballService', () => {
   beforeEach(() => {
     httpGet = jest.fn();
     teamFindMany = jest.fn();
+    teamUpsert = jest.fn();
+    leagueFindFirst = jest.fn();
+    seasonFindFirst = jest.fn();
     playerFindMany = jest.fn();
     playerUpsert = jest.fn();
     fixtureFindMany = jest.fn();
@@ -30,6 +36,7 @@ describe('FootballService', () => {
       get: jest.fn((key: string) => {
         const config: Record<string, string> = {
           ESPN_API_URL: 'https://site.api.espn.com/apis/site/v2',
+          ESPN_CORE_API_URL: 'https://sports.core.api.espn.com/v2',
           ESPN_LEAGUE: 'eng.1',
         };
 
@@ -39,6 +46,13 @@ describe('FootballService', () => {
     const prisma = {
       team: {
         findMany: teamFindMany,
+        upsert: teamUpsert,
+      },
+      league: {
+        findFirst: leagueFindFirst,
+      },
+      season: {
+        findFirst: seasonFindFirst,
       },
       player: {
         findMany: playerFindMany,
@@ -51,6 +65,146 @@ describe('FootballService', () => {
     } as unknown as PrismaService;
 
     service = new FootballService(httpService, configService, prisma);
+  });
+
+  it('extrai a competicao quando a ESPN retorna competitions como array', () => {
+    expect(
+      (
+        service as unknown as {
+          getCompetitionRef: (event: {
+            competitions?: { $ref: string } | Array<{ $ref: string }>;
+          }) => string | null;
+        }
+      ).getCompetitionRef({
+        competitions: [
+          {
+            $ref: 'https://sports.core.api.espn.com/event/competition',
+          },
+        ],
+      }),
+    ).toBe('https://sports.core.api.espn.com/event/competition');
+  });
+
+  it('sincroniza times da temporada ativa usando refs da ESPN Core', async () => {
+    leagueFindFirst.mockResolvedValue({
+      id: '99999999-9999-4999-8999-999999999999',
+    });
+    seasonFindFirst.mockResolvedValue({
+      id: '88888888-8888-4888-8888-888888888888',
+      year: 2026,
+    });
+    teamFindMany.mockResolvedValue([
+      {
+        apiTeamId: 359,
+      },
+    ]);
+    teamUpsert.mockResolvedValue({});
+    httpGet
+      .mockReturnValueOnce(
+        of({
+          data: {
+            count: 2,
+            items: [
+              {
+                $ref: 'https://sports.core.api.espn.com/team/359',
+              },
+              {
+                $ref: 'https://sports.core.api.espn.com/team/364',
+              },
+            ],
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            id: '359',
+            displayName: 'Arsenal',
+            logos: [
+              {
+                href: 'https://example.com/arsenal.png',
+                rel: ['default'],
+              },
+            ],
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            id: '364',
+            displayName: 'Liverpool',
+            logos: [
+              {
+                href: 'https://example.com/liverpool.png',
+                rel: ['default'],
+              },
+            ],
+          },
+        }),
+      );
+
+    await expect(service.syncTeams()).resolves.toEqual({
+      created: 1,
+      updated: 1,
+      total: 2,
+    });
+
+    expect(httpGet).toHaveBeenNthCalledWith(
+      1,
+      'https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/teams?limit=1000',
+    );
+    expect(httpGet).toHaveBeenNthCalledWith(
+      2,
+      'https://sports.core.api.espn.com/team/359',
+    );
+    expect(httpGet).toHaveBeenNthCalledWith(
+      3,
+      'https://sports.core.api.espn.com/team/364',
+    );
+    expect(teamFindMany).toHaveBeenCalledWith({
+      where: {
+        apiTeamId: {
+          in: [359, 364],
+        },
+      },
+      select: {
+        apiTeamId: true,
+      },
+    });
+    expect(teamUpsert).toHaveBeenCalledTimes(2);
+    expect(teamUpsert).toHaveBeenNthCalledWith(1, {
+      where: {
+        apiTeamId: 359,
+      },
+      update: {
+        name: 'Arsenal',
+        logo: 'https://example.com/arsenal.png',
+        country: 'England',
+      },
+      create: {
+        apiTeamId: 359,
+        name: 'Arsenal',
+        logo: 'https://example.com/arsenal.png',
+        country: 'England',
+      },
+    });
+    expect(teamUpsert).toHaveBeenNthCalledWith(2, {
+      where: {
+        apiTeamId: 364,
+      },
+      update: {
+        name: 'Liverpool',
+        logo: 'https://example.com/liverpool.png',
+        country: 'England',
+      },
+      create: {
+        apiTeamId: 364,
+        name: 'Liverpool',
+        logo: 'https://example.com/liverpool.png',
+        country: 'England',
+      },
+    });
   });
 
   it('sincroniza jogadores dos times cadastrados', async () => {

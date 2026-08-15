@@ -13,6 +13,8 @@ export type FixtureUserPrediction = Pick<
 >;
 
 export type MatchFixture = Fixture & {
+  league?: string | null;
+  competition?: string | null;
   winnerType: "HOME" | "AWAY" | "DRAW" | null;
   canPredict: boolean;
   userPrediction: FixtureUserPrediction | null;

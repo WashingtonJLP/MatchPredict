@@ -5,11 +5,13 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import {
   loginSchema,
   type LoginFormData,
 } from "@/features/auth/auth-schemas";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { useAuth } from "@/providers/auth-provider";
 
 export default function LoginPage() {
@@ -33,8 +35,14 @@ export default function LoginPage() {
 
     try {
       await login(data);
-    } catch {
-      setError("Não foi possível entrar. Verifique suas credenciais.");
+      toast.success("Login realizado com sucesso.");
+    } catch (err) {
+      const message = getApiErrorMessage(
+        err,
+        "Nao foi possivel entrar. Verifique suas credenciais.",
+      );
+      setError(message);
+      toast.error(message);
     }
   }
 

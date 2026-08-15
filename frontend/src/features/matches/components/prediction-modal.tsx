@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { PredictionForm } from "@/features/matches/components/prediction-form";
@@ -9,6 +10,7 @@ import {
   useDeletePrediction,
   useUpdatePrediction,
 } from "@/hooks/use-predictions";
+import { getApiErrorMessage } from "@/lib/api-error";
 import type { MatchFixture } from "@/types/fixture";
 
 type PredictionModalProps = {
@@ -38,19 +40,25 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
       return;
     }
 
-    if (fixture.userPrediction) {
-      await updatePrediction.mutateAsync({
-        predictionId: fixture.userPrediction.id,
-        payload: values,
-      });
-    } else {
-      await createPrediction.mutateAsync({
-        fixtureId: fixture.id,
-        ...values,
-      });
-    }
+    try {
+      if (fixture.userPrediction) {
+        await updatePrediction.mutateAsync({
+          predictionId: fixture.userPrediction.id,
+          payload: values,
+        });
+        toast.success("Palpite atualizado.");
+      } else {
+        await createPrediction.mutateAsync({
+          fixtureId: fixture.id,
+          ...values,
+        });
+        toast.success("Palpite salvo.");
+      }
 
-    onClose();
+      onClose();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Nao foi possivel salvar o palpite."));
+    }
   }
 
   async function handleDelete() {
@@ -58,8 +66,15 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
       return;
     }
 
-    await deletePrediction.mutateAsync(fixture.userPrediction.id);
-    onClose();
+    try {
+      await deletePrediction.mutateAsync(fixture.userPrediction.id);
+      toast.success("Palpite removido.");
+      onClose();
+    } catch (err) {
+      toast.error(
+        getApiErrorMessage(err, "Nao foi possivel remover o palpite."),
+      );
+    }
   }
 
   return (

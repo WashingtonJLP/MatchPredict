@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Toaster } from "sonner";
 
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
@@ -20,7 +21,12 @@ export function BaseLayout({ children }: BaseLayoutProps) {
   ].some((route) => pathname.startsWith(route));
 
   if (isPrivateRoute) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <Toaster richColors position="top-right" closeButton />
+      </>
+    );
   }
 
   return (
@@ -28,6 +34,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
+      <Toaster richColors position="top-right" closeButton />
     </div>
   );
 }

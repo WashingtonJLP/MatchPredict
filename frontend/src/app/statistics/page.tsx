@@ -11,6 +11,7 @@ import {
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
@@ -35,7 +36,7 @@ export default function StatisticsPage() {
             ))}
           </div>
         ) : statisticsQuery.isError ? (
-          <EmptyState
+          <ErrorState
             icon={BarChart3}
             title="Estatisticas indisponiveis"
             description="Nao foi possivel carregar suas estatisticas agora."

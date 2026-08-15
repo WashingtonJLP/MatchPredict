@@ -1,6 +1,6 @@
-import { CalendarDays, Clock3, Trophy } from "lucide-react";
+import { CalendarDays, Clock3 } from "lucide-react";
 
-import { FixtureStatus } from "@/features/matches/components/fixture-status";
+import { MatchHeader } from "@/features/matches/components/match-header";
 import { PredictionButton } from "@/features/matches/components/prediction-button";
 import { TeamBadge } from "@/features/matches/components/team-badge";
 import type { MatchFixture } from "@/types/fixture";
@@ -12,6 +12,7 @@ type MatchCardProps = {
 
 export function MatchCard({ fixture, onPredict }: MatchCardProps) {
   const kickoff = new Date(fixture.kickoff);
+  const kickoffPassed = kickoff.getTime() <= Date.now();
   const date = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "short",
@@ -23,18 +24,7 @@ export function MatchCard({ fixture, onPredict }: MatchCardProps) {
 
   return (
     <article className="rounded-3xl border border-border bg-card p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-            <Trophy className="size-4" aria-hidden />
-            Premier League
-          </p>
-          <p className="text-sm font-medium text-muted-foreground">
-            Rodada {fixture.round}
-          </p>
-        </div>
-        <FixtureStatus status={fixture.status} />
-      </div>
+      <MatchHeader fixture={fixture} />
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
         <TeamBadge team={fixture.homeTeam} />
@@ -59,6 +49,12 @@ export function MatchCard({ fixture, onPredict }: MatchCardProps) {
         <div className="mt-5 rounded-2xl bg-accent/10 px-4 py-3 text-sm font-semibold text-accent">
           Seu palpite: {fixture.userPrediction.homeGoals} x{" "}
           {fixture.userPrediction.awayGoals}
+        </div>
+      ) : null}
+
+      {kickoffPassed ? (
+        <div className="mt-5 inline-flex rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+          Palpites encerrados
         </div>
       ) : null}
 
