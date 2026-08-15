@@ -7,10 +7,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { FixtureStatus, Team, WinnerType } from '@prisma/client';
+import { FixtureStatus, Prisma, Team, WinnerType } from '@prisma/client';
 import { AxiosError } from 'axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { FixtureQueryDto } from './dto/fixture-query.dto';
 
 type EspnLogo = {
   href?: string;
@@ -146,6 +147,35 @@ type PlayerSyncData = {
   position: string | null;
   teamId: string;
 };
+
+const fixtureListPayload = Prisma.validator<Prisma.FixtureDefaultArgs>()({
+  include: {
+    homeTeam: {
+      select: {
+        id: true,
+        name: true,
+        logo: true,
+      },
+    },
+    awayTeam: {
+      select: {
+        id: true,
+        name: true,
+        logo: true,
+      },
+    },
+    predictions: {
+      select: {
+        id: true,
+        homeGoals: true,
+        awayGoals: true,
+        totalPoints: true,
+      },
+    },
+  },
+});
+
+type FixtureListItem = Prisma.FixtureGetPayload<typeof fixtureListPayload>;
 
 @Injectable()
 export class FootballService {
@@ -483,6 +513,95 @@ export class FootballService {
     return {
       created,
       updated,
+    };
+  }
+
+  async findFixtures(userId: string, query: FixtureQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where = this.buildFixtureWhere(query);
+    const [fixtures, total] = await Promise.all([
+      this.prisma.fixture.findMany({
+        where,
+        orderBy: {
+          kickoff: 'asc',
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          homeTeam: fixtureListPayload.include.homeTeam,
+          awayTeam: fixtureListPayload.include.awayTeam,
+          predictions: {
+            where: {
+              userId,
+            },
+            take: 1,
+            select: fixtureListPayload.include.predictions.select,
+          },
+        },
+      }),
+      this.prisma.fixture.count({
+        where,
+      }),
+    ]);
+
+    return {
+      data: fixtures.map((fixture) => this.toFixtureResponse(fixture)),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  private buildFixtureWhere(query: FixtureQueryDto): Prisma.FixtureWhereInput {
+    return {
+      status: query.status,
+      round: query.round,
+      kickoff: this.buildKickoffFilter(query),
+      OR: query.teamId
+        ? [
+            {
+              homeTeamId: query.teamId,
+            },
+            {
+              awayTeamId: query.teamId,
+            },
+          ]
+        : undefined,
+    };
+  }
+
+  private buildKickoffFilter(
+    query: FixtureQueryDto,
+  ): Prisma.DateTimeFilter | undefined {
+    if (!query.from && !query.to) {
+      return undefined;
+    }
+
+    return {
+      gte: query.from ? new Date(query.from) : undefined,
+      lte: query.to ? new Date(query.to) : undefined,
+    };
+  }
+
+  private toFixtureResponse(fixture: FixtureListItem) {
+    const userPrediction = fixture.predictions[0] ?? null;
+
+    return {
+      id: fixture.id,
+      round: fixture.round,
+      kickoff: fixture.kickoff,
+      status: fixture.status,
+      homeGoals: fixture.homeGoals,
+      awayGoals: fixture.awayGoals,
+      winnerType: fixture.winnerType,
+      homeTeam: fixture.homeTeam,
+      awayTeam: fixture.awayTeam,
+      canPredict: fixture.kickoff.getTime() > Date.now() && !userPrediction,
+      userPrediction,
     };
   }
 

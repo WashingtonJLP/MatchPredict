@@ -30,7 +30,7 @@ export default function DashboardPage() {
         />
 
         {meQuery.isLoading ? (
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             <LoadingCard rows={2} />
             <LoadingCard rows={2} />
             <LoadingCard rows={2} />
@@ -42,7 +42,7 @@ export default function DashboardPage() {
             description="Tente recarregar a pagina ou entrar novamente."
           />
         ) : (
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             <StatCard
               icon={UserRound}
               title="Nome"
@@ -91,15 +91,15 @@ export default function DashboardPage() {
               getRowKey={(item) => item.userId}
               rowClassName={(item) =>
                 item.userId === authUser?.id
-                  ? "bg-emerald-50 hover:bg-emerald-50"
-                  : "hover:bg-slate-50"
+                  ? "bg-accent/10 hover:bg-accent/10"
+                  : "hover:bg-muted"
               }
               columns={[
                 {
                   key: "position",
                   header: "Posicao",
                   render: (item) => (
-                    <span className="font-semibold text-slate-950">
+                    <span className="font-semibold text-foreground">
                       #{item.position}
                     </span>
                   ),
@@ -110,7 +110,7 @@ export default function DashboardPage() {
                   render: (item) => (
                     <div className="flex items-center gap-3">
                       <UserAvatar name={item.name} size="sm" />
-                      <span className="font-medium text-slate-950">
+                      <span className="font-medium text-foreground">
                         {item.name}
                       </span>
                     </div>
@@ -120,7 +120,7 @@ export default function DashboardPage() {
                   key: "points",
                   header: "Pontos",
                   render: (item) => (
-                    <span className="font-semibold text-emerald-600">
+                    <span className="font-semibold text-accent">
                       {item.totalPoints}
                     </span>
                   ),

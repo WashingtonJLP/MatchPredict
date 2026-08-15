@@ -19,10 +19,35 @@ export function DataTable<T>({
   rowClassName,
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      <div className="overflow-x-auto">
+    <div className="rounded-2xl border border-border bg-card shadow-sm">
+      <div className="grid gap-3 p-3 md:hidden">
+        {data.map((item) => (
+          <article
+            key={getRowKey(item)}
+            className={`rounded-xl border border-border bg-background p-4 ${rowClassName?.(item) ?? ""}`}
+          >
+            <dl className="grid gap-3">
+              {columns.map((column) => (
+                <div
+                  key={column.key}
+                  className="grid gap-1 border-b border-border pb-3 last:border-b-0 last:pb-0"
+                >
+                  <dt className="text-xs font-semibold uppercase text-muted-foreground">
+                    {column.header}
+                  </dt>
+                  <dd className="min-w-0 text-sm text-foreground">
+                    {column.render(item)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </article>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+          <thead className="bg-muted text-xs font-semibold uppercase text-muted-foreground">
             <tr>
               {columns.map((column) => (
                 <th key={column.key} className="px-5 py-4">
@@ -35,7 +60,7 @@ export function DataTable<T>({
             {data.map((item) => (
               <tr
                 key={getRowKey(item)}
-                className={rowClassName?.(item) ?? "hover:bg-slate-50"}
+                className={rowClassName?.(item) ?? "hover:bg-muted"}
               >
                 {columns.map((column) => (
                   <td

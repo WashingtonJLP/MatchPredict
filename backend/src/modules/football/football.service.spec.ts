@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
+import { FixtureStatus, WinnerType } from '@prisma/client';
 import { of } from 'rxjs';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -11,12 +12,16 @@ describe('FootballService', () => {
   let teamFindMany: jest.Mock;
   let playerFindMany: jest.Mock;
   let playerUpsert: jest.Mock;
+  let fixtureFindMany: jest.Mock;
+  let fixtureCount: jest.Mock;
 
   beforeEach(() => {
     httpGet = jest.fn();
     teamFindMany = jest.fn();
     playerFindMany = jest.fn();
     playerUpsert = jest.fn();
+    fixtureFindMany = jest.fn();
+    fixtureCount = jest.fn();
 
     const httpService = {
       get: httpGet,
@@ -38,6 +43,10 @@ describe('FootballService', () => {
       player: {
         findMany: playerFindMany,
         upsert: playerUpsert,
+      },
+      fixture: {
+        findMany: fixtureFindMany,
+        count: fixtureCount,
       },
     } as unknown as PrismaService;
 
@@ -259,7 +268,202 @@ describe('FootballService', () => {
     });
     expect(playerUpsert).not.toHaveBeenCalled();
   });
+
+  it('lista fixtures com filtros, paginacao e predicao do usuario', async () => {
+    const kickoff = new Date('2030-08-14T19:00:00.000Z');
+    const userId = '33333333-3333-4333-8333-333333333333';
+
+    fixtureFindMany.mockResolvedValue([
+      createFixtureListItem({
+        kickoff,
+        predictions: [
+          {
+            id: '44444444-4444-4444-8444-444444444444',
+            homeGoals: 2,
+            awayGoals: 1,
+            totalPoints: 0,
+          },
+        ],
+      }),
+    ]);
+    fixtureCount.mockResolvedValue(21);
+
+    await expect(
+      service.findFixtures(userId, {
+        status: FixtureStatus.NS,
+        round: 12,
+        teamId: firstTeamId,
+        from: '2030-08-01T00:00:00.000Z',
+        to: '2030-08-31T23:59:59.999Z',
+        page: 2,
+        limit: 10,
+      }),
+    ).resolves.toEqual({
+      data: [
+        {
+          id: fixtureId,
+          round: 12,
+          kickoff,
+          status: FixtureStatus.NS,
+          homeGoals: null,
+          awayGoals: null,
+          winnerType: null,
+          homeTeam: {
+            id: firstTeamId,
+            name: 'Arsenal',
+            logo: 'https://example.com/arsenal.png',
+          },
+          awayTeam: {
+            id: secondTeamId,
+            name: 'Chelsea',
+            logo: 'https://example.com/chelsea.png',
+          },
+          canPredict: false,
+          userPrediction: {
+            id: '44444444-4444-4444-8444-444444444444',
+            homeGoals: 2,
+            awayGoals: 1,
+            totalPoints: 0,
+          },
+        },
+      ],
+      meta: {
+        page: 2,
+        limit: 10,
+        total: 21,
+        totalPages: 3,
+      },
+    });
+
+    const expectedWhere = {
+      status: FixtureStatus.NS,
+      round: 12,
+      kickoff: {
+        gte: new Date('2030-08-01T00:00:00.000Z'),
+        lte: new Date('2030-08-31T23:59:59.999Z'),
+      },
+      OR: [
+        {
+          homeTeamId: firstTeamId,
+        },
+        {
+          awayTeamId: firstTeamId,
+        },
+      ],
+    };
+
+    expect(fixtureFindMany).toHaveBeenCalledWith({
+      where: expectedWhere,
+      orderBy: {
+        kickoff: 'asc',
+      },
+      skip: 10,
+      take: 10,
+      include: {
+        homeTeam: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+          },
+        },
+        awayTeam: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+          },
+        },
+        predictions: {
+          where: {
+            userId,
+          },
+          take: 1,
+          select: {
+            id: true,
+            homeGoals: true,
+            awayGoals: true,
+            totalPoints: true,
+          },
+        },
+      },
+    });
+    expect(fixtureCount).toHaveBeenCalledWith({
+      where: expectedWhere,
+    });
+  });
+
+  it('usa valores padrao e permite palpite quando partida ainda nao iniciou', async () => {
+    fixtureFindMany.mockResolvedValue([
+      createFixtureListItem({
+        predictions: [],
+      }),
+    ]);
+    fixtureCount.mockResolvedValue(1);
+
+    await expect(
+      service.findFixtures('33333333-3333-4333-8333-333333333333', {}),
+    ).resolves.toMatchObject({
+      data: [
+        {
+          canPredict: true,
+          userPrediction: null,
+        },
+      ],
+      meta: {
+        page: 1,
+        limit: 20,
+        total: 1,
+        totalPages: 1,
+      },
+    });
+
+    expect(fixtureFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: undefined,
+          round: undefined,
+          kickoff: undefined,
+          OR: undefined,
+        },
+        skip: 0,
+        take: 20,
+      }),
+    );
+  });
 });
 
 const firstTeamId = '11111111-1111-4111-8111-111111111111';
 const secondTeamId = '22222222-2222-4222-8222-222222222222';
+const fixtureId = '55555555-5555-4555-8555-555555555555';
+
+function createFixtureListItem(overrides: Record<string, unknown> = {}) {
+  return {
+    id: fixtureId,
+    apiFixtureId: 123,
+    seasonId: '66666666-6666-4666-8666-666666666666',
+    homeTeamId: firstTeamId,
+    awayTeamId: secondTeamId,
+    round: 12,
+    kickoff: new Date('2030-08-14T19:00:00.000Z'),
+    status: FixtureStatus.NS,
+    homeGoals: null,
+    awayGoals: null,
+    winnerType: null as WinnerType | null,
+    processedAt: null,
+    createdAt: new Date('2030-08-01T00:00:00.000Z'),
+    updatedAt: new Date('2030-08-01T00:00:00.000Z'),
+    homeTeam: {
+      id: firstTeamId,
+      name: 'Arsenal',
+      logo: 'https://example.com/arsenal.png',
+    },
+    awayTeam: {
+      id: secondTeamId,
+      name: 'Chelsea',
+      logo: 'https://example.com/chelsea.png',
+    },
+    predictions: [],
+    ...overrides,
+  };
+}

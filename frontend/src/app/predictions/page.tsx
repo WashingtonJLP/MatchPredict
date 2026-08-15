@@ -53,10 +53,10 @@ export default function PredictionsPage() {
                 header: "Partida",
                 render: (item) => (
                   <div>
-                    <p className="font-semibold text-slate-950">
+                    <p className="font-semibold text-foreground">
                       {item.fixture.homeTeam.name} x {item.fixture.awayTeam.name}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Rodada {item.fixture.round}
                     </p>
                   </div>
@@ -66,7 +66,7 @@ export default function PredictionsPage() {
                 key: "prediction",
                 header: "Palpite",
                 render: (item) => (
-                  <span className="font-semibold text-slate-950">
+                  <span className="font-semibold text-foreground">
                     {item.homeGoals} x {item.awayGoals}
                   </span>
                 ),
@@ -89,7 +89,7 @@ export default function PredictionsPage() {
                 key: "points",
                 header: "Pontuacao",
                 render: (item) => (
-                  <span className="font-semibold text-emerald-600">
+                  <span className="font-semibold text-accent">
                     {item.totalPoints} pts
                   </span>
                 ),

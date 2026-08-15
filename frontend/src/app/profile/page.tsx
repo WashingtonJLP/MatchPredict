@@ -63,62 +63,62 @@ export default function ProfilePage() {
             description="Nao foi possivel carregar seus dados agora."
           />
         ) : meQuery.data ? (
-          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-            <aside className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+          <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:gap-6">
+            <aside className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-8">
               <UserAvatar name={meQuery.data.name} size="lg" />
-              <h2 className="mt-5 text-2xl font-bold text-slate-950">
+              <h2 className="mt-5 text-2xl font-bold text-card-foreground">
                 {meQuery.data.name}
               </h2>
-              <p className="mt-2 flex items-center gap-2 text-base leading-7 text-slate-600">
+              <p className="mt-2 flex items-center gap-2 text-base leading-7 text-muted-foreground">
                 <Mail className="size-4" aria-hidden />
                 {meQuery.data.email}
               </p>
             </aside>
 
             <form
-              className="rounded-2xl border border-border bg-card p-8 shadow-sm"
+              className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-8"
               onSubmit={handleSubmit(onSubmit)}
             >
-              <h2 className="text-2xl font-bold text-slate-950">
+              <h2 className="text-2xl font-bold text-card-foreground">
                 Dados pessoais
               </h2>
-              <p className="mt-3 max-w-[650px] text-base leading-7 text-slate-600">
+              <p className="mt-3 max-w-[650px] text-base leading-7 text-muted-foreground">
                 O e-mail e exibido como leitura porque o backend atual nao
                 possui endpoint para altera-lo.
               </p>
 
               <div className="mt-8 space-y-5">
-                <label className="block text-sm font-medium text-slate-700">
+                <label className="block text-sm font-medium text-foreground">
                   Nome
                   <input
                     type="text"
-                    className="mt-2 h-12 w-full rounded-xl border border-input bg-white px-4 text-base outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15"
+                    className="mt-2 h-12 w-full rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/15"
                     {...register("name")}
                   />
                   {errors.name ? (
-                    <span className="mt-2 block text-sm text-red-600">
+                    <span className="mt-2 block text-sm text-destructive">
                       {errors.name.message}
                     </span>
                   ) : null}
                 </label>
 
-                <label className="block text-sm font-medium text-slate-700">
+                <label className="block text-sm font-medium text-foreground">
                   E-mail
                   <input
                     type="email"
                     value={meQuery.data.email}
                     readOnly
-                    className="mt-2 h-12 w-full rounded-xl border border-input bg-slate-50 px-4 text-base text-slate-500 outline-none"
+                    className="mt-2 h-12 w-full rounded-xl border border-input bg-muted px-4 text-base text-muted-foreground outline-none"
                   />
                 </label>
 
                 {updateProfile.isError ? (
-                  <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                     Nao foi possivel atualizar o perfil.
                   </p>
                 ) : null}
                 {success ? (
-                  <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  <p className="rounded-xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">
                     Perfil atualizado com sucesso.
                   </p>
                 ) : null}
@@ -126,7 +126,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || updateProfile.isPending}
-                  className="h-12 rounded-xl bg-slate-950 px-6 text-base font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="h-12 w-full rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground transition hover:bg-primary/80 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                   {updateProfile.isPending ? "Salvando..." : "Salvar alteracoes"}
                 </button>

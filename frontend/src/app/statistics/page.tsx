@@ -29,7 +29,7 @@ export default function StatisticsPage() {
         />
 
         {statisticsQuery.isLoading ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
               <LoadingCard key={index} rows={2} />
             ))}
@@ -41,7 +41,7 @@ export default function StatisticsPage() {
             description="Nao foi possivel carregar suas estatisticas agora."
           />
         ) : statistics ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             <StatCard
               icon={Hash}
               title="Total de palpites"

@@ -12,11 +12,11 @@ export function BrandMark({ className }: BrandMarkProps) {
     <Link
       href="/"
       className={cn(
-        "inline-flex items-center gap-3 text-base font-semibold text-slate-950",
+        "inline-flex items-center gap-3 text-base font-semibold text-foreground",
         className,
       )}
     >
-      <span className="flex size-9 items-center justify-center rounded-lg bg-slate-950 text-white shadow-sm">
+      <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
         <Trophy className="size-5" aria-hidden="true" />
       </span>
       <span>MatchPredict</span>

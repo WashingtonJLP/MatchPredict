@@ -13,6 +13,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
   const pathname = usePathname();
   const isPrivateRoute = [
     "/dashboard",
+    "/matches",
     "/profile",
     "/predictions",
     "/statistics",

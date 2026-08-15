@@ -20,20 +20,20 @@ const footerLinks = [
 export function Footer() {
   return (
     <footer className="border-t border-border bg-card">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-12 md:flex-row md:items-center md:justify-between lg:px-8">
         <div className="space-y-4">
           <BrandMark />
-          <p className="text-sm font-normal text-slate-500">
+          <p className="text-sm font-normal text-muted-foreground">
             Copyright {new Date().getFullYear()} MatchPredict.
           </p>
         </div>
 
-        <nav className="flex flex-wrap gap-6 text-sm font-medium text-slate-600">
+        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-muted-foreground">
           {footerLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="transition-colors duration-200 hover:text-slate-950"
+              className="flex min-h-11 items-center transition-colors duration-200 hover:text-foreground"
             >
               {link.label}
             </Link>

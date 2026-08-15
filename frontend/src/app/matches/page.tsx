@@ -1,0 +1,275 @@
+"use client";
+
+import { CalendarDays, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+
+import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { EmptyState } from "@/components/shared/empty-state";
+import { LoadingCard } from "@/components/shared/loading-card";
+import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
+import { MatchCard } from "@/features/matches/components/match-card";
+import { PredictionModal } from "@/features/matches/components/prediction-modal";
+import { useFixtures } from "@/hooks/use-fixtures";
+import type {
+  FixtureStatusValue,
+  FixturesQuery,
+  MatchFixture,
+} from "@/types/fixture";
+
+const filterOptions = [
+  {
+    label: "Hoje",
+    value: "today",
+  },
+  {
+    label: "Esta Semana",
+    value: "week",
+  },
+  {
+    label: "Proximas",
+    value: "upcoming",
+  },
+] as const;
+
+const statusOptions: Array<{ label: string; value: FixtureStatusValue | "" }> = [
+  {
+    label: "Todos",
+    value: "",
+  },
+  {
+    label: "Agendada",
+    value: "NS",
+  },
+  {
+    label: "Ao vivo",
+    value: "LIVE",
+  },
+  {
+    label: "Finalizada",
+    value: "FT",
+  },
+];
+
+type DateFilter = (typeof filterOptions)[number]["value"];
+
+function toIsoStartOfDay(date: Date) {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+
+  return value.toISOString();
+}
+
+function toIsoEndOfDay(date: Date) {
+  const value = new Date(date);
+  value.setHours(23, 59, 59, 999);
+
+  return value.toISOString();
+}
+
+function buildDateRange(filter: DateFilter) {
+  const now = new Date();
+
+  if (filter === "today") {
+    return {
+      from: toIsoStartOfDay(now),
+      to: toIsoEndOfDay(now),
+    };
+  }
+
+  if (filter === "week") {
+    const end = new Date(now);
+    end.setDate(now.getDate() + 7);
+
+    return {
+      from: toIsoStartOfDay(now),
+      to: toIsoEndOfDay(end),
+    };
+  }
+
+  return {
+    from: now.toISOString(),
+    to: undefined,
+  };
+}
+
+export default function MatchesPage() {
+  const [dateFilter, setDateFilter] = useState<DateFilter>("upcoming");
+  const [status, setStatus] = useState<FixtureStatusValue | "">("");
+  const [round, setRound] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [selectedFixture, setSelectedFixture] = useState<MatchFixture | null>(
+    null,
+  );
+  const dateRange = useMemo(() => buildDateRange(dateFilter), [dateFilter]);
+  const fixturesQueryParams = useMemo<FixturesQuery>(
+    () => ({
+      page,
+      limit: 12,
+      status: status || undefined,
+      round: round ? Number(round) : undefined,
+      from: dateRange.from,
+      to: dateRange.to,
+    }),
+    [dateRange.from, dateRange.to, page, round, status],
+  );
+  const fixturesQuery = useFixtures(fixturesQueryParams);
+  const fixtures = useMemo(() => {
+    const data = fixturesQuery.data?.data ?? [];
+    const normalizedSearch = search.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return data;
+    }
+
+    return data.filter((fixture) =>
+      `${fixture.homeTeam.name} ${fixture.awayTeam.name}`
+        .toLowerCase()
+        .includes(normalizedSearch),
+    );
+  }, [fixturesQuery.data?.data, search]);
+
+  function updateDateFilter(value: DateFilter) {
+    setDateFilter(value);
+    setPage(1);
+  }
+
+  return (
+    <DashboardShell>
+      <div className="space-y-8">
+        <PageHeader
+          title="Partidas"
+          description="Escolha uma partida, acompanhe status e registre seus palpites antes do kickoff."
+        />
+
+        <section className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1.2fr_0.9fr_0.7fr]">
+            <label className="relative block">
+              <Search
+                className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Buscar por time"
+                className="h-12 w-full rounded-2xl border border-input bg-background pl-11 pr-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-4 focus:ring-ring/15"
+              />
+            </label>
+
+            <select
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as FixtureStatusValue | "");
+                setPage(1);
+              }}
+              className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/15"
+            >
+              {statusOptions.map((option) => (
+                <option key={option.label} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              min={0}
+              value={round}
+              onChange={(event) => {
+                setRound(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Rodada"
+              className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-4 focus:ring-ring/15"
+            />
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
+            {filterOptions.map((option) => (
+              <Button
+                key={option.value}
+                type="button"
+                variant={dateFilter === option.value ? "default" : "outline"}
+                className={`h-11 rounded-xl px-4 font-semibold ${
+                  dateFilter === option.value
+                    ? "bg-primary text-primary-foreground hover:bg-primary/80"
+                    : ""
+                }`}
+                onClick={() => updateDateFilter(option.value)}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </section>
+
+        {fixturesQuery.isLoading ? (
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <LoadingCard key={index} rows={4} />
+            ))}
+          </div>
+        ) : fixturesQuery.isError ? (
+          <EmptyState
+            icon={CalendarDays}
+            title="Nao foi possivel carregar as partidas"
+            description="Tente novamente em instantes ou verifique sua conexao com a API."
+          />
+        ) : fixtures.length === 0 ? (
+          <EmptyState
+            icon={CalendarDays}
+            title="Nenhuma partida encontrada"
+            description="Ajuste filtros ou busca para encontrar partidas sincronizadas."
+          />
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {fixtures.map((fixture) => (
+              <MatchCard
+                key={fixture.id}
+                fixture={fixture}
+                onPredict={setSelectedFixture}
+              />
+            ))}
+          </div>
+        )}
+
+        {fixturesQuery.data ? (
+          <div className="flex flex-col items-stretch justify-between gap-4 rounded-3xl border border-border bg-card px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:px-5">
+            <p className="text-center text-sm text-muted-foreground sm:text-left">
+              Pagina {fixturesQuery.data.meta.page} de{" "}
+              {fixturesQuery.data.meta.totalPages || 1} -{" "}
+              {fixturesQuery.data.meta.total} partidas
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl font-semibold"
+                disabled={page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl font-semibold"
+                disabled={page >= fixturesQuery.data.meta.totalPages}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Proxima
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        <PredictionModal
+          fixture={selectedFixture}
+          onClose={() => setSelectedFixture(null)}
+        />
+      </div>
+    </DashboardShell>
+  );
+}

@@ -4,6 +4,8 @@ import { Geist } from "next/font/google";
 import { BaseLayout } from "@/components/layout/base-layout";
 import { AppProviders } from "@/providers/app-providers";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore Next.js supports global CSS side-effect imports in app/layout.
 import "./globals.css";
 
 const geist = Geist({
