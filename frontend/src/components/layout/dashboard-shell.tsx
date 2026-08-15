@@ -98,10 +98,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 className={cn(
                   "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50",
                   isActive &&
-                    "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
+                    "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
                 )}
               >
-                <item.icon className="size-5" aria-hidden />
+                <item.icon className="size-[22px]" aria-hidden />
                 {item.label}
               </Link>
             );
@@ -172,7 +172,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
               href={item.href}
               className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              <item.icon className="size-4" aria-hidden />
+              <item.icon className="size-5" aria-hidden />
               {item.label.split(" ")[0]}
             </Link>
           ))}
@@ -235,11 +235,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 className={cn(
                   "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50",
                   isActive &&
-                    "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
+                    "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
                 )}
                 onClick={() => setIsDrawerOpen(false)}
               >
-                <item.icon className="size-5" aria-hidden />
+                <item.icon className="size-[22px]" aria-hidden />
                 {item.label}
               </Link>
             );

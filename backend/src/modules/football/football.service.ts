@@ -325,6 +325,8 @@ export class FootballService {
   async syncFixtures() {
     const season = await this.getActiveSeason();
     const espnEvents = await this.getSeasonEvents(season.year);
+    const espnTeams = await this.getSeasonTeams(season.year);
+    const matchesPerRound = Math.max(1, Math.floor(espnTeams.count / 2));
     const eventRefs = espnEvents.items ?? [];
     const apiFixtureIds = eventRefs
       .map((eventRef) => this.extractIdFromRef(eventRef.$ref))
@@ -347,10 +349,11 @@ export class FootballService {
     let updated = 0;
     let skipped = 0;
 
-    for (const eventRef of eventRefs) {
+    for (const [index, eventRef] of eventRefs.entries()) {
       const fixtureData = await this.buildFixtureSyncData(
         eventRef.$ref,
         season.id,
+        this.resolveFixtureRound(index, matchesPerRound),
         teamsByApiId,
       );
 
@@ -752,7 +755,7 @@ export class FootballService {
 
   private async getSeasonEvents(year: number): Promise<EspnEventsResponse> {
     const events = await this.getEspnCore<EspnEventsResponse>(
-      `/sports/soccer/leagues/${this.espnLeague}/seasons/${year}/types/1/events?limit=1000`,
+      `/sports/soccer/leagues/${this.espnLeague}/seasons/${year}/types/1/groups/1/events?limit=1000`,
     );
 
     if (!Array.isArray(events.items)) {
@@ -877,6 +880,7 @@ export class FootballService {
   private async buildFixtureSyncData(
     eventRef: string,
     seasonId: string,
+    round: number,
     teamsByApiId: Map<number, Team>,
   ): Promise<FixtureSyncData | null> {
     const event = await this.getEspnCoreRef<EspnEventResponse>(eventRef);
@@ -938,7 +942,7 @@ export class FootballService {
       seasonId,
       homeTeamId: homeTeam.id,
       awayTeamId: awayTeam.id,
-      round: 0,
+      round,
       kickoff: new Date(competition.date ?? event.date),
       status: fixtureStatus,
       homeGoals: this.shouldPersistGoals(fixtureStatus) ? homeGoals : null,
@@ -1028,6 +1032,10 @@ export class FootballService {
     }
 
     return competitions?.$ref ?? null;
+  }
+
+  private resolveFixtureRound(index: number, matchesPerRound: number): number {
+    return Math.floor(index / matchesPerRound) + 1;
   }
 
   private async getFixtureStatus(

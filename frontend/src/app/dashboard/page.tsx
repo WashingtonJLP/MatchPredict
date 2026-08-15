@@ -1,6 +1,7 @@
 "use client";
 
-import { Gauge, Hash, Target, Trophy, UserRound } from "lucide-react";
+import { CalendarDays, Gauge, Hash, Target, Trophy, UserRound } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { DataTable } from "@/components/shared/data-table";
@@ -11,15 +12,28 @@ import { PageHeader } from "@/components/shared/page-header";
 import { SectionTitle } from "@/components/shared/section-title";
 import { StatCard } from "@/components/shared/stat-card";
 import { UserAvatar } from "@/components/shared/user-avatar";
+import { PredictionFixtureCard } from "@/features/matches/components/prediction-fixture-card";
+import { PredictionModal } from "@/features/matches/components/prediction-modal";
+import { useFixtures } from "@/hooks/use-fixtures";
 import { useStandings } from "@/hooks/use-standings";
 import { useMe, useMyStatistics } from "@/hooks/use-user";
 import { useAuth } from "@/providers/auth-provider";
+import type { MatchFixture } from "@/types/fixture";
 import type { Standing } from "@/types/standing";
 
 export default function DashboardPage() {
+  const upcomingFrom = useMemo(() => new Date().toISOString(), []);
+  const [selectedFixture, setSelectedFixture] = useState<MatchFixture | null>(
+    null,
+  );
   const { user: authUser } = useAuth();
   const meQuery = useMe();
   const statisticsQuery = useMyStatistics();
+  const fixturesQuery = useFixtures({
+    page: 1,
+    limit: 6,
+    from: upcomingFrom,
+  });
   const standingsQuery = useStandings();
   const user = meQuery.data ?? authUser;
   const statistics = statisticsQuery.data;
@@ -76,6 +90,44 @@ export default function DashboardPage() {
             />
           </div>
         )}
+
+        <section className="space-y-5">
+          <SectionTitle
+            eyebrow="Palpites"
+            title="Proximos palpites"
+            description="Acesse rapidamente as proximas partidas para registrar ou ajustar seus palpites."
+          />
+
+          {fixturesQuery.isLoading ? (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <LoadingCard key={index} rows={4} />
+              ))}
+            </div>
+          ) : fixturesQuery.isError ? (
+            <ErrorState
+              icon={CalendarDays}
+              title="Proximas partidas indisponiveis"
+              description="Nao foi possivel carregar os proximos palpites agora."
+            />
+          ) : !fixturesQuery.data?.data.length ? (
+            <EmptyState
+              icon={CalendarDays}
+              title="Sem proximas partidas"
+              description="Novas partidas aparecerao aqui quando forem sincronizadas."
+            />
+          ) : (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {fixturesQuery.data.data.map((fixture) => (
+                <PredictionFixtureCard
+                  key={fixture.id}
+                  fixture={fixture}
+                  onPredict={setSelectedFixture}
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
         <section id="ranking" className="space-y-5">
           <SectionTitle
@@ -157,6 +209,11 @@ export default function DashboardPage() {
             />
           )}
         </section>
+
+        <PredictionModal
+          fixture={selectedFixture}
+          onClose={() => setSelectedFixture(null)}
+        />
       </div>
     </DashboardShell>
   );

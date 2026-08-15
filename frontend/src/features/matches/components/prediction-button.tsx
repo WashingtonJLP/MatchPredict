@@ -1,3 +1,5 @@
+import { Pencil } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import type { MatchFixture } from "@/types/fixture";
 
@@ -22,10 +24,11 @@ export function PredictionButton({ fixture, onClick }: PredictionButtonProps) {
       <Button
         type="button"
         variant="outline"
-        className="h-12 w-full rounded-xl text-base font-bold"
+        className="h-12 w-full rounded-xl border-accent/60 bg-accent/10 text-base font-bold text-accent hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
         onClick={onClick}
       >
-        Editar Palpite
+        <Pencil className="size-5" aria-hidden />
+        Alterar meu palpite
       </Button>
     );
   }

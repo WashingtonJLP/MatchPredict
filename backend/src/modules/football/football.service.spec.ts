@@ -16,6 +16,7 @@ describe('FootballService', () => {
   let playerFindMany: jest.Mock;
   let playerUpsert: jest.Mock;
   let fixtureFindMany: jest.Mock;
+  let fixtureUpsert: jest.Mock;
   let fixtureCount: jest.Mock;
 
   beforeEach(() => {
@@ -27,6 +28,7 @@ describe('FootballService', () => {
     playerFindMany = jest.fn();
     playerUpsert = jest.fn();
     fixtureFindMany = jest.fn();
+    fixtureUpsert = jest.fn();
     fixtureCount = jest.fn();
 
     const httpService = {
@@ -60,6 +62,7 @@ describe('FootballService', () => {
       },
       fixture: {
         findMany: fixtureFindMany,
+        upsert: fixtureUpsert,
         count: fixtureCount,
       },
     } as unknown as PrismaService;
@@ -205,6 +208,177 @@ describe('FootballService', () => {
         country: 'England',
       },
     });
+  });
+
+  it('sincroniza fixtures persistindo rodada pela ordem dos eventos da temporada', async () => {
+    leagueFindFirst.mockResolvedValue({
+      id: '99999999-9999-4999-8999-999999999999',
+    });
+    seasonFindFirst.mockResolvedValue({
+      id: '88888888-8888-4888-8888-888888888888',
+      year: 2026,
+    });
+    fixtureFindMany.mockResolvedValue([]);
+    teamFindMany.mockResolvedValue([
+      {
+        id: firstTeamId,
+        apiTeamId: 359,
+      },
+      {
+        id: secondTeamId,
+        apiTeamId: 364,
+      },
+    ]);
+    fixtureUpsert.mockResolvedValue({});
+    httpGet
+      .mockReturnValueOnce(
+        of({
+          data: {
+            count: 2,
+            items: [
+              {
+                $ref: 'https://sports.core.api.espn.com/event/1',
+              },
+              {
+                $ref: 'https://sports.core.api.espn.com/event/2',
+              },
+            ],
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            count: 2,
+            items: [
+              {
+                $ref: 'https://sports.core.api.espn.com/team/359',
+              },
+              {
+                $ref: 'https://sports.core.api.espn.com/team/364',
+              },
+            ],
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            id: '1',
+            date: '2026-08-21T19:00:00.000Z',
+            competitions: {
+              $ref: 'https://sports.core.api.espn.com/competition/1',
+            },
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            date: '2026-08-21T19:00:00.000Z',
+            competitors: [
+              {
+                $ref: 'https://sports.core.api.espn.com/competition/1/home',
+              },
+              {
+                $ref: 'https://sports.core.api.espn.com/competition/1/away',
+              },
+            ],
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            id: '359',
+            homeAway: 'home',
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            id: '364',
+            homeAway: 'away',
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            id: '2',
+            date: '2026-08-28T19:00:00.000Z',
+            competitions: {
+              $ref: 'https://sports.core.api.espn.com/competition/2',
+            },
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            date: '2026-08-28T19:00:00.000Z',
+            competitors: [
+              {
+                $ref: 'https://sports.core.api.espn.com/competition/2/home',
+              },
+              {
+                $ref: 'https://sports.core.api.espn.com/competition/2/away',
+              },
+            ],
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            id: '359',
+            homeAway: 'home',
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: {
+            id: '364',
+            homeAway: 'away',
+          },
+        }),
+      );
+
+    await expect(service.syncFixtures()).resolves.toEqual({
+      fixturesFound: 2,
+      created: 2,
+      updated: 0,
+      skipped: 0,
+    });
+
+    expect(httpGet).toHaveBeenNthCalledWith(
+      1,
+      'https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/groups/1/events?limit=1000',
+    );
+    expect(fixtureUpsert).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        create: expect.objectContaining({
+          round: 1,
+        }),
+        update: expect.objectContaining({
+          round: 1,
+        }),
+      }),
+    );
+    expect(fixtureUpsert).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        create: expect.objectContaining({
+          round: 2,
+        }),
+        update: expect.objectContaining({
+          round: 2,
+        }),
+      }),
+    );
   });
 
   it('sincroniza jogadores dos times cadastrados', async () => {
