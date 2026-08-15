@@ -71,10 +71,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-sidebar-border bg-sidebar px-5 py-6 lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-sidebar-border bg-sidebar px-5 py-6 shadow-sm shadow-primary/5 lg:block">
         <Link
           href="/dashboard"
-          className="flex items-center gap-3 text-lg font-semibold text-sidebar-foreground"
+          className="flex items-center gap-3 text-xl font-extrabold tracking-tight text-sidebar-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50"
         >
           <span className="flex size-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
             <Trophy className="size-5" aria-hidden />
@@ -96,7 +96,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50",
                   isActive &&
                     "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
                 )}
@@ -111,7 +111,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <Button
           type="button"
           variant="ghost"
-          className="mt-8 h-11 w-full justify-start gap-3 px-4 font-semibold text-sidebar-foreground/70 hover:text-sidebar-foreground"
+          className="mt-8 h-12 w-full justify-start gap-3 px-4 text-base font-semibold text-sidebar-foreground/70 hover:text-sidebar-foreground"
           onClick={handleLogout}
         >
           <LogOut className="size-5" aria-hidden />
@@ -120,8 +120,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
       </aside>
 
       <div className="lg:pl-72">
-        <header className="sticky top-0 z-40 border-b border-border bg-card">
-          <div className="flex h-16 items-center justify-between gap-3 px-4 sm:h-20 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
+          <div className="flex h-[72px] items-center justify-between gap-3 px-4 sm:h-20 sm:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
@@ -133,11 +133,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 <Menu className="size-5" aria-hidden />
               </button>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground sm:text-sm">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:text-sm">
                   Area logada
                 </p>
-                <p className="truncate text-base font-semibold text-card-foreground sm:text-lg">
-                {user?.name ?? "MatchPredict"}
+                <p className="truncate text-lg font-extrabold leading-tight text-card-foreground sm:text-xl">
+                  {user?.name ?? "MatchPredict"}
                 </p>
               </div>
             </div>
@@ -145,10 +145,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
             <div className="flex items-center gap-3">
               <UserAvatar name={user?.name} />
               <div className="hidden text-right sm:block">
-                <p className="text-sm font-semibold text-card-foreground">
+                <p className="text-base font-bold leading-tight text-card-foreground">
                   {user?.name ?? "Usuario"}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="mt-1 text-xs font-medium text-muted-foreground">
                   {user?.email ?? "Sessao ativa"}
                 </p>
               </div>
@@ -170,7 +170,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             <Link
               key={item.href}
               href={item.href}
-              className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <item.icon className="size-4" aria-hidden />
               {item.label.split(" ")[0]}
@@ -178,7 +178,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
           ))}
         </nav>
 
-        <main className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+          {children}
+        </main>
       </div>
 
       <div
@@ -199,7 +201,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <div className="flex items-center justify-between gap-4">
           <Link
             href="/dashboard"
-            className="flex items-center gap-3 text-lg font-semibold text-sidebar-foreground"
+            className="flex items-center gap-3 text-xl font-extrabold tracking-tight text-sidebar-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50"
             onClick={() => setIsDrawerOpen(false)}
           >
             <span className="flex size-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
@@ -231,7 +233,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50",
                   isActive &&
                     "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
                 )}
@@ -247,7 +249,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <Button
           type="button"
           variant="ghost"
-          className="mt-auto h-11 w-full justify-start gap-3 px-4 font-semibold text-sidebar-foreground/70 hover:text-sidebar-foreground"
+          className="mt-auto h-12 w-full justify-start gap-3 px-4 text-base font-semibold text-sidebar-foreground/70 hover:text-sidebar-foreground"
           onClick={handleLogout}
         >
           <LogOut className="size-5" aria-hidden />

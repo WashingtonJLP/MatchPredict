@@ -24,7 +24,7 @@ export default function PredictionsPage() {
 
   return (
     <DashboardShell>
-      <div className="space-y-8">
+      <div className="space-y-9">
         <PageHeader
           title="Meus Palpites"
           description="Acompanhe seus palpites, resultados das partidas e pontuacao registrada."
@@ -54,10 +54,10 @@ export default function PredictionsPage() {
                 header: "Partida",
                 render: (item) => (
                   <div>
-                    <p className="font-semibold text-foreground">
+                    <p className="text-base font-bold leading-6 text-foreground">
                       {item.fixture.homeTeam.name} x {item.fixture.awayTeam.name}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-sm font-medium text-muted-foreground">
                       Rodada {item.fixture.round}
                     </p>
                   </div>
@@ -67,7 +67,7 @@ export default function PredictionsPage() {
                 key: "prediction",
                 header: "Palpite",
                 render: (item) => (
-                  <span className="font-semibold text-foreground">
+                  <span className="text-base font-bold text-foreground">
                     {item.homeGoals} x {item.awayGoals}
                   </span>
                 ),
@@ -90,7 +90,7 @@ export default function PredictionsPage() {
                 key: "points",
                 header: "Pontuacao",
                 render: (item) => (
-                  <span className="font-semibold text-accent">
+                  <span className="text-base font-bold text-accent">
                     {item.totalPoints} pts
                   </span>
                 ),

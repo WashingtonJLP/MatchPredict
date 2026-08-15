@@ -23,14 +23,14 @@ export default function StatisticsPage() {
 
   return (
     <DashboardShell>
-      <div className="space-y-8">
+      <div className="space-y-9">
         <PageHeader
           title="Estatisticas"
           description="Resumo individual com pontos, acertos, melhor rodada e desempenho geral."
         />
 
         {statisticsQuery.isLoading ? (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 6 }).map((_, index) => (
               <LoadingCard key={index} rows={2} />
             ))}
@@ -42,7 +42,7 @@ export default function StatisticsPage() {
             description="Nao foi possivel carregar suas estatisticas agora."
           />
         ) : statistics ? (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               icon={Hash}
               title="Total de palpites"

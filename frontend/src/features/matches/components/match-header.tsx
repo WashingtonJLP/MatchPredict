@@ -13,11 +13,11 @@ export function MatchHeader({ fixture }: MatchHeaderProps) {
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="space-y-1">
-        <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+        <p className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
           <Trophy className="size-4" aria-hidden />
           {competition}
         </p>
-        <p className="text-sm font-medium text-muted-foreground">
+        <p className="text-base font-semibold text-foreground">
           Rodada {fixture.round}
         </p>
       </div>

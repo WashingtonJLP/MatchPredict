@@ -153,13 +153,13 @@ export default function MatchesPage() {
 
   return (
     <DashboardShell>
-      <div className="space-y-8">
+      <div className="space-y-9">
         <PageHeader
           title="Partidas"
           description="Escolha uma partida, acompanhe status e registre seus palpites antes do kickoff."
         />
 
-        <section className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 sm:p-5 lg:p-6">
           <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1.2fr_0.8fr_0.7fr_0.8fr]">
             <label className="relative block">
               <Search
@@ -169,18 +169,20 @@ export default function MatchesPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
+                aria-label="Buscar partidas por time"
                 placeholder="Buscar por time"
-                className="h-12 w-full rounded-2xl border border-input bg-background pl-11 pr-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-4 focus:ring-ring/15"
+                className="h-[52px] w-full rounded-xl border border-input bg-background pl-11 pr-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
               />
             </label>
 
             <select
               value={status}
+              aria-label="Filtrar por status"
               onChange={(event) => {
                 setStatus(event.target.value as FixtureStatusValue | "");
                 setPage(1);
               }}
-              className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/15"
+              className="h-[52px] rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
             >
               {statusOptions.map((option) => (
                 <option key={option.label} value={option.value}>
@@ -193,32 +195,34 @@ export default function MatchesPage() {
               type="number"
               min={0}
               value={round}
+              aria-label="Filtrar por rodada"
               onChange={(event) => {
                 setRound(event.target.value);
                 setPage(1);
               }}
               placeholder="Rodada"
-              className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-4 focus:ring-ring/15"
+              className="h-[52px] rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
             />
 
             <input
               value={teamId}
+              aria-label="Filtrar por ID do time"
               onChange={(event) => {
                 setTeamId(event.target.value);
                 setPage(1);
               }}
               placeholder="ID do time"
-              className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-4 focus:ring-ring/15"
+              className="h-[52px] rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
             />
           </div>
 
-          <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
+          <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
             {filterOptions.map((option) => (
               <Button
                 key={option.value}
                 type="button"
                 variant={dateFilter === option.value ? "default" : "outline"}
-                className={`h-11 rounded-xl px-4 font-semibold ${
+                className={`h-11 rounded-xl px-4 text-sm font-bold sm:text-base ${
                   dateFilter === option.value
                     ? "bg-primary text-primary-foreground hover:bg-primary/80"
                     : ""

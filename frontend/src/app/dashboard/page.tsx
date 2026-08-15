@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail, Trophy, UserRound } from "lucide-react";
+import { Gauge, Hash, Target, Trophy, UserRound } from "lucide-react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { DataTable } from "@/components/shared/data-table";
@@ -12,55 +12,67 @@ import { SectionTitle } from "@/components/shared/section-title";
 import { StatCard } from "@/components/shared/stat-card";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { useStandings } from "@/hooks/use-standings";
-import { useMe } from "@/hooks/use-user";
+import { useMe, useMyStatistics } from "@/hooks/use-user";
 import { useAuth } from "@/providers/auth-provider";
 import type { Standing } from "@/types/standing";
 
 export default function DashboardPage() {
   const { user: authUser } = useAuth();
   const meQuery = useMe();
+  const statisticsQuery = useMyStatistics();
   const standingsQuery = useStandings();
   const user = meQuery.data ?? authUser;
+  const statistics = statisticsQuery.data;
 
   return (
     <DashboardShell>
-      <div className="space-y-8">
+      <div className="space-y-9">
         <PageHeader
           title="Dashboard"
           description="Acompanhe seu perfil e a classificacao geral da temporada ativa."
         />
 
-        {meQuery.isLoading ? (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            <LoadingCard rows={2} />
-            <LoadingCard rows={2} />
-            <LoadingCard rows={2} />
+        {meQuery.isLoading || statisticsQuery.isLoading ? (
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <LoadingCard key={index} rows={2} />
+            ))}
           </div>
-        ) : meQuery.isError ? (
+        ) : meQuery.isError || statisticsQuery.isError ? (
           <ErrorState
             icon={UserRound}
-            title="Nao foi possivel carregar seu perfil"
+            title="Nao foi possivel carregar seu painel"
             description="Tente recarregar a pagina ou entrar novamente."
           />
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            <StatCard
-              icon={UserRound}
-              title="Nome"
-              value={user?.name ?? "-"}
-              description="Identificacao exibida na sua conta."
-            />
-            <StatCard
-              icon={Mail}
-              title="E-mail"
-              value={user?.email ?? "-"}
-              description="Canal principal da sua conta."
-            />
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               icon={Trophy}
-              title="Perfil"
-              value={user?.role ?? "USER"}
-              description="Resumo do perfil autenticado."
+              title="Sua posicao"
+              value={
+                statistics?.currentPosition
+                  ? `#${statistics.currentPosition}`
+                  : "-"
+              }
+              description={`${user?.name ?? "Usuario"}, esta e sua posicao atual no ranking.`}
+            />
+            <StatCard
+              icon={Target}
+              title="Seus pontos"
+              value={statistics?.totalPoints ?? 0}
+              description="Pontuacao acumulada na temporada ativa."
+            />
+            <StatCard
+              icon={Gauge}
+              title="Aproveitamento"
+              value={`${statistics?.accuracy ?? 0}%`}
+              description="Percentual de desempenho dos palpites processados."
+            />
+            <StatCard
+              icon={Hash}
+              title="Total de palpites"
+              value={statistics?.totalPredictions ?? 0}
+              description="Quantidade de palpites registrados na sua conta."
             />
           </div>
         )}

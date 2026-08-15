@@ -48,12 +48,12 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-lg flex-col justify-center px-4 py-10 sm:px-6 sm:py-16 lg:py-20">
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-xl sm:p-8 lg:p-10">
-        <p className="text-sm font-semibold text-accent">
+    <section className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-xl flex-col justify-center px-4 py-8 sm:px-6 sm:py-14 lg:py-20">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-xl shadow-primary/10 sm:p-8 lg:p-10">
+        <p className="text-sm font-bold uppercase tracking-wide text-accent">
           Criar Conta
         </p>
-        <h1 className="mt-3 text-3xl font-bold leading-tight text-card-foreground sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-extrabold leading-tight text-card-foreground sm:text-4xl">
           Comece no MatchPredict
         </h1>
         <p className="mt-4 max-w-[650px] text-base leading-7 text-muted-foreground sm:mt-5 sm:text-lg sm:leading-8">
@@ -62,7 +62,7 @@ export default function RegisterPage() {
         </p>
 
         <form className="mt-8 space-y-5 sm:mt-9 sm:space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <label className="block text-sm font-medium text-foreground">
+          <label className="block text-base font-semibold text-foreground">
             Nome
             <input
               type="text"
@@ -77,7 +77,7 @@ export default function RegisterPage() {
             ) : null}
           </label>
 
-          <label className="block text-sm font-medium text-foreground">
+          <label className="block text-base font-semibold text-foreground">
             E-mail
             <input
               type="email"
@@ -92,7 +92,7 @@ export default function RegisterPage() {
             ) : null}
           </label>
 
-          <label className="block text-sm font-medium text-foreground">
+          <label className="block text-base font-semibold text-foreground">
             Senha
             <span className="relative mt-2 block">
               <input
@@ -131,13 +131,13 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="h-[52px] w-full rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/80 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-[52px] w-full rounded-xl bg-primary px-6 text-base font-bold text-primary-foreground shadow-sm transition hover:bg-primary/80 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Criando..." : "Criar Conta"}
           </button>
         </form>
 
-        <p className="mt-7 text-sm leading-7 text-muted-foreground">
+        <p className="mt-7 text-base leading-7 text-muted-foreground">
           Já tem conta?{" "}
           <Link href="/login" className="font-semibold text-accent">
             Entrar

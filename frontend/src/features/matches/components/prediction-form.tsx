@@ -48,7 +48,7 @@ export function PredictionForm({
           value={homeGoals}
           onChange={setHomeGoals}
         />
-        <span className="pb-4 text-xl font-bold text-muted-foreground">x</span>
+        <span className="pb-4 text-2xl font-extrabold text-muted-foreground">x</span>
         <ScoreInput
           label={fixture.awayTeam.name}
           value={awayGoals}
@@ -61,7 +61,7 @@ export function PredictionForm({
           <Button
             type="button"
             variant="destructive"
-            className="h-11 rounded-xl font-semibold"
+            className="h-12 rounded-xl text-base font-bold"
             onClick={onDelete}
             disabled={isSubmitting}
           >
@@ -72,7 +72,7 @@ export function PredictionForm({
         )}
         <Button
           type="submit"
-          className="h-11 rounded-xl bg-primary px-6 font-semibold text-primary-foreground hover:bg-primary/80"
+          className="h-12 rounded-xl bg-primary px-6 text-base font-bold text-primary-foreground hover:bg-primary/80"
           disabled={isSubmitting}
         >
           {isSubmitting ? "Salvando..." : "Salvar Palpite"}

@@ -78,17 +78,17 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-primary/60 px-3 py-3 sm:items-center sm:px-4">
-      <div className="max-h-[calc(100svh-1.5rem)] w-full max-w-xl overflow-y-auto rounded-3xl border border-border bg-popover p-5 text-popover-foreground shadow-2xl sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-primary/60 px-3 py-3 backdrop-blur-sm sm:items-center sm:px-4">
+      <div className="max-h-[calc(100svh-1.5rem)] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-popover p-5 text-popover-foreground shadow-2xl sm:p-8">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase text-accent">
+            <p className="text-sm font-bold uppercase tracking-wide text-accent">
               Palpite
             </p>
-            <h2 className="mt-2 text-xl font-bold leading-tight text-popover-foreground sm:text-2xl">
+            <h2 className="mt-2 text-2xl font-extrabold leading-tight text-popover-foreground sm:text-3xl">
               {fixture.homeTeam.name} x {fixture.awayTeam.name}
             </h2>
-            <p className="mt-2 text-base leading-7 text-muted-foreground">
+            <p className="mt-2 text-base font-semibold leading-7 text-muted-foreground">
               Rodada {fixture.round}
             </p>
           </div>

@@ -10,11 +10,16 @@ const statusLabels: Record<FixtureStatusValue, string> = {
 
 export function MatchStatusBadge({ status }: { status: FixtureStatusValue }) {
   const isLive = status === "LIVE";
+  const isFinished = status === "FT";
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-        isLive ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"
+      className={`inline-flex min-h-8 items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+        isLive
+          ? "bg-accent/15 text-accent"
+          : isFinished
+            ? "bg-primary/10 text-primary"
+            : "bg-muted text-muted-foreground"
       }`}
     >
       {statusLabels[status]}

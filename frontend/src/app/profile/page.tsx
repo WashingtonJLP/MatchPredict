@@ -57,7 +57,7 @@ export default function ProfilePage() {
 
   return (
     <DashboardShell>
-      <div className="space-y-8">
+      <div className="space-y-9">
         <PageHeader
           title="Perfil"
           description="Gerencie as informacoes basicas exibidas na sua conta."
@@ -73,22 +73,22 @@ export default function ProfilePage() {
           />
         ) : meQuery.data ? (
           <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:gap-6">
-            <aside className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-8">
+            <aside className="rounded-2xl border border-border bg-card p-5 shadow-sm shadow-primary/5 sm:p-8">
               <UserAvatar name={meQuery.data.name} size="lg" />
-              <h2 className="mt-5 text-2xl font-bold text-card-foreground">
+              <h2 className="mt-5 break-words text-3xl font-extrabold leading-tight text-card-foreground">
                 {meQuery.data.name}
               </h2>
-              <p className="mt-2 flex items-center gap-2 text-base leading-7 text-muted-foreground">
-                <Mail className="size-4" aria-hidden />
-                {meQuery.data.email}
+              <p className="mt-3 flex min-w-0 items-center gap-2 text-base font-medium leading-7 text-muted-foreground">
+                <Mail className="size-5 shrink-0" aria-hidden />
+                <span className="min-w-0 break-words">{meQuery.data.email}</span>
               </p>
             </aside>
 
             <form
-              className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-8"
+              className="rounded-2xl border border-border bg-card p-5 shadow-sm shadow-primary/5 sm:p-8"
               onSubmit={handleSubmit(onSubmit)}
             >
-              <h2 className="text-2xl font-bold text-card-foreground">
+              <h2 className="text-2xl font-extrabold text-card-foreground sm:text-3xl">
                 Dados pessoais
               </h2>
               <p className="mt-3 max-w-[650px] text-base leading-7 text-muted-foreground">
@@ -101,7 +101,7 @@ export default function ProfilePage() {
                   Nome
                   <input
                     type="text"
-                    className="mt-2 h-12 w-full rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/15"
+                    className="mt-2 h-[52px] w-full rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
                     {...register("name")}
                   />
                   {errors.name ? (
@@ -117,7 +117,7 @@ export default function ProfilePage() {
                     type="email"
                     value={meQuery.data.email}
                     readOnly
-                    className="mt-2 h-12 w-full rounded-xl border border-input bg-muted px-4 text-base text-muted-foreground outline-none"
+                    className="mt-2 h-[52px] w-full rounded-xl border border-input bg-muted px-4 text-base text-muted-foreground outline-none"
                   />
                 </label>
 
@@ -135,7 +135,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || updateProfile.isPending}
-                  className="h-12 w-full rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground transition hover:bg-primary/80 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  className="h-[52px] w-full rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/80 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                   {updateProfile.isPending ? "Salvando..." : "Salvar alteracoes"}
                 </button>

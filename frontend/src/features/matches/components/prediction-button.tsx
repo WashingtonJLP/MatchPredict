@@ -11,7 +11,7 @@ export function PredictionButton({ fixture, onClick }: PredictionButtonProps) {
 
   if (kickoffPassed) {
     return (
-      <Button disabled className="h-11 w-full rounded-xl font-semibold">
+      <Button disabled className="h-12 w-full rounded-xl text-base font-bold">
         Palpites encerrados
       </Button>
     );
@@ -22,7 +22,7 @@ export function PredictionButton({ fixture, onClick }: PredictionButtonProps) {
       <Button
         type="button"
         variant="outline"
-        className="h-11 w-full rounded-xl font-semibold"
+        className="h-12 w-full rounded-xl text-base font-bold"
         onClick={onClick}
       >
         Editar Palpite
@@ -34,7 +34,7 @@ export function PredictionButton({ fixture, onClick }: PredictionButtonProps) {
     return (
       <Button
         type="button"
-        className="h-11 w-full rounded-xl bg-primary font-semibold text-primary-foreground hover:bg-primary/80"
+        className="h-12 w-full rounded-xl bg-primary text-base font-bold text-primary-foreground hover:bg-primary/80"
         onClick={onClick}
       >
         Fazer Palpite
@@ -43,7 +43,7 @@ export function PredictionButton({ fixture, onClick }: PredictionButtonProps) {
   }
 
   return (
-    <Button disabled className="h-11 w-full rounded-xl font-semibold">
+    <Button disabled className="h-12 w-full rounded-xl text-base font-bold">
       Indisponivel
     </Button>
   );

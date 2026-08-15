@@ -16,8 +16,8 @@ export function Pagination({
   const safeTotalPages = totalPages || 1;
 
   return (
-    <div className="flex flex-col items-stretch justify-between gap-4 rounded-3xl border border-border bg-card px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:px-5">
-      <p className="text-center text-sm text-muted-foreground sm:text-left">
+    <div className="flex flex-col items-stretch justify-between gap-4 rounded-2xl border border-border bg-card px-4 py-4 shadow-sm shadow-primary/5 sm:flex-row sm:items-center sm:px-5">
+      <p className="text-center text-base font-medium text-muted-foreground sm:text-left">
         Pagina {page} de {safeTotalPages} - {total} partidas
       </p>
       <div className="grid grid-cols-2 gap-2 sm:flex">
