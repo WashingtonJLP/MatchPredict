@@ -1,6 +1,15 @@
 "use client";
 
-import { CalendarDays, Gauge, Hash, Target, Trophy, UserRound } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  Gauge,
+  Hash,
+  Target,
+  Trophy,
+  UserRound,
+} from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -12,12 +21,14 @@ import { PageHeader } from "@/components/shared/page-header";
 import { SectionTitle } from "@/components/shared/section-title";
 import { StatCard } from "@/components/shared/stat-card";
 import { UserAvatar } from "@/components/shared/user-avatar";
+import { buttonVariants } from "@/components/ui/button";
 import { PredictionFixtureCard } from "@/features/matches/components/prediction-fixture-card";
 import { PredictionModal } from "@/features/matches/components/prediction-modal";
 import { useFixtures } from "@/hooks/use-fixtures";
 import { useStandings } from "@/hooks/use-standings";
 import { useMe, useMyStatistics } from "@/hooks/use-user";
 import { useAuth } from "@/providers/auth-provider";
+import { cn } from "@/lib/utils";
 import type { MatchFixture } from "@/types/fixture";
 import type { Standing } from "@/types/standing";
 
@@ -90,6 +101,34 @@ export default function DashboardPage() {
             />
           </div>
         )}
+
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm shadow-primary/5 sm:p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex gap-4">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-accent/15 bg-accent/10 text-accent">
+                <BookOpen className="size-6" aria-hidden />
+              </span>
+              <div>
+                <h2 className="text-xl font-extrabold text-card-foreground">
+                  Como funciona a pontuação
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
+                  Placar exato vale 3 pontos. Resultado correto vale 1 ponto.
+                  Erro não pontua.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/rules"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "h-12 w-full font-semibold md:w-auto",
+              )}
+            >
+              Ver regras
+            </Link>
+          </div>
+        </section>
 
         <section className="space-y-5">
           <SectionTitle

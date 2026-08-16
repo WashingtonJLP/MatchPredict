@@ -1,8 +1,10 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -24,5 +26,25 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Credenciais inválidas.' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Solicitar redefinição de senha' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mensagem genérica de envio retornada.',
+  })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Redefinir senha usando token' })
+  @ApiResponse({ status: 200, description: 'Senha alterada.' })
+  @ApiResponse({ status: 400, description: 'Token ou senha inválidos.' })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
   }
 }

@@ -134,10 +134,22 @@ export function LandingPage() {
               >
                 Entrar
               </Link>
+              <Link
+                href="/rules"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "lg" }),
+                  "h-12 px-7 text-base font-semibold border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground",
+                )}
+              >
+                Ver regras
+              </Link>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-primary-foreground/10 bg-card p-4 text-card-foreground shadow-2xl sm:p-6">
+          <div
+            id="ranking"
+            className="scroll-mt-24 rounded-2xl border border-primary-foreground/10 bg-card p-4 text-card-foreground shadow-2xl sm:p-6"
+          >
             <div className="flex items-center justify-between gap-4 border-b border-border pb-5">
               <div>
                 <p className="text-xs font-semibold uppercase text-muted-foreground">
@@ -316,6 +328,15 @@ export function LandingPage() {
                 )}
               >
                 Entrar
+              </Link>
+              <Link
+                href="/rules"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "lg" }),
+                  "h-12 px-7 text-base font-semibold border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground",
+                )}
+              >
+                Ver regras
               </Link>
             </div>
           </div>

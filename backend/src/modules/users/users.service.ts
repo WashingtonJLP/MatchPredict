@@ -41,11 +41,8 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
-    const userAlreadyExists = await this.prisma.user.findUnique({
-      where: {
-        email: createUserDto.email,
-      },
-    });
+    const email = this.normalizeEmail(createUserDto.email);
+    const userAlreadyExists = await this.findByEmail(email);
 
     if (userAlreadyExists) {
       throw new ConflictException('Já existe um usuário com esse e-mail.');
@@ -56,7 +53,7 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         name: createUserDto.name,
-        email: createUserDto.email,
+        email,
         password: hashedPassword,
       },
     });
@@ -117,9 +114,12 @@ export class UsersService {
   }
 
   async findByEmail(email: string) {
-    return this.prisma.user.findUnique({
+    return this.prisma.user.findFirst({
       where: {
-        email,
+        email: {
+          equals: this.normalizeEmail(email),
+          mode: 'insensitive',
+        },
       },
     });
   }
@@ -302,5 +302,9 @@ export class UsersService {
 
   private roundToTwoDecimals(value: number): number {
     return Number(value.toFixed(2));
+  }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
   }
 }

@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  BookOpen,
   CalendarDays,
   LayoutDashboard,
   LogOut,
@@ -46,6 +47,11 @@ const sidebarLinks = [
     href: "/statistics",
     label: "Estatisticas",
     icon: BarChart3,
+  },
+  {
+    href: "/rules",
+    label: "Regras",
+    icon: BookOpen,
   },
   {
     href: "/profile",

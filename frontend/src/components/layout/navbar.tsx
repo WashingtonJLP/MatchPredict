@@ -14,8 +14,12 @@ const navLinks = [
     label: "Home",
   },
   {
-    href: "/#features",
+    href: "/#ranking",
     label: "Ranking",
+  },
+  {
+    href: "/rules",
+    label: "Regras",
   },
 ];
 

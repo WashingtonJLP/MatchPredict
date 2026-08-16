@@ -37,6 +37,9 @@ model User {
 
   avatarUrl String? @map("avatar_url")
 
+  resetPasswordToken     String?   @unique @map("reset_password_token")
+  resetPasswordExpiresAt DateTime? @map("reset_password_expires_at")
+
   predictions Prediction[]
   standings   Standing[]
 

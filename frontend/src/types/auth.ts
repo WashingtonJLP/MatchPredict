@@ -19,6 +19,20 @@ export type RegisterPayload = {
   password: string;
 };
 
+export type ForgotPasswordPayload = {
+  email: string;
+};
+
+export type ResetPasswordPayload = {
+  token: string;
+  password: string;
+  confirmPassword: string;
+};
+
 export type AuthResponse = {
   accessToken: string;
+};
+
+export type MessageResponse = {
+  message: string;
 };
