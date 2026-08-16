@@ -91,10 +91,6 @@ export default function ProfilePage() {
               <h2 className="text-2xl font-extrabold text-card-foreground sm:text-3xl">
                 Dados pessoais
               </h2>
-              <p className="mt-3 max-w-[650px] text-base leading-7 text-muted-foreground">
-                O e-mail e exibido como leitura porque o backend atual nao
-                possui endpoint para altera-lo.
-              </p>
 
               <div className="mt-8 space-y-5">
                 <label className="block text-sm font-medium text-foreground">

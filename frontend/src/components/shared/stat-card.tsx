@@ -15,7 +15,7 @@ export function StatCard({ title, value, description, icon: Icon }: StatCardProp
           <p className="text-sm font-semibold leading-6 text-muted-foreground">
             {title}
           </p>
-          <p className="mt-3 break-words text-3xl font-extrabold leading-none tracking-tight text-card-foreground sm:text-4xl">
+          <p className="mt-3 break-words text-3xl font-extrabold leading-tight tracking-tight text-card-foreground sm:text-4xl">
             {value}
           </p>
         </div>

@@ -101,6 +101,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50",
                   isActive &&
@@ -171,17 +172,33 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </div>
         </header>
 
-        <nav className="grid grid-cols-3 gap-1 border-b border-border bg-card p-2 sm:grid-cols-6 lg:hidden">
-          {sidebarLinks.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <item.icon className="size-5" aria-hidden />
-              {item.label.split(" ")[0]}
-            </Link>
-          ))}
+        <nav
+          className="flex gap-1 overflow-x-auto border-b border-border bg-card p-2 lg:hidden"
+          aria-label="Navegação principal"
+        >
+          {sidebarLinks.map((item) => {
+            const isActive =
+              item.href.includes("#")
+                ? false
+                : item.href === "/dashboard"
+                  ? pathname === "/dashboard"
+                  : pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "flex min-h-12 min-w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+                  isActive && "bg-muted text-foreground",
+                )}
+              >
+                <item.icon className="size-5" aria-hidden />
+                <span className="max-w-20 truncate">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
@@ -238,6 +255,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50",
                   isActive &&

@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { ScoreInput } from "@/features/matches/components/score-input";
 import type { MatchFixture } from "@/types/fixture";
 
@@ -24,6 +25,7 @@ export function PredictionForm({
   onDelete,
   onSubmit,
 }: PredictionFormProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [homeGoals, setHomeGoals] = useState(
     fixture.userPrediction?.homeGoals ?? 0,
   );
@@ -62,7 +64,7 @@ export function PredictionForm({
             type="button"
             variant="destructive"
             className="h-12 rounded-xl text-base font-bold"
-            onClick={onDelete}
+            onClick={() => setIsDeleteDialogOpen(true)}
             disabled={isSubmitting}
           >
             Excluir Palpite
@@ -78,6 +80,50 @@ export function PredictionForm({
           {isSubmitting ? "Salvando..." : "Salvar Palpite"}
         </Button>
       </div>
+
+      <Dialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        titleId="delete-prediction-title"
+      >
+        <div className="space-y-5">
+          <div>
+            <h2
+              id="delete-prediction-title"
+              className="text-2xl font-extrabold text-popover-foreground"
+            >
+              Excluir palpite?
+            </h2>
+            <p className="mt-3 text-base leading-7 text-muted-foreground">
+              Esta ação não poderá ser desfeita.
+            </p>
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-xl text-base font-bold"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="h-12 rounded-xl text-base font-bold"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                onDelete?.();
+              }}
+              disabled={isSubmitting}
+            >
+              Excluir
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </form>
   );
 }

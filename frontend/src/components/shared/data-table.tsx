@@ -24,7 +24,7 @@ export function DataTable<T>({
         {data.map((item) => (
           <article
             key={getRowKey(item)}
-            className={`rounded-xl border border-border bg-background p-4 shadow-sm transition hover:border-accent/40 ${rowClassName?.(item) ?? ""}`}
+            className={`min-w-0 rounded-xl border border-border bg-background p-4 shadow-sm transition hover:border-accent/40 ${rowClassName?.(item) ?? ""}`}
           >
             <dl className="grid gap-3">
               {columns.map((column) => (
@@ -35,7 +35,7 @@ export function DataTable<T>({
                   <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                     {column.header}
                   </dt>
-                  <dd className="min-w-0 text-base leading-7 text-foreground">
+                  <dd className="min-w-0 break-words text-base leading-7 text-foreground">
                     {column.render(item)}
                   </dd>
                 </div>
@@ -45,7 +45,7 @@ export function DataTable<T>({
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto md:block">
+      <div className="hidden overflow-x-auto md:block" tabIndex={0}>
         <table className="w-full min-w-[720px] border-collapse text-left text-sm">
           <thead className="bg-muted/80 text-xs font-bold uppercase tracking-wide text-muted-foreground">
             <tr>

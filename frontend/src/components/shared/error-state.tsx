@@ -8,7 +8,10 @@ type ErrorStateProps = {
 
 export function ErrorState({ title, description, icon: Icon }: ErrorStateProps) {
   return (
-    <div className="rounded-2xl border border-destructive/20 bg-card p-6 text-center shadow-sm shadow-primary/5 sm:p-10">
+    <div
+      className="rounded-2xl border border-destructive/20 bg-card p-6 text-center shadow-sm shadow-primary/5 sm:p-10"
+      role="alert"
+    >
       {Icon ? (
         <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
           <Icon className="size-7" aria-hidden />

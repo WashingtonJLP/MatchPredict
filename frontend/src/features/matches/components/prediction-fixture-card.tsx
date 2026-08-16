@@ -113,7 +113,7 @@ function TeamSummary({ name, logo }: TeamSummaryProps) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-2 text-center">
       <TeamLogo team={{ name, logo }} />
-      <span className="line-clamp-2 min-h-10 text-base font-extrabold leading-5 text-foreground">
+      <span className="line-clamp-2 min-h-10 break-words text-base font-extrabold leading-5 text-foreground">
         {name}
       </span>
     </div>

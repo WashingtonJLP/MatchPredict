@@ -24,6 +24,7 @@ export function Pagination({
         <Button
           type="button"
           variant="outline"
+          aria-label="Ir para a pagina anterior"
           className="h-11 rounded-xl font-semibold"
           disabled={page <= 1}
           onClick={() => onPageChange(Math.max(1, page - 1))}
@@ -33,6 +34,7 @@ export function Pagination({
         <Button
           type="button"
           variant="outline"
+          aria-label="Ir para a proxima pagina"
           className="h-11 rounded-xl font-semibold"
           disabled={page >= safeTotalPages}
           onClick={() => onPageChange(page + 1)}
