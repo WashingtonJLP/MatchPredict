@@ -20,6 +20,7 @@ import { useMyStatistics } from "@/hooks/use-user";
 export default function StatisticsPage() {
   const statisticsQuery = useMyStatistics();
   const statistics = statisticsQuery.data;
+  const hasPositivePoints = Boolean(statistics && statistics.totalPoints > 0);
 
   return (
     <DashboardShell>
@@ -46,27 +47,27 @@ export default function StatisticsPage() {
             <StatCard
               icon={Hash}
               title="Total de palpites"
-              value={statistics.totalPredictions}
+              value={`${statistics.totalPredictions}`}
             />
             <StatCard
               icon={Trophy}
               title="Total de pontos"
-              value={statistics.totalPoints}
+              value={formatPoints(statistics.totalPoints)}
             />
             <StatCard
               icon={Gauge}
               title="Pontuacao media"
-              value={statistics.averagePoints}
+              value={formatPoints(statistics.averagePoints)}
             />
             <StatCard
               icon={CheckCircle2}
               title="Acertos de vencedor"
-              value={statistics.correctWinners}
+              value={`${statistics.correctWinners}`}
             />
             <StatCard
               icon={CheckCircle2}
               title="Placares exatos"
-              value={statistics.exactScores}
+              value={`${statistics.exactScores}`}
             />
             <StatCard
               icon={Trophy}
@@ -74,25 +75,23 @@ export default function StatisticsPage() {
               value={
                 statistics.currentPosition
                   ? `#${statistics.currentPosition}`
-                  : "-"
+                  : "Sem classificação"
               }
             />
             <StatCard
               icon={BarChart3}
               title="Melhor rodada"
-              value={
-                statistics.bestRound
-                  ? `R${statistics.bestRound.round} - ${statistics.bestRound.points} pts`
-                  : "-"
+              value={formatRoundPoints(statistics.bestRound, hasPositivePoints)}
+              description={
+                hasPositivePoints ? undefined : "Ainda não possui pontuação."
               }
             />
             <StatCard
               icon={CircleX}
               title="Pior rodada"
-              value={
-                statistics.worstRound
-                  ? `R${statistics.worstRound.round} - ${statistics.worstRound.points} pts`
-                  : "-"
+              value={formatRoundPoints(statistics.worstRound, hasPositivePoints)}
+              description={
+                hasPositivePoints ? undefined : "Ainda não possui pontuação."
               }
             />
           </div>
@@ -106,4 +105,31 @@ export default function StatisticsPage() {
       </div>
     </DashboardShell>
   );
+}
+
+type RoundPoints = {
+  points: number;
+  round: number;
+};
+
+function formatPoints(points: number) {
+  return `${formatNumber(points)} pts`;
+}
+
+function formatRoundPoints(
+  roundPoints: RoundPoints | null,
+  hasPositivePoints: boolean,
+) {
+  if (!roundPoints || !hasPositivePoints) {
+    return "Sem pontuação";
+  }
+
+  return `R${roundPoints.round} - ${formatPoints(roundPoints.points)}`;
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+  }).format(value);
 }

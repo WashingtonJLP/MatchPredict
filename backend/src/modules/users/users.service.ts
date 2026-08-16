@@ -32,6 +32,7 @@ type StandingSummary = {
 type PredictionRoundPointsSource = {
   totalPoints: number;
   fixture: {
+    processedAt: Date | null;
     round: number;
   };
 };
@@ -137,18 +138,24 @@ export class UsersService {
     const correctWinners = standing?.correctWinners ?? 0;
     const exactScores = standing?.exactScores ?? 0;
     const wrongPredictions = standing?.wrongPredictions ?? 0;
-    const roundPoints = this.groupPredictionPointsByRound(predictions);
+    const processedPredictions = predictions.filter(
+      (prediction) => prediction.fixture.processedAt !== null,
+    );
+    const processedPredictionsCount = processedPredictions.length;
+    const roundPoints = this.groupPredictionPointsByRound(processedPredictions);
 
     return {
       totalPredictions,
       totalPoints,
       averagePoints: this.roundToTwoDecimals(
-        totalPredictions === 0 ? 0 : totalPoints / totalPredictions,
+        processedPredictionsCount === 0
+          ? 0
+          : totalPoints / processedPredictionsCount,
       ),
       accuracy: this.roundToTwoDecimals(
-        totalPredictions === 0
+        processedPredictionsCount === 0
           ? 0
-          : (correctWinners / totalPredictions) * 100,
+          : (correctWinners / processedPredictionsCount) * 100,
       ),
       correctWinners,
       exactScores,
@@ -194,6 +201,7 @@ export class UsersService {
         totalPoints: true,
         fixture: {
           select: {
+            processedAt: true,
             round: true,
           },
         },
