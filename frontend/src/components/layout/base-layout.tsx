@@ -1,8 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Toaster } from "sonner";
 
+import { AppToaster } from "@/components/layout/app-toaster";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
@@ -28,7 +28,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
     return (
       <>
         {children}
-        <Toaster richColors position="top-right" closeButton />
+        <AppToaster />
       </>
     );
   }
@@ -36,7 +36,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
   if (isRulesRoute && isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Toaster richColors position="top-right" closeButton />
+        <AppToaster />
       </div>
     );
   }
@@ -45,7 +45,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
     return (
       <>
         <DashboardShell>{children}</DashboardShell>
-        <Toaster richColors position="top-right" closeButton />
+        <AppToaster />
       </>
     );
   }
@@ -55,7 +55,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
-      <Toaster richColors position="top-right" closeButton />
+      <AppToaster />
     </div>
   );
 }
