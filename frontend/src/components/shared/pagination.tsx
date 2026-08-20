@@ -18,13 +18,13 @@ export function Pagination({
   return (
     <div className="flex flex-col items-stretch justify-between gap-4 rounded-2xl border border-border bg-card px-4 py-4 shadow-sm shadow-primary/5 sm:flex-row sm:items-center sm:px-5">
       <p className="text-center text-base font-medium text-muted-foreground sm:text-left">
-        Pagina {page} de {safeTotalPages} - {total} partidas
+        Página {page} de {safeTotalPages} - {total} partidas
       </p>
       <div className="grid grid-cols-2 gap-2 sm:flex">
         <Button
           type="button"
           variant="outline"
-          aria-label="Ir para a pagina anterior"
+          aria-label="Ir para a página anterior"
           className="h-11 rounded-xl font-semibold"
           disabled={page <= 1}
           onClick={() => onPageChange(Math.max(1, page - 1))}
@@ -34,12 +34,12 @@ export function Pagination({
         <Button
           type="button"
           variant="outline"
-          aria-label="Ir para a proxima pagina"
+          aria-label="Ir para a próxima página"
           className="h-11 rounded-xl font-semibold"
           disabled={page >= safeTotalPages}
           onClick={() => onPageChange(page + 1)}
         >
-          Proxima
+          Próxima
         </Button>
       </div>
     </div>

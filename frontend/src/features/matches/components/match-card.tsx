@@ -13,7 +13,10 @@ type MatchCardProps = {
 
 export function MatchCard({ fixture, onPredict }: MatchCardProps) {
   const kickoff = new Date(fixture.kickoff);
-  const kickoffPassed = kickoff.getTime() <= Date.now();
+  const predictionClosed =
+    kickoff.getTime() <= Date.now() ||
+    fixture.status === "LIVE" ||
+    fixture.status === "FT";
   const hasPrediction = Boolean(fixture.userPrediction);
   const isFinished = fixture.status === "FT";
   const date = new Intl.DateTimeFormat("pt-BR", {
@@ -69,7 +72,7 @@ export function MatchCard({ fixture, onPredict }: MatchCardProps) {
         </div>
       ) : null}
 
-      {kickoffPassed ? (
+      {predictionClosed ? (
         <div className="mt-5 inline-flex min-h-8 items-center rounded-full bg-muted px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
           Palpites encerrados
         </div>

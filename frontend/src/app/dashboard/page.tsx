@@ -54,7 +54,7 @@ export default function DashboardPage() {
       <div className="space-y-9">
         <PageHeader
           title="Dashboard"
-          description="Acompanhe seu perfil e a classificacao geral da temporada ativa."
+          description="Acompanhe seu perfil e a classificação geral da temporada ativa."
         />
 
         {meQuery.isLoading || statisticsQuery.isLoading ? (
@@ -66,26 +66,26 @@ export default function DashboardPage() {
         ) : meQuery.isError || statisticsQuery.isError ? (
           <ErrorState
             icon={UserRound}
-            title="Nao foi possivel carregar seu painel"
-            description="Tente recarregar a pagina ou entrar novamente."
+            title="Não foi possível carregar seu painel"
+            description="Tente recarregar a página ou entrar novamente."
           />
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               icon={Trophy}
-              title="Sua posicao"
+              title="Sua posição"
               value={
                 statistics?.currentPosition
                   ? `#${statistics.currentPosition}`
                   : "-"
               }
-              description={`${user?.name ?? "Usuario"}, esta e sua posicao atual no ranking.`}
+              description={`${user?.name ?? "Usuário"}, esta é sua posição atual no ranking.`}
             />
             <StatCard
               icon={Target}
               title="Seus pontos"
               value={statistics?.totalPoints ?? 0}
-              description="Pontuacao acumulada na temporada ativa."
+              description="Pontuação acumulada na temporada ativa."
             />
             <StatCard
               icon={Gauge}
@@ -133,8 +133,8 @@ export default function DashboardPage() {
         <section className="space-y-5">
           <SectionTitle
             eyebrow="Palpites"
-            title="Proximos palpites"
-            description="Acesse rapidamente as proximas partidas para registrar ou ajustar seus palpites."
+            title="Próximos palpites"
+            description="Acesse rapidamente as próximas partidas para registrar ou ajustar seus palpites."
           />
 
           {fixturesQuery.isLoading ? (
@@ -146,14 +146,14 @@ export default function DashboardPage() {
           ) : fixturesQuery.isError ? (
             <ErrorState
               icon={CalendarDays}
-              title="Proximas partidas indisponiveis"
-              description="Nao foi possivel carregar os proximos palpites agora."
+              title="Próximas partidas indisponíveis"
+              description="Não foi possível carregar os próximos palpites agora."
             />
           ) : !fixturesQuery.data?.data.length ? (
             <EmptyState
               icon={CalendarDays}
-              title="Sem proximas partidas"
-              description="Novas partidas aparecerao aqui quando forem sincronizadas."
+              title="Sem próximas partidas"
+              description="Novas partidas aparecerão aqui quando forem sincronizadas."
             />
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -171,7 +171,7 @@ export default function DashboardPage() {
         <section id="ranking" className="space-y-5">
           <SectionTitle
             eyebrow="Ranking"
-            title="Classificacao geral"
+            title="Classificação geral"
             description="Tabela responsiva com pontos, acertos e erros da temporada ativa."
           />
 
@@ -180,14 +180,14 @@ export default function DashboardPage() {
           ) : standingsQuery.isError ? (
             <ErrorState
               icon={Trophy}
-              title="Ranking indisponivel"
-              description="Nao foi possivel carregar a classificacao agora."
+              title="Ranking indisponível"
+              description="Não foi possível carregar a classificação agora."
             />
           ) : !standingsQuery.data?.length ? (
             <EmptyState
               icon={Trophy}
               title="Sem dados de ranking"
-              description="O ranking aparecera quando houver standings processados."
+              description="O ranking aparecerá quando houver classificações processadas."
             />
           ) : (
             <DataTable<Standing>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
               columns={[
                 {
                   key: "position",
-                  header: "Posicao",
+                  header: "Posição",
                   render: (item) => (
                     <span className="font-semibold text-foreground">
                       #{item.position}
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                 },
                 {
                   key: "user",
-                  header: "Usuario",
+                  header: "Usuário",
                   render: (item) => (
                     <div className="flex items-center gap-3">
                       <UserAvatar name={item.name} size="sm" />

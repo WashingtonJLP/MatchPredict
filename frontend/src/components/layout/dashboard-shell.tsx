@@ -45,7 +45,7 @@ const sidebarLinks = [
   },
   {
     href: "/statistics",
-    label: "Estatisticas",
+    label: "Estatísticas",
     icon: BarChart3,
   },
   {
@@ -141,7 +141,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
               </button>
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:text-sm">
-                  Area logada
+                  Área logada
                 </p>
                 <p className="truncate text-lg font-extrabold leading-tight text-card-foreground sm:text-xl">
                   {user?.name ?? "MatchPredict"}
@@ -153,10 +153,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
               <UserAvatar name={user?.name} />
               <div className="hidden text-right sm:block">
                 <p className="text-base font-bold leading-tight text-card-foreground">
-                  {user?.name ?? "Usuario"}
+                  {user?.name ?? "Usuário"}
                 </p>
                 <p className="mt-1 text-xs font-medium text-muted-foreground">
-                  {user?.email ?? "Sessao ativa"}
+                  {user?.email ?? "Sessão ativa"}
                 </p>
               </div>
               <Button

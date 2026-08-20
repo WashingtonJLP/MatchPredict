@@ -51,7 +51,7 @@ export default function RegisterPage() {
     } catch (err) {
       const message = getApiErrorMessage(
         err,
-        "Nao foi possivel criar sua conta. Tente novamente.",
+        "Não foi possível criar sua conta. Tente novamente.",
       );
       setError(message);
       toast.error(message);

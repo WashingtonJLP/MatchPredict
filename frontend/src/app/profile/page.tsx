@@ -50,7 +50,7 @@ export default function ProfilePage() {
       toast.success("Perfil atualizado.");
     } catch (err) {
       toast.error(
-        getApiErrorMessage(err, "Nao foi possivel atualizar o perfil."),
+        getApiErrorMessage(err, "Não foi possível atualizar o perfil."),
       );
     }
   }
@@ -60,7 +60,7 @@ export default function ProfilePage() {
       <div className="space-y-9">
         <PageHeader
           title="Perfil"
-          description="Gerencie as informacoes basicas exibidas na sua conta."
+          description="Gerencie as informações básicas exibidas na sua conta."
         />
 
         {meQuery.isLoading ? (
@@ -68,8 +68,8 @@ export default function ProfilePage() {
         ) : meQuery.isError ? (
           <ErrorState
             icon={UserRound}
-            title="Perfil indisponivel"
-            description="Nao foi possivel carregar seus dados agora."
+            title="Perfil indisponível"
+            description="Não foi possível carregar seus dados agora."
           />
         ) : meQuery.data ? (
           <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:gap-6">
@@ -119,7 +119,7 @@ export default function ProfilePage() {
 
                 {updateProfile.isError ? (
                   <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                    Nao foi possivel atualizar o perfil.
+                    Não foi possível atualizar o perfil.
                   </p>
                 ) : null}
                 {success ? (
@@ -133,7 +133,7 @@ export default function ProfilePage() {
                   disabled={isSubmitting || updateProfile.isPending}
                   className="h-[52px] w-full rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/80 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
-                  {updateProfile.isPending ? "Salvando..." : "Salvar alteracoes"}
+                  {updateProfile.isPending ? "Salvando..." : "Salvar alterações"}
                 </button>
               </div>
             </form>

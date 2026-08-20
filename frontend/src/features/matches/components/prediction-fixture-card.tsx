@@ -24,7 +24,10 @@ export function PredictionFixtureCard({
     minute: "2-digit",
   }).format(kickoff);
   const prediction = fixture.userPrediction;
-  const canEdit = kickoff.getTime() > Date.now();
+  const canEdit =
+    kickoff.getTime() > Date.now() &&
+    fixture.status !== "LIVE" &&
+    fixture.status !== "FT";
   const canCreate = !prediction && fixture.canPredict;
   const actionLabel = prediction ? "Editar meu palpite" : "Fazer Palpite";
   const competition = fixture.league ?? fixture.competition ?? "Premier League";
@@ -81,7 +84,7 @@ export function PredictionFixtureCard({
             Pendente
           </span>
           <p className="mt-3 text-base font-semibold leading-7 text-muted-foreground">
-            Voce ainda nao registrou um palpite para esta partida.
+            Você ainda não registrou um palpite para esta partida.
           </p>
         </div>
       )}
@@ -98,7 +101,7 @@ export function PredictionFixtureCard({
         onClick={() => onPredict(fixture)}
       >
         {prediction && canEdit ? <Pencil className="size-5" aria-hidden /> : null}
-        {prediction && !canEdit ? "Alteracao encerrada" : actionLabel}
+        {prediction && !canEdit ? "Alteração encerrada" : actionLabel}
       </Button>
     </article>
   );

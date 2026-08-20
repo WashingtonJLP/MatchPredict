@@ -1,4 +1,3 @@
-import { EmailProvider } from './providers/email-provider.interface';
 import { EmailService } from './email.service';
 
 describe('EmailService', () => {
@@ -9,7 +8,7 @@ describe('EmailService', () => {
     emailProvider = {
       sendEmail: jest.fn(),
     };
-    service = new EmailService(emailProvider as unknown as EmailProvider);
+    service = new EmailService(emailProvider);
   });
 
   it('delegates password reset email to configured provider', async () => {

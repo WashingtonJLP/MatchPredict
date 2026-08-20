@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
     } catch (err) {
       const message = getApiErrorMessage(
         err,
-        "Nao foi possivel enviar o link. Tente novamente.",
+        "Não foi possível enviar o link. Tente novamente.",
       );
       setError(message);
       toast.error(message);

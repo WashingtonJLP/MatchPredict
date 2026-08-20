@@ -2,12 +2,14 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -62,7 +64,12 @@ export class PredictionsController {
   @ApiOperation({ summary: 'Calcular pontuação de um palpite específico' })
   @ApiResponse({ status: 201, description: 'Palpite calculado.' })
   @ApiResponse({ status: 404, description: 'Palpite não encontrado.' })
-  calculate(@Param('predictionId') predictionId: string) {
+  calculate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('predictionId') predictionId: string,
+  ) {
+    this.ensureAdmin(user);
+
     return this.predictionsService.calculatePrediction(predictionId);
   }
 
@@ -73,7 +80,12 @@ export class PredictionsController {
     description: 'Palpites e standings processados.',
   })
   @ApiResponse({ status: 400, description: 'Partida ainda não finalizada.' })
-  processFixture(@Param('fixtureId') fixtureId: string) {
+  processFixture(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('fixtureId') fixtureId: string,
+  ) {
+    this.ensureAdmin(user);
+
     return this.predictionProcessorService.processFixture(fixtureId);
   }
 
@@ -103,5 +115,11 @@ export class PredictionsController {
   @ApiResponse({ status: 409, description: 'Partida já iniciada.' })
   remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.predictionsService.remove(user.id, id);
+  }
+
+  private ensureAdmin(user: AuthenticatedUser) {
+    if (user.role !== Role.ADMIN) {
+      throw new ForbiddenException('Acesso restrito a administradores.');
+    }
   }
 }

@@ -9,9 +9,12 @@ type PredictionButtonProps = {
 };
 
 export function PredictionButton({ fixture, onClick }: PredictionButtonProps) {
-  const kickoffPassed = new Date(fixture.kickoff).getTime() <= Date.now();
+  const predictionClosed =
+    new Date(fixture.kickoff).getTime() <= Date.now() ||
+    fixture.status === "LIVE" ||
+    fixture.status === "FT";
 
-  if (kickoffPassed) {
+  if (predictionClosed) {
     return (
       <Button disabled className="h-12 w-full rounded-xl text-base font-bold">
         Palpites encerrados
@@ -47,7 +50,7 @@ export function PredictionButton({ fixture, onClick }: PredictionButtonProps) {
 
   return (
     <Button disabled className="h-12 w-full rounded-xl text-base font-bold">
-      Indisponivel
+      Indisponível
     </Button>
   );
 }

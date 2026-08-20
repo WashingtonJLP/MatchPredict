@@ -33,13 +33,13 @@ export class StandingsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Obter posicao do usuario autenticado na temporada ativa',
+    summary: 'Obter posição do usuário autenticado na temporada ativa',
   })
   @ApiOkResponse({
-    description: 'Posicao do usuario autenticado no ranking.',
+    description: 'Posição do usuário autenticado no ranking.',
     type: MyStandingResponseDto,
   })
-  @ApiUnauthorizedResponse({ description: 'JWT ausente ou invalido.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente ou inválido.' })
   findMyActiveSeasonStanding(@CurrentUser() user: { id: string }) {
     return this.standingsService.findMyActiveSeasonStanding(user.id);
   }

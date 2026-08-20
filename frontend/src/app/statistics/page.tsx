@@ -26,7 +26,7 @@ export default function StatisticsPage() {
     <DashboardShell>
       <div className="space-y-9">
         <PageHeader
-          title="Estatisticas"
+          title="Estatísticas"
           description="Resumo individual com pontos, acertos, melhor rodada e desempenho geral."
         />
 
@@ -39,8 +39,8 @@ export default function StatisticsPage() {
         ) : statisticsQuery.isError ? (
           <ErrorState
             icon={BarChart3}
-            title="Estatisticas indisponiveis"
-            description="Nao foi possivel carregar suas estatisticas agora."
+            title="Estatísticas indisponíveis"
+            description="Não foi possível carregar suas estatísticas agora."
           />
         ) : statistics ? (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -56,7 +56,7 @@ export default function StatisticsPage() {
             />
             <StatCard
               icon={Gauge}
-              title="Pontuacao media"
+              title="Pontuação média"
               value={formatPoints(statistics.averagePoints)}
             />
             <StatCard
@@ -71,7 +71,7 @@ export default function StatisticsPage() {
             />
             <StatCard
               icon={Trophy}
-              title="Posicao atual"
+              title="Posição atual"
               value={
                 statistics.currentPosition
                   ? `#${statistics.currentPosition}`
@@ -98,8 +98,8 @@ export default function StatisticsPage() {
         ) : (
           <EmptyState
             icon={BarChart3}
-            title="Sem estatisticas"
-            description="Suas estatisticas aparecerao quando houver palpites processados."
+            title="Sem estatísticas"
+            description="Suas estatísticas aparecerão quando houver palpites processados."
           />
         )}
       </div>

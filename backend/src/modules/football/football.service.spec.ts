@@ -759,6 +759,29 @@ describe('FootballService', () => {
       }),
     );
   });
+
+  it('bloqueia palpite na listagem quando status indica partida ao vivo', async () => {
+    fixtureFindMany.mockResolvedValue([
+      createFixtureListItem({
+        kickoff: new Date('2030-08-14T19:00:00.000Z'),
+        status: FixtureStatus.LIVE,
+        predictions: [],
+      }),
+    ]);
+    fixtureCount.mockResolvedValue(1);
+
+    await expect(
+      service.findFixtures('33333333-3333-4333-8333-333333333333', {}),
+    ).resolves.toMatchObject({
+      data: [
+        {
+          canPredict: false,
+          status: FixtureStatus.LIVE,
+          userPrediction: null,
+        },
+      ],
+    });
+  });
 });
 
 const firstTeamId = '11111111-1111-4111-8111-111111111111';

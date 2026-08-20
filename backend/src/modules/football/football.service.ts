@@ -611,9 +611,20 @@ export class FootballService {
       winnerType: fixture.winnerType,
       homeTeam: fixture.homeTeam,
       awayTeam: fixture.awayTeam,
-      canPredict: fixture.kickoff.getTime() > Date.now() && !userPrediction,
+      canPredict: this.isFixtureOpenForPrediction(fixture) && !userPrediction,
       userPrediction,
     };
+  }
+
+  private isFixtureOpenForPrediction(fixture: {
+    kickoff: Date;
+    status: FixtureStatus;
+  }) {
+    return (
+      fixture.kickoff.getTime() > Date.now() &&
+      fixture.status !== FixtureStatus.LIVE &&
+      fixture.status !== FixtureStatus.FT
+    );
   }
 
   private async getEspn<TResponse = unknown>(path: string): Promise<TResponse> {
@@ -771,7 +782,7 @@ export class FootballService {
     );
 
     if (!Array.isArray(teams.items)) {
-      throw new BadGatewayException('Lista de times da ESPN invÃ¡lida.');
+      throw new BadGatewayException('Lista de times da ESPN inválida.');
     }
 
     return teams;
@@ -900,9 +911,8 @@ export class FootballService {
       return null;
     }
 
-    const competition = await this.getEspnCoreRef<EspnCompetitionResponse>(
-      competitionRef,
-    );
+    const competition =
+      await this.getEspnCoreRef<EspnCompetitionResponse>(competitionRef);
     const competitors = await this.getFixtureCompetitors(competition);
     const homeCompetitor = competitors.find(
       (competitor) => competitor.homeAway === 'home',
@@ -972,9 +982,8 @@ export class FootballService {
       return null;
     }
 
-    const competition = await this.getEspnCoreRef<EspnCompetitionResponse>(
-      competitionRef,
-    );
+    const competition =
+      await this.getEspnCoreRef<EspnCompetitionResponse>(competitionRef);
     const competitors = await this.getFixtureCompetitors(competition);
     const homeCompetitor = competitors.find(
       (competitor) => competitor.homeAway === 'home',

@@ -200,14 +200,16 @@ describe('AuthService register login and forgot password flow', () => {
 
     const prisma = {
       user: {
-        findFirst: jest.fn(({ where }: { where: { email?: { equals: string } } }) => {
-          const email = where.email?.equals.toLowerCase();
+        findFirst: jest.fn(
+          ({ where }: { where: { email?: { equals: string } } }) => {
+            const email = where.email?.equals.toLowerCase();
 
-          return (
-            storedUsers.find((user) => user.email.toLowerCase() === email) ??
-            null
-          );
-        }),
+            return (
+              storedUsers.find((user) => user.email.toLowerCase() === email) ??
+              null
+            );
+          },
+        ),
         create: jest.fn(
           ({
             data,

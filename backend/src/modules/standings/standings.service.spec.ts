@@ -175,7 +175,9 @@ describe('StandingsService', () => {
 
   it('rejeita quando usuario autenticado nao possui standing', async () => {
     seasonFindFirst.mockResolvedValue({ id: activeSeasonId });
-    standingFindMany.mockResolvedValue([createStanding({ userId: firstUserId })]);
+    standingFindMany.mockResolvedValue([
+      createStanding({ userId: firstUserId }),
+    ]);
 
     await expect(
       service.findMyActiveSeasonStanding(secondUserId),

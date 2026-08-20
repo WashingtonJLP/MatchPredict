@@ -67,7 +67,7 @@ export function ResetPasswordForm() {
     } catch (err) {
       const message = getApiErrorMessage(
         err,
-        "Nao foi possivel redefinir sua senha.",
+        "Não foi possível redefinir sua senha.",
       );
       setError(message);
       toast.error(message);

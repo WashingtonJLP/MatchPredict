@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { FixtureStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ScoreEngineService } from '../../common/score-engine/score-engine.service';
 import { CreatePredictionDto } from './dto/create-prediction.dto';
@@ -33,7 +33,7 @@ export class PredictionsService {
   async create(userId: string, createPredictionDto: CreatePredictionDto) {
     const fixture = await this.findFixtureOrFail(createPredictionDto.fixtureId);
 
-    this.ensureFixtureHasNotStarted(fixture.kickoff);
+    this.ensureFixtureIsOpenForPrediction(fixture);
 
     const existingPrediction = await this.prisma.prediction.findUnique({
       where: {
@@ -113,7 +113,7 @@ export class PredictionsService {
       predictionId,
     );
 
-    this.ensureFixtureHasNotStarted(prediction.fixture.kickoff);
+    this.ensureFixtureIsOpenForPrediction(prediction.fixture);
 
     return this.prisma.prediction.update({
       where: {
@@ -133,7 +133,7 @@ export class PredictionsService {
       predictionId,
     );
 
-    this.ensureFixtureHasNotStarted(prediction.fixture.kickoff);
+    this.ensureFixtureIsOpenForPrediction(prediction.fixture);
 
     await this.prisma.prediction.delete({
       where: {
@@ -218,8 +218,15 @@ export class PredictionsService {
     return prediction;
   }
 
-  private ensureFixtureHasNotStarted(kickoff: Date) {
-    if (kickoff.getTime() <= Date.now()) {
+  private ensureFixtureIsOpenForPrediction(fixture: {
+    kickoff: Date;
+    status: FixtureStatus;
+  }) {
+    if (
+      fixture.kickoff.getTime() <= Date.now() ||
+      fixture.status === FixtureStatus.LIVE ||
+      fixture.status === FixtureStatus.FT
+    ) {
       throw new ConflictException(
         'Não é possível registrar, alterar ou excluir palpites após o início da partida.',
       );

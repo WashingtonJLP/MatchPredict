@@ -25,7 +25,7 @@ export default function PredictionsPage() {
       <div className="space-y-9">
         <PageHeader
           title="Meus Palpites"
-          description="Acompanhe seus palpites, resultados das partidas e pontuacao registrada."
+          description="Acompanhe seus palpites, resultados das partidas e pontuação registrada."
         />
 
         {predictionsQuery.isLoading ? (
@@ -33,14 +33,14 @@ export default function PredictionsPage() {
         ) : predictionsQuery.isError ? (
           <ErrorState
             icon={ClipboardList}
-            title="Palpites indisponiveis"
-            description="Nao foi possivel carregar seus palpites agora."
+            title="Palpites indisponíveis"
+            description="Não foi possível carregar seus palpites agora."
           />
         ) : !predictionsQuery.data?.length ? (
           <EmptyState
             icon={ClipboardList}
             title="Nenhum palpite encontrado"
-            description="Seus palpites aparecerao aqui quando forem cadastrados."
+            description="Seus palpites aparecerão aqui quando forem cadastrados."
           />
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -68,7 +68,10 @@ function toMatchFixture(prediction: Prediction): MatchFixture {
 
   return {
     ...prediction.fixture,
-    canPredict: kickoff.getTime() > Date.now(),
+    canPredict:
+      kickoff.getTime() > Date.now() &&
+      prediction.fixture.status !== "LIVE" &&
+      prediction.fixture.status !== "FT",
     competition: "Premier League",
     league: "Premier League",
     userPrediction: {

@@ -59,7 +59,17 @@ export class UsersService {
       },
     });
 
-    const { password, ...userWithoutPassword } = user;
+    const userWithoutPassword = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      resetPasswordToken: user.resetPasswordToken,
+      resetPasswordExpiresAt: user.resetPasswordExpiresAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
 
     return userWithoutPassword;
   }
@@ -233,7 +243,7 @@ export class UsersService {
     });
 
     if (!season) {
-      throw new NotFoundException('Temporada ativa nao encontrada.');
+      throw new NotFoundException('Temporada ativa não encontrada.');
     }
 
     return season.id;
@@ -283,17 +293,11 @@ export class UsersService {
     }
 
     return roundPoints.reduce((selectedRound, currentRound) => {
-      if (
-        direction === 'best' &&
-        currentRound.points > selectedRound.points
-      ) {
+      if (direction === 'best' && currentRound.points > selectedRound.points) {
         return currentRound;
       }
 
-      if (
-        direction === 'worst' &&
-        currentRound.points < selectedRound.points
-      ) {
+      if (direction === 'worst' && currentRound.points < selectedRound.points) {
         return currentRound;
       }
 

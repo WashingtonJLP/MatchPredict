@@ -41,7 +41,7 @@ httpClient.interceptors.response.use(
       !isPublicAuthRequest
     ) {
       clearStoredToken();
-      toast.error("Sessao expirada. Entre novamente.");
+      toast.error("Sessão expirada. Entre novamente.");
       window.location.href = "/login";
     }
 

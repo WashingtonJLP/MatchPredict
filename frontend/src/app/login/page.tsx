@@ -40,10 +40,10 @@ export default function LoginPage() {
     } catch (err) {
       const message =
         err instanceof AxiosError && err.response?.status === 401
-          ? "Email ou senha invalidos."
+          ? "E-mail ou senha inválidos."
           : getApiErrorMessage(
               err,
-              "Nao foi possivel entrar. Verifique suas credenciais.",
+              "Não foi possível entrar. Verifique suas credenciais.",
             );
       setError(message);
       toast.error(message);

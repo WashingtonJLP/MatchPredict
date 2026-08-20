@@ -30,13 +30,13 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me/statistics')
-  @ApiOperation({ summary: 'Obter estatisticas do usuario autenticado' })
+  @ApiOperation({ summary: 'Obter estatísticas do usuário autenticado' })
   @ApiResponse({
     status: 200,
-    description: 'Estatisticas do usuario autenticado.',
+    description: 'Estatísticas do usuário autenticado.',
     type: UserStatisticsResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'JWT ausente ou invalido.' })
+  @ApiResponse({ status: 401, description: 'JWT ausente ou inválido.' })
   getStatistics(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.findMyStatistics(user.id);
   }

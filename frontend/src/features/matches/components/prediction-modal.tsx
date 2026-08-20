@@ -74,7 +74,7 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
 
       onClose();
     } catch (err) {
-      toast.error(getApiErrorMessage(err, "Nao foi possivel salvar o palpite."));
+      toast.error(getApiErrorMessage(err, "Não foi possível salvar o palpite."));
     }
   }
 
@@ -89,7 +89,7 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
       onClose();
     } catch (err) {
       toast.error(
-        getApiErrorMessage(err, "Nao foi possivel remover o palpite."),
+        getApiErrorMessage(err, "Não foi possível remover o palpite."),
       );
     }
   }

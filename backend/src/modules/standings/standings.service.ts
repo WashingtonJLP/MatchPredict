@@ -60,7 +60,7 @@ export class StandingsService {
 
     if (!standing) {
       throw new NotFoundException(
-        'Usuario nao possui standing na temporada ativa.',
+        'Usuário não possui classificação na temporada ativa.',
       );
     }
 
@@ -83,7 +83,7 @@ export class StandingsService {
     });
 
     if (!season) {
-      throw new NotFoundException('Temporada ativa nao encontrada.');
+      throw new NotFoundException('Temporada ativa não encontrada.');
     }
 
     return season.id;

@@ -30,11 +30,11 @@ const filterOptions = [
     value: "today",
   },
   {
-    label: "Esta Semana",
+    label: "Esta semana",
     value: "week",
   },
   {
-    label: "Proximas",
+    label: "Próximas",
     value: "upcoming",
   },
 ] as const;
@@ -156,7 +156,7 @@ export default function MatchesPage() {
       <div className="space-y-9">
         <PageHeader
           title="Partidas"
-          description="Escolha uma partida, acompanhe status e registre seus palpites antes do kickoff."
+          description="Escolha uma partida, acompanhe o status e registre seus palpites antes do início do jogo."
         />
 
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 sm:p-5 lg:p-6">
@@ -244,10 +244,10 @@ export default function MatchesPage() {
         ) : fixturesQuery.isError ? (
           <ErrorState
             icon={CalendarDays}
-            title="Nao foi possivel carregar as partidas"
+            title="Não foi possível carregar as partidas"
             description={getApiErrorMessage(
               fixturesQuery.error,
-              "Tente novamente em instantes ou verifique sua conexao com a API.",
+              "Tente novamente em instantes ou verifique sua conexão com a API.",
             )}
           />
         ) : fixtures.length === 0 ? (
