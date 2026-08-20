@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -37,10 +38,13 @@ export default function LoginPage() {
       await login(data);
       toast.success("Login realizado com sucesso.");
     } catch (err) {
-      const message = getApiErrorMessage(
-        err,
-        "Nao foi possivel entrar. Verifique suas credenciais.",
-      );
+      const message =
+        err instanceof AxiosError && err.response?.status === 401
+          ? "Email ou senha invalidos."
+          : getApiErrorMessage(
+              err,
+              "Nao foi possivel entrar. Verifique suas credenciais.",
+            );
       setError(message);
       toast.error(message);
     }
