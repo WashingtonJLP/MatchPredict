@@ -8,11 +8,13 @@ import type { MatchFixture } from "@/types/fixture";
 type PredictionFixtureCardProps = {
   fixture: MatchFixture;
   onPredict: (fixture: MatchFixture) => void;
+  showFinalResult?: boolean;
 };
 
 export function PredictionFixtureCard({
   fixture,
   onPredict,
+  showFinalResult = false,
 }: PredictionFixtureCardProps) {
   const kickoff = new Date(fixture.kickoff);
   const date = new Intl.DateTimeFormat("pt-BR", {
@@ -31,6 +33,11 @@ export function PredictionFixtureCard({
   const canCreate = !prediction && fixture.canPredict;
   const actionLabel = prediction ? "Editar meu palpite" : "Fazer Palpite";
   const competition = fixture.league ?? fixture.competition ?? "Premier League";
+  const shouldShowFinalResult =
+    showFinalResult &&
+    fixture.status === "FT" &&
+    fixture.homeGoals !== null &&
+    fixture.awayGoals !== null;
 
   return (
     <article className="rounded-2xl border border-border bg-card p-5 shadow-sm shadow-primary/5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg hover:shadow-primary/10 sm:p-6">
@@ -88,6 +95,25 @@ export function PredictionFixtureCard({
           </p>
         </div>
       )}
+
+      {shouldShowFinalResult ? (
+        <div className="mt-4 rounded-2xl border border-border bg-background p-4">
+          <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            Resultado final
+          </p>
+          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+            <span className="truncate text-sm font-semibold text-foreground">
+              {fixture.homeTeam.name}
+            </span>
+            <span className="rounded-xl bg-muted px-3 py-2 text-2xl font-extrabold leading-none text-foreground">
+              {fixture.homeGoals} x {fixture.awayGoals}
+            </span>
+            <span className="truncate text-right text-sm font-semibold text-foreground">
+              {fixture.awayTeam.name}
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       <Button
         type="button"

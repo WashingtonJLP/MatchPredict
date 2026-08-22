@@ -27,6 +27,10 @@ export function MatchCard({ fixture, onPredict }: MatchCardProps) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(kickoff);
+  const shouldShowFinalResult =
+    fixture.status === "FT" &&
+    fixture.homeGoals !== null &&
+    fixture.awayGoals !== null;
 
   return (
     <article
@@ -75,6 +79,25 @@ export function MatchCard({ fixture, onPredict }: MatchCardProps) {
       {predictionClosed ? (
         <div className="mt-5 inline-flex min-h-8 items-center rounded-full bg-muted px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
           Palpites encerrados
+        </div>
+      ) : null}
+
+      {shouldShowFinalResult ? (
+        <div className="mt-4 rounded-2xl border border-border bg-background p-4">
+          <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            Resultado final
+          </p>
+          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+            <span className="truncate text-sm font-semibold text-foreground">
+              {fixture.homeTeam.name}
+            </span>
+            <span className="rounded-xl bg-muted px-3 py-2 text-2xl font-extrabold leading-none text-foreground">
+              {fixture.homeGoals} x {fixture.awayGoals}
+            </span>
+            <span className="truncate text-right text-sm font-semibold text-foreground">
+              {fixture.awayTeam.name}
+            </span>
+          </div>
         </div>
       ) : null}
 

@@ -49,6 +49,7 @@ export default function PredictionsPage() {
                 key={prediction.id}
                 fixture={toMatchFixture(prediction)}
                 onPredict={setSelectedFixture}
+                showFinalResult
               />
             ))}
           </div>
