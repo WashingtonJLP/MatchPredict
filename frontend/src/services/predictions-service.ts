@@ -1,5 +1,5 @@
 import { httpClient } from "@/services/http-client";
-import type { Prediction } from "@/types/prediction";
+import type { FixtureTransparency, Prediction } from "@/types/prediction";
 
 export type PredictionPayload = {
   fixtureId: string;
@@ -11,6 +11,14 @@ export type UpdatePredictionPayload = Omit<PredictionPayload, "fixtureId">;
 
 export async function getMyPredictions() {
   const { data } = await httpClient.get<Prediction[]>("/predictions/my");
+
+  return data;
+}
+
+export async function getFixtureTransparency(fixtureId: string) {
+  const { data } = await httpClient.get<FixtureTransparency>(
+    `/predictions/fixture/${fixtureId}/transparency`,
+  );
 
   return data;
 }

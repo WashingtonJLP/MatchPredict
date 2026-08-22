@@ -21,6 +21,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
     "/profile",
     "/predictions",
     "/statistics",
+    "/transparency",
   ].some((route) => pathname.startsWith(route));
   const isRulesRoute = pathname.startsWith("/rules");
 

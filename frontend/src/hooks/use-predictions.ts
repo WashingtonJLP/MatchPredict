@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createPrediction,
   deletePrediction,
+  getFixtureTransparency,
   getMyPredictions,
   updatePrediction,
   type PredictionPayload,
@@ -13,6 +14,14 @@ export function useMyPredictions() {
   return useQuery({
     queryKey: ["predictions", "my"],
     queryFn: getMyPredictions,
+  });
+}
+
+export function useFixtureTransparency(fixtureId: string | null) {
+  return useQuery({
+    queryKey: ["predictions", "fixture", fixtureId, "transparency"],
+    queryFn: () => getFixtureTransparency(fixtureId ?? ""),
+    enabled: Boolean(fixtureId),
   });
 }
 

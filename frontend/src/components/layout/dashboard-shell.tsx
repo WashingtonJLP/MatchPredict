@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
+  Eye,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -37,6 +38,11 @@ const sidebarLinks = [
     href: "/predictions",
     label: "Meus Palpites",
     icon: PieChart,
+  },
+  {
+    href: "/transparency",
+    label: "Transparência",
+    icon: Eye,
   },
   {
     href: "/dashboard#ranking",

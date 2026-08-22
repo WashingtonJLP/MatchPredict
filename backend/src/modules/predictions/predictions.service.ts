@@ -23,6 +23,21 @@ const predictionWithFixtureTeams =
     },
   });
 
+const transparencyPredictionSelect =
+  Prisma.validator<Prisma.PredictionSelect>()({
+    id: true,
+    homeGoals: true,
+    awayGoals: true,
+    totalPoints: true,
+    user: {
+      select: {
+        id: true,
+        name: true,
+        avatarUrl: true,
+      },
+    },
+  });
+
 @Injectable()
 export class PredictionsService {
   constructor(
@@ -73,12 +88,13 @@ export class PredictionsService {
     });
   }
 
-  async findByFixture(fixtureId: string) {
-    await this.findFixtureOrFail(fixtureId);
+  async findByFixture(userId: string, fixtureId: string) {
+    const fixture = await this.findFixtureOrFail(fixtureId);
 
     return this.prisma.prediction.findMany({
       where: {
         fixtureId,
+        userId: this.isFixtureClosedForPrediction(fixture) ? undefined : userId,
       },
       orderBy: {
         createdAt: 'desc',
@@ -92,6 +108,85 @@ export class PredictionsService {
         },
       },
     });
+  }
+
+  async findFixtureTransparency(userId: string, fixtureId: string) {
+    const fixture = await this.prisma.fixture.findUnique({
+      where: {
+        id: fixtureId,
+      },
+      select: {
+        id: true,
+        round: true,
+        kickoff: true,
+        status: true,
+        homeGoals: true,
+        awayGoals: true,
+        processedAt: true,
+        homeTeam: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+          },
+        },
+        awayTeam: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+          },
+        },
+      },
+    });
+
+    if (!fixture) {
+      throw new NotFoundException('Partida nÃ£o encontrada.');
+    }
+
+    const isClosedForPrediction = this.isFixtureClosedForPrediction(fixture);
+    const finalResult =
+      fixture.status === FixtureStatus.FT &&
+      fixture.homeGoals !== null &&
+      fixture.awayGoals !== null
+        ? {
+            homeGoals: fixture.homeGoals,
+            awayGoals: fixture.awayGoals,
+          }
+        : null;
+
+    const predictions = await this.prisma.prediction.findMany({
+      where: {
+        fixtureId,
+        userId: isClosedForPrediction ? undefined : userId,
+      },
+      orderBy: [
+        {
+          user: {
+            name: 'asc',
+          },
+        },
+        {
+          createdAt: 'asc',
+        },
+      ],
+      select: transparencyPredictionSelect,
+    });
+
+    return {
+      fixture: {
+        id: fixture.id,
+        round: fixture.round,
+        kickoff: fixture.kickoff,
+        status: fixture.status,
+        processedAt: fixture.processedAt,
+        homeTeam: fixture.homeTeam,
+        awayTeam: fixture.awayTeam,
+      },
+      isClosedForPrediction,
+      finalResult,
+      predictions,
+    };
   }
 
   async update(
@@ -222,14 +317,21 @@ export class PredictionsService {
     kickoff: Date;
     status: FixtureStatus;
   }) {
-    if (
-      fixture.kickoff.getTime() <= Date.now() ||
-      fixture.status === FixtureStatus.LIVE ||
-      fixture.status === FixtureStatus.FT
-    ) {
+    if (this.isFixtureClosedForPrediction(fixture)) {
       throw new ConflictException(
         'Não é possível registrar, alterar ou excluir palpites após o início da partida.',
       );
     }
+  }
+
+  private isFixtureClosedForPrediction(fixture: {
+    kickoff: Date;
+    status: FixtureStatus;
+  }) {
+    return (
+      fixture.kickoff.getTime() <= Date.now() ||
+      fixture.status === FixtureStatus.LIVE ||
+      fixture.status === FixtureStatus.FT
+    );
   }
 }

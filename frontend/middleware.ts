@@ -7,6 +7,7 @@ const privateRoutes = [
   "/profile",
   "/predictions",
   "/statistics",
+  "/transparency",
 ];
 const publicAuthRoutes = ["/login", "/register"];
 
@@ -36,6 +37,7 @@ export const config = {
     "/profile/:path*",
     "/predictions/:path*",
     "/statistics/:path*",
+    "/transparency/:path*",
     "/login",
     "/register",
   ],

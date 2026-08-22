@@ -28,3 +28,27 @@ export type Prediction = {
   correctMvp: boolean;
   fixture: Fixture;
 };
+
+export type TransparencyPrediction = {
+  id: string;
+  homeGoals: number;
+  awayGoals: number;
+  totalPoints: number;
+  user: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+  };
+};
+
+export type FixtureTransparency = {
+  fixture: Pick<Fixture, "id" | "round" | "kickoff" | "status" | "homeTeam" | "awayTeam"> & {
+    processedAt: string | null;
+  };
+  isClosedForPrediction: boolean;
+  finalResult: {
+    homeGoals: number;
+    awayGoals: number;
+  } | null;
+  predictions: TransparencyPrediction[];
+};

@@ -8,6 +8,7 @@ describe('PredictionsService', () => {
   let service: PredictionsService;
   let fixtureFindUnique: jest.Mock;
   let predictionFindUnique: jest.Mock;
+  let predictionFindMany: jest.Mock;
   let predictionCreate: jest.Mock;
   let predictionUpdate: jest.Mock;
 
@@ -16,6 +17,7 @@ describe('PredictionsService', () => {
 
     fixtureFindUnique = jest.fn();
     predictionFindUnique = jest.fn();
+    predictionFindMany = jest.fn();
     predictionCreate = jest.fn();
     predictionUpdate = jest.fn();
 
@@ -25,6 +27,7 @@ describe('PredictionsService', () => {
       },
       prediction: {
         findUnique: predictionFindUnique,
+        findMany: predictionFindMany,
         create: predictionCreate,
         update: predictionUpdate,
       },
@@ -154,6 +157,138 @@ describe('PredictionsService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(predictionUpdate).not.toHaveBeenCalled();
   });
+  it('limita endpoint antigo ao palpite prÃ³prio antes do kickoff', async () => {
+    const fixture = createFixture({
+      kickoff: new Date('2026-08-20T16:00:00.000Z'),
+    });
+
+    fixtureFindUnique.mockResolvedValue(fixture);
+    predictionFindMany.mockResolvedValue([createPrediction({ fixtureId })]);
+
+    await service.findByFixture(userId, fixtureId);
+
+    expect(predictionFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          fixtureId,
+          userId,
+        },
+      }),
+    );
+  });
+
+  it('retorna somente palpite prÃ³prio na transparÃªncia antes do kickoff', async () => {
+    const fixture = createTransparencyFixture({
+      kickoff: new Date('2026-08-20T16:00:00.000Z'),
+    });
+    const predictions = [createTransparencyPrediction({ userId })];
+
+    fixtureFindUnique.mockResolvedValue(fixture);
+    predictionFindMany.mockResolvedValue(predictions);
+
+    await expect(
+      service.findFixtureTransparency(userId, fixtureId),
+    ).resolves.toMatchObject({
+      isClosedForPrediction: false,
+      finalResult: null,
+      predictions,
+    });
+    expect(predictionFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          fixtureId,
+          userId,
+        },
+      }),
+    );
+  });
+
+  it('retorna lista vazia na transparÃªncia antes do kickoff sem palpite prÃ³prio', async () => {
+    fixtureFindUnique.mockResolvedValue(
+      createTransparencyFixture({
+        kickoff: new Date('2026-08-20T16:00:00.000Z'),
+      }),
+    );
+    predictionFindMany.mockResolvedValue([]);
+
+    await expect(
+      service.findFixtureTransparency(userId, fixtureId),
+    ).resolves.toMatchObject({
+      isClosedForPrediction: false,
+      predictions: [],
+    });
+  });
+
+  it('libera todos os palpites na transparÃªncia apÃ³s o kickoff', async () => {
+    fixtureFindUnique.mockResolvedValue(
+      createTransparencyFixture({
+        kickoff: new Date('2026-08-20T14:59:59.999Z'),
+      }),
+    );
+    predictionFindMany.mockResolvedValue([
+      createTransparencyPrediction({ userId }),
+      createTransparencyPrediction({ userId: otherUserId }),
+    ]);
+
+    await service.findFixtureTransparency(userId, fixtureId);
+
+    expect(predictionFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          fixtureId,
+          userId: undefined,
+        },
+      }),
+    );
+  });
+
+  it('libera todos os palpites em LIVE sem resultado final', async () => {
+    fixtureFindUnique.mockResolvedValue(
+      createTransparencyFixture({
+        kickoff: new Date('2026-08-20T16:00:00.000Z'),
+        status: FixtureStatus.LIVE,
+        homeGoals: 1,
+        awayGoals: 0,
+      }),
+    );
+    predictionFindMany.mockResolvedValue([createTransparencyPrediction()]);
+
+    await expect(
+      service.findFixtureTransparency(userId, fixtureId),
+    ).resolves.toMatchObject({
+      isClosedForPrediction: true,
+      finalResult: null,
+    });
+  });
+
+  it('retorna resultado final em FT com placar sem recalcular pontos', async () => {
+    const predictions = [
+      createTransparencyPrediction({
+        totalPoints: 3,
+      }),
+    ];
+
+    fixtureFindUnique.mockResolvedValue(
+      createTransparencyFixture({
+        status: FixtureStatus.FT,
+        homeGoals: 3,
+        awayGoals: 1,
+        processedAt: null,
+      }),
+    );
+    predictionFindMany.mockResolvedValue(predictions);
+
+    await expect(
+      service.findFixtureTransparency(userId, fixtureId),
+    ).resolves.toMatchObject({
+      finalResult: {
+        homeGoals: 3,
+        awayGoals: 1,
+      },
+      predictions,
+    });
+    expect(predictionUpdate).not.toHaveBeenCalled();
+  });
 });
 
 const userId = '11111111-1111-4111-8111-111111111111';
@@ -200,5 +335,54 @@ function createPrediction(
     createdAt: new Date('2026-08-01T00:00:00.000Z'),
     updatedAt: new Date('2026-08-01T00:00:00.000Z'),
     ...overrides,
+  };
+}
+
+function createTransparencyFixture(
+  overrides: Partial<
+    Fixture & {
+      homeTeam: { id: string; logo: string; name: string };
+      awayTeam: { id: string; logo: string; name: string };
+    }
+  > = {},
+) {
+  return {
+    ...createFixture(),
+    homeTeam: {
+      id: '66666666-6666-4666-8666-666666666666',
+      logo: 'https://example.com/home.png',
+      name: 'Arsenal',
+    },
+    awayTeam: {
+      id: '77777777-7777-4777-8777-777777777777',
+      logo: 'https://example.com/away.png',
+      name: 'Chelsea',
+    },
+    ...overrides,
+  };
+}
+
+function createTransparencyPrediction(
+  overrides: Partial<{
+    awayGoals: number;
+    homeGoals: number;
+    id: string;
+    totalPoints: number;
+    user: { avatarUrl: string | null; id: string; name: string };
+    userId: string;
+  }> = {},
+) {
+  const selectedUserId = overrides.userId ?? userId;
+
+  return {
+    id: overrides.id ?? predictionId,
+    homeGoals: overrides.homeGoals ?? 1,
+    awayGoals: overrides.awayGoals ?? 0,
+    totalPoints: overrides.totalPoints ?? 0,
+    user: overrides.user ?? {
+      id: selectedUserId,
+      name: selectedUserId === userId ? 'Washington' : 'JoÃ£o',
+      avatarUrl: null,
+    },
   };
 }

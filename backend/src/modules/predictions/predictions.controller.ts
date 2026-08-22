@@ -52,12 +52,29 @@ export class PredictionsController {
     return this.predictionsService.findMy(user.id);
   }
 
+  @Get('fixture/:fixtureId/transparency')
+  @ApiOperation({ summary: 'Consultar transparÃªncia de palpites da partida' })
+  @ApiResponse({
+    status: 200,
+    description: 'Palpites visÃ­veis conforme fechamento da partida.',
+  })
+  @ApiResponse({ status: 404, description: 'Partida nÃ£o encontrada.' })
+  findFixtureTransparency(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('fixtureId') fixtureId: string,
+  ) {
+    return this.predictionsService.findFixtureTransparency(user.id, fixtureId);
+  }
+
   @Get('fixture/:fixtureId')
   @ApiOperation({ summary: 'Listar palpites de uma partida' })
   @ApiResponse({ status: 200, description: 'Lista de palpites da partida.' })
   @ApiResponse({ status: 404, description: 'Partida não encontrada.' })
-  findByFixture(@Param('fixtureId') fixtureId: string) {
-    return this.predictionsService.findByFixture(fixtureId);
+  findByFixture(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('fixtureId') fixtureId: string,
+  ) {
+    return this.predictionsService.findByFixture(user.id, fixtureId);
   }
 
   @Post('calculate/:predictionId')
