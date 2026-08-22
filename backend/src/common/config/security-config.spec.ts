@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import {
   getCorsOrigins,
+  getJwtExpiresIn,
   getRequiredConfigValue,
   getTrustProxyHops,
 } from './security-config';
@@ -32,6 +33,53 @@ describe('security config', () => {
     expect(() => getRequiredConfigValue(configService, 'JWT_SECRET')).toThrow(
       'Invalid configuration: JWT_SECRET is required.',
     );
+  });
+
+  it('requires JWT_EXPIRES_IN', () => {
+    const configService = createConfigService({});
+
+    expect(() => getJwtExpiresIn(configService)).toThrow(
+      'Invalid configuration: JWT_EXPIRES_IN is required.',
+    );
+  });
+
+  it('rejects blank JWT_EXPIRES_IN', () => {
+    const configService = createConfigService({
+      JWT_EXPIRES_IN: '   ',
+    });
+
+    expect(() => getJwtExpiresIn(configService)).toThrow(
+      'Invalid configuration: JWT_EXPIRES_IN is required.',
+    );
+  });
+
+  it.each(['invalid', '0', '-1', '1.5h', '10 ms', '10ms'])(
+    'rejects invalid JWT_EXPIRES_IN value %s',
+    (value) => {
+      const configService = createConfigService({
+        JWT_EXPIRES_IN: value,
+      });
+
+      expect(() => getJwtExpiresIn(configService)).toThrow(
+        'Invalid configuration: JWT_EXPIRES_IN must be a positive integer number of seconds or use s, m, h, d, w, y units.',
+      );
+    },
+  );
+
+  it('parses JWT_EXPIRES_IN with a supported unit', () => {
+    const configService = createConfigService({
+      JWT_EXPIRES_IN: ' 7d ',
+    });
+
+    expect(getJwtExpiresIn(configService)).toBe('7d');
+  });
+
+  it('parses numeric JWT_EXPIRES_IN as seconds', () => {
+    const configService = createConfigService({
+      JWT_EXPIRES_IN: '3600',
+    });
+
+    expect(getJwtExpiresIn(configService)).toBe(3600);
   });
 
   it('requires explicit CORS origins in production', () => {

@@ -1,5 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 
+type JwtExpiresIn = number | `${number}${'s' | 'm' | 'h' | 'd' | 'w' | 'y'}`;
+
 export function getRequiredConfigValue(
   configService: ConfigService,
   key: string,
@@ -11,6 +13,28 @@ export function getRequiredConfigValue(
   }
 
   return value.trim();
+}
+
+export function getJwtExpiresIn(configService: ConfigService): JwtExpiresIn {
+  const rawValue = getRequiredConfigValue(configService, 'JWT_EXPIRES_IN');
+  const match = rawValue.match(/^([1-9]\d*)([smhdwy])?$/);
+
+  if (!match) {
+    throw new Error(
+      'Invalid configuration: JWT_EXPIRES_IN must be a positive integer number of seconds or use s, m, h, d, w, y units.',
+    );
+  }
+
+  const value = Number(match[1]);
+  const unit = match[2] as 's' | 'm' | 'h' | 'd' | 'w' | 'y' | undefined;
+
+  if (!Number.isSafeInteger(value)) {
+    throw new Error(
+      'Invalid configuration: JWT_EXPIRES_IN must be a safe positive integer.',
+    );
+  }
+
+  return unit ? (`${value}${unit}` as JwtExpiresIn) : value;
 }
 
 export function getNodeEnv(configService: ConfigService) {
