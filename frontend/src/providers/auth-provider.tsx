@@ -70,8 +70,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       storeToken(response.accessToken);
       setToken(response.accessToken);
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      const authenticatedUser = await queryClient.fetchQuery({
+        queryKey: ["auth", "me"],
+        queryFn: getMe,
+      });
+
+      queryClient.setQueryData(["users", "me"], authenticatedUser);
       router.push("/dashboard");
+      router.refresh();
     },
     [queryClient, router],
   );

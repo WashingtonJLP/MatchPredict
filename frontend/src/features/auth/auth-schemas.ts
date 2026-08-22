@@ -35,11 +35,17 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Informe sua senha."),
 });
 
-export const registerSchema = z.object({
-  name: z.string().min(3, "Informe pelo menos 3 caracteres."),
-  email: z.string().email("Informe um e-mail válido."),
-  password: passwordSchema,
-});
+export const registerSchema = z
+  .object({
+    name: z.string().min(3, "Informe pelo menos 3 caracteres."),
+    email: z.string().email("Informe um e-mail válido."),
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Confirme sua nova senha."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas não conferem.",
+    path: ["confirmPassword"],
+  });
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Informe um e-mail válido."),

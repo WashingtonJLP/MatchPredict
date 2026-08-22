@@ -1,12 +1,13 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { BrandMark } from "@/components/shared/brand-mark";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/providers/auth-provider";
 
 const navLinks = [
   {
@@ -24,7 +25,13 @@ const navLinks = [
 ];
 
 export function Navbar() {
+  const { isAuthenticated, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+
+  function handleLogout() {
+    setIsOpen(false);
+    logout();
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card">
@@ -43,26 +50,52 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <Link
-            href="/login"
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "sm" }),
-              "h-11 px-5 text-sm font-semibold text-muted-foreground hover:text-foreground",
-            )}
-          >
-            Entrar
-          </Link>
-          <Link
-            href="/register"
-            className={cn(
-              buttonVariants({ size: "sm" }),
-              "h-11 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/80 hover:shadow-md",
-            )}
-          >
-            Criar Conta
-          </Link>
-        </div>
+        {isAuthenticated ? (
+          <div className="hidden items-center gap-2 md:flex">
+            <Link
+              href="/dashboard"
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "h-11 gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/80 hover:shadow-md",
+              )}
+            >
+              <LayoutDashboard className="size-4" aria-hidden />
+              Dashboard
+            </Link>
+            <button
+              type="button"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "h-11 gap-2 px-5 text-sm font-semibold text-muted-foreground hover:text-foreground",
+              )}
+              onClick={handleLogout}
+            >
+              <LogOut className="size-4" aria-hidden />
+              Sair
+            </button>
+          </div>
+        ) : (
+          <div className="hidden items-center gap-2 md:flex">
+            <Link
+              href="/login"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "h-11 px-5 text-sm font-semibold text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Entrar
+            </Link>
+            <Link
+              href="/register"
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "h-11 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/80 hover:shadow-md",
+              )}
+            >
+              Criar Conta
+            </Link>
+          </div>
+        )}
 
         <button
           type="button"
@@ -119,28 +152,55 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="mt-auto grid gap-3 pt-8">
-          <Link
-            href="/login"
-            className={cn(
-              buttonVariants({ variant: "outline", size: "lg" }),
-              "h-12 rounded-xl text-base font-semibold",
-            )}
-            onClick={() => setIsOpen(false)}
-          >
-            Entrar
-          </Link>
-          <Link
-            href="/register"
-            className={cn(
-              buttonVariants({ size: "lg" }),
-              "h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/80",
-            )}
-            onClick={() => setIsOpen(false)}
-          >
-            Criar Conta
-          </Link>
-        </div>
+        {isAuthenticated ? (
+          <div className="mt-auto grid gap-3 pt-8">
+            <Link
+              href="/dashboard"
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "h-12 gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/80",
+              )}
+              onClick={() => setIsOpen(false)}
+            >
+              <LayoutDashboard className="size-5" aria-hidden />
+              Dashboard
+            </Link>
+            <button
+              type="button"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "h-12 gap-2 rounded-xl text-base font-semibold",
+              )}
+              onClick={handleLogout}
+            >
+              <LogOut className="size-5" aria-hidden />
+              Sair
+            </button>
+          </div>
+        ) : (
+          <div className="mt-auto grid gap-3 pt-8">
+            <Link
+              href="/login"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "h-12 rounded-xl text-base font-semibold",
+              )}
+              onClick={() => setIsOpen(false)}
+            >
+              Entrar
+            </Link>
+            <Link
+              href="/register"
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/80",
+              )}
+              onClick={() => setIsOpen(false)}
+            >
+              Criar Conta
+            </Link>
+          </div>
+        )}
       </aside>
     </header>
   );

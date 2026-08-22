@@ -19,17 +19,20 @@ export default function RegisterPage() {
   const { register: createAccount } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const {
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
     handleSubmit,
     register,
     watch,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    mode: "onChange",
     defaultValues: {
       name: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
   const password = watch("password");
@@ -44,9 +47,14 @@ export default function RegisterPage() {
 
   async function onSubmit(data: RegisterFormData) {
     setError(null);
+    const registerPayload = {
+      name: data.name,
+      email: data.email,
+      password: data.password,
+    };
 
     try {
-      await createAccount(data);
+      await createAccount(registerPayload);
       toast.success("Cadastro realizado com sucesso.");
     } catch (err) {
       const message = getApiErrorMessage(
@@ -148,6 +156,38 @@ export default function RegisterPage() {
             ))}
           </div>
 
+          <label className="block text-base font-semibold text-foreground">
+            Confirmar senha
+            <span className="relative mt-2 block">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirme sua nova senha"
+                className="h-[52px] w-full rounded-xl border border-input bg-background px-4 pr-12 text-base font-normal text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
+                {...register("confirmPassword")}
+              />
+              <button
+                type="button"
+                aria-label={
+                  showConfirmPassword ? "Ocultar senha" : "Mostrar senha"
+                }
+                className="absolute right-1.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => setShowConfirmPassword((current) => !current)}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="size-5" aria-hidden />
+                ) : (
+                  <Eye className="size-5" aria-hidden />
+                )}
+              </button>
+            </span>
+            {errors.confirmPassword ? (
+              <span className="mt-2 block text-sm text-destructive">
+                {errors.confirmPassword.message}
+              </span>
+            ) : null}
+          </label>
+
           {error ? (
             <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}
@@ -156,7 +196,7 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isValid}
             className="h-[52px] w-full rounded-xl bg-primary px-6 text-base font-bold text-primary-foreground shadow-sm transition hover:bg-primary/80 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Criando..." : "Criar Conta"}

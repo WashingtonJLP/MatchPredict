@@ -21,3 +21,22 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-production
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      HOME: /home/nonroot
+    volumes:
+      - ./cloudflared:/home/nonroot/.cloudflared
+    command:
+      - tunnel
+      - --config
+      - /home/nonroot/.cloudflared/config.yml
+      - run
+      - matchpredict-production
+    depends_on:
+      - frontend
+      - backend
