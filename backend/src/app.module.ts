@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 import { PrismaModule } from './common/prisma/prisma.module';
 import { UsersModule } from './modules/users/users.module';
@@ -17,6 +18,13 @@ import { StandingsModule } from './modules/standings/standings.module';
     }),
 
     ScheduleModule.forRoot(),
+
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 60,
+      },
+    ]),
 
     PrismaModule,
 
