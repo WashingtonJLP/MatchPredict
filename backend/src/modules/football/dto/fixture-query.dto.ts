@@ -7,6 +7,7 @@ import {
   IsInt,
   IsOptional,
   IsUUID,
+  Max,
   Min,
 } from 'class-validator';
 
@@ -16,11 +17,12 @@ export class FixtureQueryDto {
   @IsEnum(FixtureStatus)
   status?: FixtureStatus;
 
-  @ApiPropertyOptional({ example: 12, minimum: 0 })
+  @ApiPropertyOptional({ example: 12, minimum: 0, maximum: 100 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(100)
   round?: number;
 
   @ApiPropertyOptional({
@@ -40,17 +42,19 @@ export class FixtureQueryDto {
   @IsDateString()
   to?: string;
 
-  @ApiPropertyOptional({ example: 1, minimum: 1, default: 1 })
+  @ApiPropertyOptional({ example: 1, minimum: 1, maximum: 1000, default: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(1000)
   page?: number;
 
-  @ApiPropertyOptional({ example: 20, minimum: 1, default: 20 })
+  @ApiPropertyOptional({ example: 20, minimum: 1, maximum: 100, default: 20 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number;
 }

@@ -3,6 +3,59 @@ import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { UsersService } from './users.service';
 
+describe('UsersService create', () => {
+  it('returns public registration data without password or reset fields', async () => {
+    const userFindFirst = jest.fn().mockResolvedValue(null);
+    const userCreate = jest.fn().mockResolvedValue({
+      id: userId,
+      name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      role: 'USER',
+      avatarUrl: null,
+      createdAt: new Date('2026-08-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-08-01T00:00:00.000Z'),
+    });
+    const service = new UsersService({
+      user: {
+        findFirst: userFindFirst,
+        create: userCreate,
+      },
+    } as unknown as PrismaService);
+
+    const result = await service.create({
+      name: 'Ada Lovelace',
+      email: 'ADA@example.com',
+      password: 'NovaSenha123',
+    });
+
+    expect(result).toEqual({
+      id: userId,
+      name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      role: 'USER',
+      avatarUrl: null,
+      createdAt: new Date('2026-08-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-08-01T00:00:00.000Z'),
+    });
+    expect(result).not.toHaveProperty('password');
+    expect(result).not.toHaveProperty('resetPasswordToken');
+    expect(result).not.toHaveProperty('resetPasswordExpiresAt');
+    expect(userCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          avatarUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+    );
+  });
+});
+
 describe('UsersService statistics', () => {
   let service: UsersService;
   let seasonFindFirst: jest.Mock;

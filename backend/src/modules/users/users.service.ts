@@ -57,21 +57,18 @@ export class UsersService {
         email,
         password: hashedPassword,
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatarUrl: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
-    const userWithoutPassword = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatarUrl: user.avatarUrl,
-      resetPasswordToken: user.resetPasswordToken,
-      resetPasswordExpiresAt: user.resetPasswordExpiresAt,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-
-    return userWithoutPassword;
+    return user;
   }
 
   async findById(id: string) {

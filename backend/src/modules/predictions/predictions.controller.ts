@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
@@ -61,7 +62,7 @@ export class PredictionsController {
   @ApiResponse({ status: 404, description: 'Partida nÃ£o encontrada.' })
   findFixtureTransparency(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('fixtureId') fixtureId: string,
+    @Param('fixtureId', new ParseUUIDPipe({ version: '4' })) fixtureId: string,
   ) {
     return this.predictionsService.findFixtureTransparency(user.id, fixtureId);
   }
@@ -72,7 +73,7 @@ export class PredictionsController {
   @ApiResponse({ status: 404, description: 'Partida não encontrada.' })
   findByFixture(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('fixtureId') fixtureId: string,
+    @Param('fixtureId', new ParseUUIDPipe({ version: '4' })) fixtureId: string,
   ) {
     return this.predictionsService.findByFixture(user.id, fixtureId);
   }
@@ -83,7 +84,8 @@ export class PredictionsController {
   @ApiResponse({ status: 404, description: 'Palpite não encontrado.' })
   calculate(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('predictionId') predictionId: string,
+    @Param('predictionId', new ParseUUIDPipe({ version: '4' }))
+    predictionId: string,
   ) {
     this.ensureAdmin(user);
 
@@ -99,7 +101,7 @@ export class PredictionsController {
   @ApiResponse({ status: 400, description: 'Partida ainda não finalizada.' })
   processFixture(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('fixtureId') fixtureId: string,
+    @Param('fixtureId', new ParseUUIDPipe({ version: '4' })) fixtureId: string,
   ) {
     this.ensureAdmin(user);
 
@@ -116,7 +118,7 @@ export class PredictionsController {
   @ApiResponse({ status: 409, description: 'Partida já iniciada.' })
   update(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() updatePredictionDto: UpdatePredictionDto,
   ) {
     return this.predictionsService.update(user.id, id, updatePredictionDto);
@@ -130,7 +132,10 @@ export class PredictionsController {
     description: 'Palpite pertence a outro usuário.',
   })
   @ApiResponse({ status: 409, description: 'Partida já iniciada.' })
-  remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  remove(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     return this.predictionsService.remove(user.id, id);
   }
 

@@ -4,6 +4,7 @@ import { RegisterDto } from '../../modules/auth/dto/register.dto';
 import { ResetPasswordDto } from '../../modules/auth/dto/reset-password.dto';
 
 describe('password validation', () => {
+  const validResetToken = 'a'.repeat(64);
   const invalidPasswords = [
     ['short password', 'Abc1234'],
     ['missing uppercase letter', 'senha1234'],
@@ -36,7 +37,7 @@ describe('password validation', () => {
     'rejects reset password with %s',
     async (_caseName, password) => {
       const dto = Object.assign(new ResetPasswordDto(), {
-        token: 'token-valido',
+        token: validResetToken,
         password,
         confirmPassword: password,
       });
@@ -60,7 +61,7 @@ describe('password validation', () => {
       password: 'NovaSenha123',
     });
     const resetPasswordDto = Object.assign(new ResetPasswordDto(), {
-      token: 'token-valido',
+      token: validResetToken,
       password: 'NovaSenha123',
       confirmPassword: 'NovaSenha123',
     });
