@@ -16,6 +16,9 @@ const geist = Geist({
 export const metadata: Metadata = {
   title: "MatchPredict",
   description: "Palpites esportivos com ranking competitivo.",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({
