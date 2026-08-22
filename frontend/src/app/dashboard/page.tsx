@@ -229,21 +229,6 @@ export default function DashboardPage() {
                     </span>
                   ),
                 },
-                {
-                  key: "exact",
-                  header: "Placares exatos",
-                  render: (item) => item.exactScores,
-                },
-                {
-                  key: "winners",
-                  header: "Acertos",
-                  render: (item) => item.correctWinners,
-                },
-                {
-                  key: "wrong",
-                  header: "Erros",
-                  render: (item) => item.wrongPredictions,
-                },
               ]}
             />
           )}
