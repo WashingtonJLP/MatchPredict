@@ -75,13 +75,155 @@ A modelagem atual contém:
 
 ## Diagrama entidade-relacionamento
 
-O repositório possui um diagrama em:
+O diagrama abaixo representa a modelagem atual descrita em `backend/prisma/schema.prisma`. Ele substitui a imagem estática antiga como referência técnica atual da documentação.
 
-```text
-docs/images/erd-v1.png
+```mermaid
+erDiagram
+    USER {
+        String id PK
+        String name
+        String email UK
+        String password
+        Role role
+        String avatarUrl
+        String resetPasswordToken UK
+        DateTime resetPasswordExpiresAt
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    LEAGUE {
+        String id PK
+        Int apiLeagueId UK
+        String name
+        String country
+        String logo
+        Boolean isActive
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    SEASON {
+        String id PK
+        String leagueId FK
+        Int year
+        String name
+        Boolean isActive
+        DateTime startDate
+        DateTime endDate
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    TEAM {
+        String id PK
+        Int apiTeamId UK
+        String name
+        String logo
+        String country
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    PLAYER {
+        String id PK
+        Int apiPlayerId UK
+        String teamId FK
+        String name
+        Int number
+        String photo
+        String position
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    FIXTURE {
+        String id PK
+        Int apiFixtureId UK
+        String seasonId FK
+        String homeTeamId FK
+        String awayTeamId FK
+        Int round
+        DateTime kickoff
+        FixtureStatus status
+        Int homeGoals
+        Int awayGoals
+        WinnerType winnerType
+        DateTime processedAt
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    PREDICTION {
+        String id PK
+        String userId FK
+        String fixtureId FK
+        Int homeGoals
+        Int awayGoals
+        String mvpPlayerId FK
+        Int scorePoints
+        Int mvpPoints
+        Int totalPoints
+        Boolean exactScore
+        Boolean correctWinner
+        Boolean correctMvp
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    STANDING {
+        String id PK
+        String seasonId FK
+        String userId FK
+        Int scorePoints
+        Int mvpPoints
+        Int totalPoints
+        Int exactScores
+        Int correctWinners
+        Int correctMvps
+        Int wrongPredictions
+        Int position
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    SYNCLOG {
+        String id PK
+        String entity
+        String status
+        String message
+        DateTime startedAt
+        DateTime finishedAt
+        DateTime createdAt
+    }
+
+    LEAGUE ||--o{ SEASON : possui
+    SEASON ||--o{ FIXTURE : possui
+    SEASON ||--o{ STANDING : possui
+
+    TEAM ||--o{ FIXTURE : "mandante"
+    TEAM ||--o{ FIXTURE : "visitante"
+    TEAM ||--o{ PLAYER : possui
+
+    USER ||--o{ PREDICTION : faz
+    USER ||--o{ STANDING : possui
+
+    FIXTURE ||--o{ PREDICTION : recebe
+    PREDICTION }o--o| PLAYER : "MVP opcional"
 ```
 
-Esse diagrama deve ser revisado sempre que a modelagem mudar, pois o schema atual inclui campos e relações adicionados após a primeira versão da documentação.
+As constraints mais importantes confirmadas no schema são:
+
+- `User.email` é único.
+- `League.apiLeagueId` é único.
+- `Team.apiTeamId` é único.
+- `Fixture.apiFixtureId` é único.
+- `Player.apiPlayerId` é único.
+- `Prediction` possui constraint única para o par `userId` + `fixtureId`, impedindo mais de um palpite por usuário na mesma partida.
+- `Standing` possui constraint única para o par `seasonId` + `userId`, mantendo um standing por usuário em cada temporada.
+- `SyncLog` existe como modelo independente e não possui relacionamento atual com outros models.
+
+Observação: `mvpPlayerId` aparece no ER porque existe na modelagem atual. Esse campo pertence ao desenho existente/legado de MVP e, neste momento, não participa do fluxo funcional de criação, edição ou pontuação de palpites.
 
 ---
 
