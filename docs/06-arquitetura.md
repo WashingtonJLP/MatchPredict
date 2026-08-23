@@ -16,21 +16,48 @@ O MatchPredict é dividido em três partes principais:
 2. API backend.
 3. Banco de dados PostgreSQL.
 
-Além disso, a implantação atual prevista no repositório usa Cloudflare Tunnel para expor os serviços através de um túnel configurado fora do código.
+Além disso, a implantação atual prevista no repositório usa Cloudflare Tunnel para expor os serviços por meio de um túnel configurado fora do código.
 
-```text
-Usuário
-  |
-  v
-Frontend Next.js
-  |
-  v
-Backend NestJS /api/v1
-  |
-  +--> PostgreSQL via Prisma
-  +--> APIs da ESPN
-  +--> SMTP para e-mail
+O diagrama abaixo representa a arquitetura conceitual atual, sem expor domínio, IP, token ou credencial. Em produção, o browser acessa a API pública configurada em `NEXT_PUBLIC_API_URL`; essa URL é exposta pelo Cloudflare Tunnel, não por uma comunicação interna obrigatória entre os containers de frontend e backend.
+
+```mermaid
+flowchart TD
+    browser[Usuário / Browser]
+
+    subgraph cloudflare[Cloudflare]
+        edge[Cloudflare Edge]
+    end
+
+    subgraph host[Servidor / TrueNAS]
+        tunnel[Cloudflare Tunnel<br/>cloudflared]
+        frontend[Frontend<br/>Next.js]
+        backend[Backend<br/>NestJS API /api/v1]
+    end
+
+    subgraph external[Serviços externos]
+        db[(PostgreSQL / Neon)]
+        espn[ESPN APIs]
+        smtp[SMTP]
+    end
+
+    browser -->|HTTPS| edge
+    edge -->|Tunnel| tunnel
+    tunnel --> frontend
+    tunnel --> backend
+
+    browser -.->|API pública configurada em NEXT_PUBLIC_API_URL| backend
+
+    backend -->|Prisma ORM| db
+    backend -->|Sincronização esportiva| espn
+    backend -->|Recuperação de senha| smtp
 ```
+
+Os principais elementos são:
+
+- `Cloudflare Tunnel`: expõe frontend e backend sem registrar detalhes sensíveis na documentação.
+- `Frontend Next.js`: entrega a interface web e usa a URL pública da API configurada em `NEXT_PUBLIC_API_URL`.
+- `Backend NestJS`: concentra regras de negócio, autenticação, sincronização, processamento de palpites e integrações externas.
+- `PostgreSQL / Neon`, `ESPN APIs` e `SMTP`: serviços externos consumidos pelo backend.
 
 ---
 
