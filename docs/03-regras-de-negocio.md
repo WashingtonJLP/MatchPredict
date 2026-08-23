@@ -1,165 +1,276 @@
 # Regras de Negócio
 
+## Objetivo
+
+Este documento descreve as regras de negócio atualmente implementadas no MatchPredict.
+
+O backend NestJS é a fonte de verdade para as regras de autenticação, palpites, processamento de resultados, transparência e ranking.
+
+---
+
 ## RN01 - Cadastro de Usuário
 
-- O e-mail do usuário deve ser único.
-- A senha deverá ser armazenada criptografada.
-- O usuário deverá informar nome, e-mail e senha para realizar o cadastro.
-- Não será permitido o cadastro com e-mail já existente.
+- O usuário deve informar nome, e-mail e senha.
+- O nome é obrigatório e deve possuir entre 3 e 80 caracteres.
+- O e-mail deve ser válido, possuir no máximo 254 caracteres e ser único.
+- O e-mail é normalizado antes de ser armazenado.
+- A senha deve possuir entre 8 e 72 caracteres, com pelo menos:
+  - uma letra maiúscula;
+  - uma letra minúscula;
+  - um número.
+- A senha é armazenada com hash usando bcrypt.
+- Não é permitido cadastrar um novo usuário com e-mail já existente.
+- Usuários novos são criados com perfil `USER`.
 
 ---
 
 ## RN02 - Autenticação
 
-- Apenas usuários autenticados poderão registrar palpites.
-- O acesso será realizado utilizando e-mail e senha.
-- Após autenticação, será gerado um token JWT.
-- O token deverá ser enviado em todas as requisições protegidas.
+- O login é feito com e-mail e senha.
+- Ao autenticar com sucesso, a API retorna um JWT.
+- O JWT contém o identificador do usuário, e-mail e papel (`role`).
+- Endpoints protegidos exigem JWT válido no header `Authorization`.
+- O backend valida a existência do usuário em cada requisição autenticada.
+- Endpoints de autenticação possuem rate limit específico para reduzir abuso.
 
 ---
 
-## RN03 - Competições
+## RN03 - Recuperação de Senha
 
-- Inicialmente o sistema suportará apenas a Premier League.
-- A arquitetura deverá permitir a inclusão de novas competições sem necessidade de alterações estruturais.
-- Cada competição possuirá sua própria temporada.
-- Cada competição possuirá seu próprio ranking.
-
----
-
-## RN04 - Temporadas
-
-- Apenas uma temporada poderá estar ativa por competição.
-- Ao término da temporada, ela será encerrada.
-- Uma nova temporada será criada automaticamente ou manualmente pelo administrador.
-- O histórico da temporada anterior deverá ser preservado.
-- O ranking será reiniciado para a nova temporada.
+- A solicitação de recuperação recebe apenas o e-mail.
+- A resposta da solicitação é sempre genérica, independentemente de o e-mail existir ou não.
+- Quando o e-mail existe, o sistema gera um token aleatório.
+- O token é armazenado apenas como hash SHA-256.
+- O token de recuperação expira em 30 minutos.
+- Ao redefinir senha:
+  - o token deve existir;
+  - o token não pode estar expirado;
+  - a nova senha e a confirmação devem ser iguais;
+  - a nova senha deve atender à política de senha forte.
+- Após redefinição bem-sucedida, o token e sua expiração são removidos.
+- Se um token expirado for usado, ele é removido antes de retornar erro.
 
 ---
 
-## RN05 - Jogos
+## RN04 - Perfil do Usuário
 
-- Os jogos serão sincronizados através da API-Football.
-- Apenas jogos da temporada ativa serão exibidos aos usuários.
-- O sistema deverá atualizar automaticamente os resultados das partidas.
-- Jogos adiados deverão manter os palpites registrados.
-- Jogos cancelados não gerarão pontuação.
-
----
-
-## RN06 - Registro de Palpites
-
-- O usuário poderá registrar apenas um palpite por partida.
-- O palpite deverá conter:
-  - Gols do mandante.
-  - Gols do visitante.
-  - MVP previsto da partida (opcional, caso habilitado).
-- O usuário poderá editar seu palpite enquanto a partida não iniciar.
+- O usuário autenticado pode consultar o próprio perfil.
+- O usuário autenticado pode atualizar o próprio nome.
+- O usuário autenticado pode alterar a própria senha.
+- Para alterar senha, a senha atual deve ser informada e conferida.
+- A nova senha deve atender à mesma política de senha forte do cadastro.
+- Dados sensíveis, como senha e tokens de recuperação, não são retornados nas respostas públicas de usuário.
 
 ---
 
-## RN07 - Encerramento dos Palpites
+## RN05 - Competições e Temporadas
 
-- Os palpites serão bloqueados no momento em que a partida iniciar.
-- Após o bloqueio não será permitido:
+- O sistema está configurado para operar inicialmente com a Premier League.
+- A liga e a temporada ativa são sincronizadas a partir das APIs da ESPN.
+- Apenas uma temporada ativa por liga é mantida como ativa no fluxo de sincronização atual.
+- Ao sincronizar uma nova temporada ativa, temporadas anteriores da mesma liga são marcadas como inativas.
+- Consultas de ranking e estatísticas usam a temporada ativa vinculada a uma liga ativa.
+
+---
+
+## RN06 - Times, Jogadores e Partidas
+
+- Times, jogadores, partidas e resultados são sincronizados a partir das APIs da ESPN.
+- Times são identificados localmente por UUID e externamente por `apiTeamId`.
+- Jogadores são identificados localmente por UUID e externamente por `apiPlayerId`.
+- Partidas são identificadas localmente por UUID e externamente por `apiFixtureId`.
+- A rodada (`round`) é armazenada na fixture como número inteiro.
+- A rodada é calculada durante a sincronização de fixtures com base na posição do evento e na quantidade de partidas por rodada.
+- Os status de partida suportados são:
+  - `NS`;
+  - `LIVE`;
+  - `FT`;
+  - `POSTPONED`;
+  - `CANCELLED`.
+- O resultado final da partida é armazenado em `homeGoals`, `awayGoals` e `winnerType`.
+- Partidas finalizadas podem ser marcadas como processadas por meio de `processedAt`.
+
+---
+
+## RN07 - Listagem de Partidas
+
+- Apenas usuários autenticados podem listar partidas.
+- A listagem retorna partidas da base local.
+- A listagem suporta filtros por:
+  - status;
+  - rodada;
+  - time;
+  - data/hora inicial do kickoff;
+  - data/hora final do kickoff.
+- A listagem é paginada.
+- As partidas são ordenadas por kickoff crescente.
+- Para cada partida, a resposta inclui o palpite do usuário autenticado, quando existir.
+- `canPredict` só é verdadeiro quando:
+  - a partida ainda está aberta para palpite;
+  - o usuário ainda não registrou palpite para aquela partida.
+
+---
+
+## RN08 - Registro de Palpites
+
+- Apenas usuários autenticados podem registrar palpites.
+- Cada usuário pode registrar no máximo um palpite por partida.
+- O palpite atual contém:
+  - gols previstos para o mandante;
+  - gols previstos para o visitante.
+- Gols previstos devem ser números inteiros entre 0 e 20.
+- O palpite só pode ser criado se a partida estiver aberta para palpite.
+- A partida está aberta para palpite quando:
+  - `kickoff` é maior que o horário atual;
+  - status não é `LIVE`;
+  - status não é `FT`.
+- Se a partida não existir, o palpite não pode ser criado.
+- Se o usuário já tiver palpite para a partida, a criação é rejeitada.
+
+---
+
+## RN09 - Edição e Exclusão de Palpites
+
+- Apenas o dono do palpite pode editá-lo ou excluí-lo.
+- Um palpite só pode ser editado enquanto a partida estiver aberta para palpite.
+- Um palpite só pode ser excluído enquanto a partida estiver aberta para palpite.
+- Ao editar, pelo menos um dos campos `homeGoals` ou `awayGoals` deve ser enviado.
+- Após o fechamento dos palpites, não é permitido:
   - editar o palpite;
-  - excluir o palpite;
-  - alterar o MVP escolhido.
+  - excluir o palpite.
 
 ---
 
-## RN08 - Pontuação
+## RN10 - Fechamento dos Palpites
 
-### Placar Exato
-
-Caso o usuário acerte exatamente o placar da partida:
-
-+3 pontos
-
-### Resultado Correto
-
-Caso o usuário acerte apenas o vencedor da partida ou o empate:
-
-+1 ponto
-
-### Erro
-
-Caso o usuário não acerte o vencedor nem o placar:
-
-0 pontos
+- O fechamento dos palpites é calculado por partida.
+- Uma partida está fechada para palpite quando qualquer condição abaixo é verdadeira:
+  - `kickoff` é menor ou igual ao horário atual;
+  - status é `LIVE`;
+  - status é `FT`.
+- O fechamento não depende da rodada inteira.
+- Em uma mesma rodada, podem existir palpites ainda ativos e palpites já encerrados se as partidas tiverem horários diferentes.
+- O frontend pode exibir um estado derivado da mesma regra, mas a proteção real é aplicada pelo backend.
 
 ---
 
-## RN09 - MVP da Partida
+## RN11 - Meus Palpites
 
-- O usuário deverá selecionar obrigatoriamente um MVP para cada palpite.
-- Apenas jogadores pertencentes aos dois times da partida poderão ser selecionados.
-- O MVP poderá ser alterado enquanto a partida estiver com status **NS (Not Started)**.
-- Caso um jogador escolhido seja cortado da partida antes do início, o usuário poderá alterar sua escolha enquanto os palpites estiverem abertos.
-- Após o início da partida não será permitido alterar o MVP.
-- O MVP oficial da partida será determinado automaticamente através do maior **rating** retornado pela API-Football.
-- Em caso de empate no rating, será aplicada uma regra de desempate definida pelo sistema.
-- O usuário que acertar o MVP receberá **2 pontos**.
+- A listagem de meus palpites retorna somente palpites do usuário autenticado.
+- A listagem não retorna partidas sem palpite do usuário.
+- A listagem não possui filtros ou paginação no endpoint atual.
+- A ordenação do endpoint é pela data de criação do palpite em ordem decrescente.
+- A organização visual entre palpites ativos e histórico é feita no frontend com base na regra de fechamento da partida.
 
 ---
 
-## RN10 - Ranking
+## RN12 - Transparência de Palpites
 
-- O ranking será calculado automaticamente.
-- O ranking será específico da competição e da temporada.
-- A classificação será ordenada pela pontuação total.
-
-### Critérios de desempate
-
-1. Maior número de placares exatos.
-2. Maior número de vencedores corretos.
-3. Maior número de MVPs acertados.
-4. Menor quantidade de erros.
-5. Ordem alfabética.
+- A transparência é consultada por fixture.
+- Antes do fechamento dos palpites, a consulta retorna somente o palpite do usuário autenticado, se existir.
+- Após o fechamento dos palpites, a consulta retorna os palpites de todos os usuários daquela fixture.
+- Os palpites na transparência são ordenados por nome do usuário e, depois, por data de criação.
+- A resposta informa se a fixture está fechada para palpites.
+- O resultado final só é retornado quando:
+  - status da fixture é `FT`;
+  - `homeGoals` não é nulo;
+  - `awayGoals` não é nulo.
 
 ---
 
-## RN11 - API Externa
+## RN13 - Pontuação
 
-- A API-Football será a fonte oficial dos dados esportivos.
-- O sistema não permitirá alteração manual dos resultados das partidas.
-- Os dados sincronizados poderão ser armazenados localmente para reduzir chamadas à API.
-
----
-
-## RN12 - Integridade
-
-- Um usuário não poderá registrar dois palpites para a mesma partida.
-- Um jogo encerrado não poderá receber novos palpites.
-- A pontuação somente poderá ser calculada após a partida ser finalizada.
-- A pontuação de um palpite será calculada apenas uma vez.
+- A pontuação atual considera apenas placar e vencedor/empate.
+- Placar exato vale 3 pontos.
+- Acerto do vencedor ou empate, sem placar exato, vale 1 ponto.
+- Erro do vencedor/empate vale 0 ponto.
+- Se a partida não possuir placar final, a pontuação calculada é 0.
+- `scorePoints` e `totalPoints` recebem o mesmo valor no cálculo atual.
+- Campos de MVP existem no modelo de dados, mas MVP não faz parte do fluxo atual de criação/edição de palpites nem do motor de pontuação atual.
 
 ---
 
-## RN13 - Auditoria
+## RN14 - Processamento de Resultados
 
-- Toda alteração de pontuação deverá ser registrada.
-- Toda sincronização da API deverá ser registrada em log.
-- O sistema deverá registrar a data da última sincronização.
+- Uma fixture só pode ser processada se existir.
+- Uma fixture só pode ser processada se estiver com status `FT`.
+- Uma fixture finalizada só pode ser processada se possuir placar final.
+- O processamento calcula a pontuação de todos os palpites da fixture.
+- O processamento atualiza os standings dos usuários afetados.
+- O processamento marca a fixture com `processedAt`.
+- Se a fixture já tiver sido processada, o endpoint retorna um resultado indicando `alreadyProcessed: true` e não recalcula os palpites.
+- O processamento usa transação para evitar processamento duplicado concorrente.
+- Um scheduler executa a cada 5 minutos para:
+  - sincronizar resultados pendentes;
+  - processar fixtures finalizadas ainda não processadas.
+
 ---
 
-## RN14 - Administrador
+## RN15 - Ranking
 
-O sistema possuirá usuários com perfil **ADMIN**.
+- O ranking é calculado para a temporada ativa.
+- Standings são atualizados a partir dos palpites de fixtures finalizadas.
+- Cada usuário possui no máximo um standing por temporada.
+- O ranking público retorna a lista de usuários classificados.
+- A posição do usuário autenticado pode ser consultada separadamente.
 
-Apenas administradores poderão:
+### Critérios de Ordenação
 
-- Iniciar uma nova temporada.
-- Encerrar a temporada ativa.
-- Executar sincronizações manuais da API-Football.
-- Visualizar os logs de sincronização.
-- Gerenciar configurações da aplicação.
-- Atualizar manualmente dados de competições, times e partidas quando necessário.
+1. Maior `totalPoints`.
+2. Maior `exactScores`.
+3. Maior `correctWinners`.
+4. Menor `wrongPredictions`.
+5. `createdAt` mais antigo do standing.
+
 ---
-## RN15 - Sincronização da API
 
-- O sistema utilizará a API-Football como fonte oficial dos dados esportivos.
-- As informações de competições, partidas e resultados serão sincronizadas periodicamente.
-- O administrador poderá executar uma sincronização manual sempre que necessário.
-- Os dados sincronizados serão armazenados localmente para reduzir o número de chamadas à API.
-- Em caso de indisponibilidade temporária da API, o sistema continuará utilizando os últimos dados sincronizados.
+## RN16 - Estatísticas do Usuário
+
+- As estatísticas são calculadas para o usuário autenticado na temporada ativa.
+- O total de palpites considera palpites do usuário na temporada ativa.
+- A média de pontos considera somente palpites de fixtures já processadas.
+- A acurácia é o percentual de palpites processados com vencedor correto.
+- Melhor e pior rodada são calculadas a partir da soma de pontos por rodada, considerando apenas fixtures processadas.
+- Em caso de empate de pontos entre rodadas, a rodada de menor número é escolhida.
+- A posição atual é calculada com base na ordenação real do ranking.
+
+---
+
+## RN17 - Administração
+
+- O sistema possui usuários com perfil `ADMIN`.
+- Endpoints administrativos exigem JWT válido e role `ADMIN`.
+- Apenas administradores podem:
+  - sincronizar liga e temporada ativa;
+  - sincronizar times;
+  - sincronizar fixtures;
+  - sincronizar jogadores;
+  - sincronizar resultados;
+  - calcular a pontuação de um palpite específico;
+  - processar todos os palpites de uma fixture.
+- Usuários sem role `ADMIN` recebem erro de acesso restrito ao chamar endpoints administrativos.
+
+---
+
+## RN18 - Integridade e Segurança
+
+- A API usa validação global com `whitelist`, transformação de tipos e rejeição de campos não permitidos.
+- IDs recebidos em parâmetros de rota de palpites são validados como UUID v4.
+- O par `(userId, fixtureId)` é único na tabela de palpites.
+- O par `(seasonId, userId)` é único na tabela de standings.
+- Configurações sensíveis são lidas de variáveis de ambiente.
+- Em produção, CORS exige origem configurada.
+- Swagger é habilitado apenas fora de produção.
+- O backend pode ser configurado para confiar em proxies por meio de `TRUST_PROXY_HOPS`.
+
+---
+
+## RN19 - Limitações Atuais
+
+- Não há endpoint público específico para listar ligas, temporadas, times ou jogadores.
+- Não há painel administrativo no frontend.
+- Não há CRUD manual de ligas, temporadas, times ou partidas.
+- Não há endpoint para encerrar temporada manualmente.
+- `SyncLog` existe no modelo de dados, mas não há fluxo implementado gravando logs de sincronização.
+- MVP existe no schema, mas ainda não está implementado no fluxo funcional de palpites.
+- A API atual não usa envelope global de resposta.
