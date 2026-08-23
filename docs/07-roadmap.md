@@ -1,179 +1,163 @@
 # Roadmap
 
-## Objetivo
+Este documento apresenta o estado atual do MatchPredict e a direcao de evolucao do projeto. A classificacao abaixo considera o que esta implementado no codigo atual.
 
-Este documento apresenta o planejamento evolutivo do MatchPredict.
+## Status geral
 
-O desenvolvimento será dividido em versões, permitindo a entrega incremental de funcionalidades e facilitando a evolução da plataforma.
+O MatchPredict ja possui um fluxo funcional completo para usuarios autenticados criarem palpites de placar, acompanharem partidas, consultarem seus palpites, verem ranking, estatisticas e transparencia. A integracao esportiva atual usa APIs da ESPN, e o deploy esta orientado a Docker, TrueNAS e Cloudflare Tunnel.
 
----
+## Concluido
 
-# Versão 1.0 (MVP)
+### Usuarios e autenticacao
 
-Objetivo: disponibilizar uma plataforma funcional de bolão da Premier League.
+- [x] Cadastro de usuario.
+- [x] Login com JWT.
+- [x] Protecao de rotas autenticadas.
+- [x] Recuperacao de senha por e-mail.
+- [x] Redefinicao de senha com token temporario.
+- [x] Perfil do usuario autenticado.
+- [x] Atualizacao de dados do perfil.
+- [x] Politica de senha forte.
 
-## Funcionalidades
+### Partidas e dados esportivos
 
-### Usuários
-
-- [ ] Cadastro
-- [ ] Login
-- [ ] Autenticação JWT
-- [ ] Perfil do usuário
-
----
-
-### Campeonato
-
-- [ ] Premier League
-- [ ] Temporada
-- [ ] Sincronização automática das partidas
-- [ ] Atualização automática dos resultados
-
----
+- [x] Modelagem de liga, temporada, times, jogadores e partidas.
+- [x] Foco inicial na Premier League.
+- [x] Sincronizacao administrativa de liga.
+- [x] Sincronizacao administrativa de times.
+- [x] Sincronizacao administrativa de partidas.
+- [x] Sincronizacao administrativa de jogadores.
+- [x] Sincronizacao administrativa de resultados.
+- [x] Listagem autenticada de partidas.
+- [x] Filtros por status, rodada, time e intervalo de datas.
+- [x] Paginacao da listagem de partidas.
+- [x] Status de fixtures e placar final quando disponivel.
 
 ### Palpites
 
-- [ ] Registrar palpite
-- [ ] Editar palpite antes do início da partida
-- [ ] Escolher o MVP da partida
-- [ ] Bloqueio automático após início do jogo
+- [x] Criacao de palpite por placar.
+- [x] Edicao de palpite proprio antes do bloqueio.
+- [x] Exclusao de palpite proprio antes do bloqueio.
+- [x] Um palpite por usuario por partida.
+- [x] Bloqueio por kickoff.
+- [x] Bloqueio por status `LIVE`.
+- [x] Bloqueio por status `FT`.
+- [x] Pagina "Meus Palpites" exibindo apenas palpites ja feitos pelo usuario.
+- [x] Separacao visual entre palpites ativos e historico.
+- [x] Filtro de historico por rodada no frontend.
 
----
+### Transparencia
 
-### Pontuação
+- [x] Consulta de palpites por partida.
+- [x] Ocultacao de palpites de outros usuarios antes do kickoff.
+- [x] Liberacao de palpites apos kickoff ou durante partida ao vivo.
+- [x] Exibicao de resultado final quando a partida esta encerrada.
 
-- [ ] Acerto do vencedor
-- [ ] Acerto do placar exato
-- [ ] Acerto do MVP
-- [ ] Cálculo automático da pontuação
+### Pontuacao e ranking
 
----
+- [x] Calculo de placar exato.
+- [x] Calculo de acerto de vencedor ou empate.
+- [x] Calculo de erro do resultado.
+- [x] Processamento de fixtures encerradas.
+- [x] Marcacao de fixture processada com `processedAt`.
+- [x] Atualizacao de standings.
+- [x] Ranking geral da temporada ativa.
+- [x] Ranking do usuario autenticado.
+- [x] Criterios de desempate por pontos, placares exatos, vencedores corretos, erros e data de criacao.
 
-### Ranking
+### Estatisticas
 
-- [ ] Classificação geral
-- [ ] Ranking da temporada
-- [ ] Atualização automática
+- [x] Estatisticas do usuario autenticado.
+- [x] Total de palpites.
+- [x] Pontos totais.
+- [x] Media de pontos.
+- [x] Acertos de vencedor.
+- [x] Placares exatos.
+- [x] Posicao atual.
+- [x] Melhor e pior rodada com base em palpites processados.
 
----
+### Infraestrutura e desenvolvimento
 
-### Administração
+- [x] Frontend Next.js.
+- [x] Backend NestJS.
+- [x] Prisma ORM.
+- [x] PostgreSQL.
+- [x] Neon como banco hospedado.
+- [x] Swagger em ambiente de desenvolvimento.
+- [x] Variaveis de ambiente.
+- [x] Dockerfiles para frontend e backend.
+- [x] Docker Compose com frontend, backend e Cloudflare Tunnel.
+- [x] Deploy orientado a TrueNAS e Cloudflare Tunnel.
+- [x] Testes automatizados no backend.
+- [x] Lint e build configurados no frontend.
 
-- [ ] Painel administrativo
-- [ ] Sincronização manual da API
-- [ ] Gerenciamento das temporadas
-- [ ] Logs de sincronização
+## Parcialmente concluido
 
----
+- [ ] Administracao: existem endpoints administrativos no backend, mas ainda nao ha painel administrativo completo no frontend.
+- [ ] Temporadas: a modelagem suporta temporadas e temporada ativa, mas ainda nao ha experiencia completa para navegacao historica de temporadas.
+- [ ] Jogadores: a sincronizacao e a modelagem existem, mas jogadores ainda nao compoem um fluxo de palpite funcional.
+- [ ] MVP: a modelagem possui campos de MVP, mas criacao, edicao e pontuacao por MVP nao estao implementadas no fluxo atual.
+- [ ] Logs de sincronizacao: o model `SyncLog` existe, mas ainda nao e usado de forma efetiva pelos servicos.
+- [ ] Estatisticas avancadas: existem estatisticas do usuario, mas ainda ha espaco para metricas mais detalhadas, comparacoes e historico.
 
-### Infraestrutura
+## Pendente
 
-- [ ] Deploy Front-end (Vercel)
-- [ ] Deploy Back-end (Railway)
-- [ ] PostgreSQL (Neon)
-- [ ] Swagger
-- [ ] Variáveis de ambiente
+### Administracao
 
----
+- [ ] Painel administrativo no frontend.
+- [ ] Controle visual de sincronizacoes.
+- [ ] Visualizacao de falhas de sincronizacao.
+- [ ] CRUD administrativo de ligas, temporadas, times e partidas, se necessario.
+- [ ] Uso efetivo de `SyncLog`.
 
-# Versão 1.1
+### Experiencia do usuario
 
-Melhorias na experiência do usuário.
+- [ ] Perfil publico de participantes.
+- [ ] Avatar personalizado.
+- [ ] Compartilhamento de ranking.
+- [ ] Melhor sequencia de acertos.
+- [ ] Conquistas e medalhas.
+- [ ] Notificacoes.
 
-## Funcionalidades
+### Competicoes e temporadas
 
-- [ ] Avatar personalizado
-- [ ] Histórico de palpites
-- [ ] Estatísticas do usuário
-- [ ] Melhor sequência de acertos
-- [ ] Perfil público
+- [ ] Historico completo de temporadas anteriores.
+- [ ] Historico de campeoes.
+- [ ] Suporte de produto para multiplas competicoes.
+- [ ] Bundesliga.
+- [ ] La Liga.
+- [ ] Serie A.
+- [ ] Brasileirao.
+- [ ] Copa do Mundo.
+- [ ] Copa Libertadores.
 
----
+### Social
 
-# Versão 2.0
+- [ ] Ligas privadas.
+- [ ] Convites por codigo.
+- [ ] Ranking por liga.
+- [ ] Comentarios nas partidas.
 
-Expansão das competições.
+### Autenticacao e plataforma
 
-## Funcionalidades
+- [ ] Login com Google.
+- [ ] Login com GitHub.
+- [ ] Login com Discord.
+- [ ] Internacionalizacao.
+- [ ] Aplicativo mobile.
 
-- [ ] Bundesliga
-- [ ] La Liga
-- [ ] Serie A
-- [ ] Brasileirão
-- [ ] Copa do Mundo
-- [ ] Copa Libertadores
+## Itens que nao fazem mais sentido como descritos originalmente
 
----
+- Deploy em Vercel e Railway nao representa a topologia atual documentada, que usa Docker, TrueNAS e Cloudflare Tunnel.
+- API-Football nao representa a integracao atual; o codigo usa APIs da ESPN.
+- MVP obrigatorio no palpite nao representa o contrato atual, que aceita apenas placar.
+- "Desenvolvimento sera iniciado" nao representa mais o estado do projeto, pois a aplicacao ja possui frontend, backend, banco, autenticacao e fluxos principais implementados.
 
-# Versão 2.5
+## Proximos passos recomendados
 
-Experiência social.
-
-## Funcionalidades
-
-- [ ] Ligas privadas
-- [ ] Convites
-- [ ] Compartilhamento do ranking
-- [ ] Perfil dos participantes
-
----
-
-# Versão 3.0
-
-Recursos avançados.
-
-## Funcionalidades
-
-- [ ] Dashboard administrativo
-- [ ] Estatísticas avançadas
-- [ ] Histórico completo das temporadas
-- [ ] Histórico de campeões
-- [ ] Sistema de notificações
-- [ ] Aplicativo Mobile
-
----
-
-# Ideias Futuras
-
-As funcionalidades abaixo fazem parte do planejamento de longo prazo e poderão ser implementadas conforme a evolução do projeto.
-
-- [ ] Sistema de conquistas
-- [ ] Medalhas por desempenho
-- [ ] Ranking global
-- [ ] Ranking por liga
-- [ ] Comentários nas partidas
-- [ ] Integração com Google OAuth
-- [ ] Login com GitHub
-- [ ] Login com Discord
-- [ ] Modo escuro
-- [ ] Internacionalização (i18n)
-
----
-
-# Status do Projeto
-
-| Documento | Status |
-|------------|--------|
-| Visão Geral | ✅ |
-| Requisitos Funcionais | ✅ |
-| Regras de Negócio | ✅ |
-| Modelagem do Banco | ✅ |
-| Endpoints | ✅ |
-| Arquitetura | ✅ |
-| Roadmap | ✅ |
-
----
-
-# Próximos Passos
-
-Com a documentação concluída, o desenvolvimento será iniciado na seguinte ordem:
-
-1. Configuração do ambiente.
-2. Criação da API utilizando NestJS.
-3. Configuração do Prisma ORM.
-4. Integração com PostgreSQL (Neon).
-5. Implementação da autenticação.
-6. Sincronização da API-Football.
-7. Desenvolvimento do Front-end.
-8. Deploy da aplicação.
+1. Criar painel administrativo minimo para acompanhar sincronizacoes e executar rotinas com mais seguranca operacional.
+2. Persistir logs reais no model `SyncLog`.
+3. Melhorar a atualizacao visual de paginas sensiveis a horario, como "Meus Palpites", no momento do kickoff.
+4. Definir se MVP sera removido do modelo ou implementado como funcionalidade real.
+5. Evoluir historico de temporadas antes de adicionar multiplas competicoes.
+6. Ampliar testes de integracao e fluxos end-to-end do frontend.
