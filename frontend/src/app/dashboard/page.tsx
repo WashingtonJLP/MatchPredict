@@ -172,7 +172,7 @@ export default function DashboardPage() {
           <SectionTitle
             eyebrow="Ranking"
             title="Classificação geral"
-            description="Tabela responsiva com pontos, acertos e erros da temporada ativa."
+            description="Classificação dos participantes com base na pontuação da temporada atual."
           />
 
           {standingsQuery.isLoading ? (
