@@ -1,79 +1,79 @@
 # Roadmap
 
-Este documento apresenta o estado atual do MatchPredict e a direcao de evolucao do projeto. A classificacao abaixo considera o que esta implementado no codigo atual.
+Este documento apresenta o estado atual do MatchPredict e a direção de evolução do projeto. A classificação abaixo considera o que está implementado no código atual.
 
 ## Status geral
 
-O MatchPredict ja possui um fluxo funcional completo para usuarios autenticados criarem palpites de placar, acompanharem partidas, consultarem seus palpites, verem ranking, estatisticas e transparencia. A integracao esportiva atual usa APIs da ESPN, e o deploy esta orientado a Docker, TrueNAS e Cloudflare Tunnel.
+O MatchPredict já possui um fluxo funcional completo para usuários autenticados criarem palpites de placar, acompanharem partidas, consultarem seus palpites, verem ranking, estatísticas e transparência. A integração esportiva atual usa APIs da ESPN, e o deploy está orientado a Docker, TrueNAS e Cloudflare Tunnel.
 
-## Concluido
+## Concluído
 
-### Usuarios e autenticacao
+### Usuários e autenticação
 
-- [x] Cadastro de usuario.
+- [x] Cadastro de usuário.
 - [x] Login com JWT.
-- [x] Protecao de rotas autenticadas.
-- [x] Recuperacao de senha por e-mail.
-- [x] Redefinicao de senha com token temporario.
-- [x] Perfil do usuario autenticado.
-- [x] Atualizacao de dados do perfil.
-- [x] Politica de senha forte.
+- [x] Proteção de rotas autenticadas.
+- [x] Recuperação de senha por e-mail.
+- [x] Redefinição de senha com token temporário.
+- [x] Perfil do usuário autenticado.
+- [x] Atualização de dados do perfil.
+- [x] Política de senha forte.
 
 ### Partidas e dados esportivos
 
 - [x] Modelagem de liga, temporada, times, jogadores e partidas.
 - [x] Foco inicial na Premier League.
-- [x] Sincronizacao administrativa de liga.
-- [x] Sincronizacao administrativa de times.
-- [x] Sincronizacao administrativa de partidas.
-- [x] Sincronizacao administrativa de jogadores.
-- [x] Sincronizacao administrativa de resultados.
+- [x] Sincronização administrativa de liga.
+- [x] Sincronização administrativa de times.
+- [x] Sincronização administrativa de partidas.
+- [x] Sincronização administrativa de jogadores.
+- [x] Sincronização administrativa de resultados.
 - [x] Listagem autenticada de partidas.
 - [x] Filtros por status, rodada, time e intervalo de datas.
-- [x] Paginacao da listagem de partidas.
-- [x] Status de fixtures e placar final quando disponivel.
+- [x] Paginação da listagem de partidas.
+- [x] Status de fixtures e placar final quando disponível.
 
 ### Palpites
 
-- [x] Criacao de palpite por placar.
-- [x] Edicao de palpite proprio antes do bloqueio.
-- [x] Exclusao de palpite proprio antes do bloqueio.
-- [x] Um palpite por usuario por partida.
+- [x] Criação de palpite por placar.
+- [x] Edição de palpite próprio antes do bloqueio.
+- [x] Exclusão de palpite próprio antes do bloqueio.
+- [x] Um palpite por usuário por partida.
 - [x] Bloqueio por kickoff.
 - [x] Bloqueio por status `LIVE`.
 - [x] Bloqueio por status `FT`.
-- [x] Pagina "Meus Palpites" exibindo apenas palpites ja feitos pelo usuario.
-- [x] Separacao visual entre palpites ativos e historico.
-- [x] Filtro de historico por rodada no frontend.
+- [x] Página "Meus Palpites" exibindo apenas palpites já feitos pelo usuário.
+- [x] Separação visual entre palpites ativos e histórico.
+- [x] Filtro de histórico por rodada no frontend.
 
-### Transparencia
+### Transparência
 
 - [x] Consulta de palpites por partida.
-- [x] Ocultacao de palpites de outros usuarios antes do kickoff.
-- [x] Liberacao de palpites apos kickoff ou durante partida ao vivo.
-- [x] Exibicao de resultado final quando a partida esta encerrada.
+- [x] Ocultação de palpites de outros usuários antes do kickoff.
+- [x] Liberação de palpites após kickoff ou durante partida ao vivo.
+- [x] Exibição de resultado final quando a partida está encerrada.
 
-### Pontuacao e ranking
+### Pontuação e ranking
 
-- [x] Calculo de placar exato.
-- [x] Calculo de acerto de vencedor ou empate.
-- [x] Calculo de erro do resultado.
+- [x] Cálculo de placar exato.
+- [x] Cálculo de acerto de vencedor ou empate.
+- [x] Cálculo de erro do resultado.
 - [x] Processamento de fixtures encerradas.
-- [x] Marcacao de fixture processada com `processedAt`.
-- [x] Atualizacao de standings.
+- [x] Marcação de fixture processada com `processedAt`.
+- [x] Atualização de standings.
 - [x] Ranking geral da temporada ativa.
-- [x] Ranking do usuario autenticado.
-- [x] Criterios de desempate por pontos, placares exatos, vencedores corretos, erros e data de criacao.
+- [x] Ranking do usuário autenticado.
+- [x] Critérios de desempate por pontos, placares exatos, vencedores corretos, erros e data de criação.
 
-### Estatisticas
+### Estatísticas
 
-- [x] Estatisticas do usuario autenticado.
+- [x] Estatísticas do usuário autenticado.
 - [x] Total de palpites.
 - [x] Pontos totais.
-- [x] Media de pontos.
+- [x] Média de pontos.
 - [x] Acertos de vencedor.
 - [x] Placares exatos.
-- [x] Posicao atual.
+- [x] Posição atual.
 - [x] Melhor e pior rodada com base em palpites processados.
 
 ### Infraestrutura e desenvolvimento
@@ -84,80 +84,80 @@ O MatchPredict ja possui um fluxo funcional completo para usuarios autenticados 
 - [x] PostgreSQL.
 - [x] Neon como banco hospedado.
 - [x] Swagger em ambiente de desenvolvimento.
-- [x] Variaveis de ambiente.
+- [x] Variáveis de ambiente.
 - [x] Dockerfiles para frontend e backend.
 - [x] Docker Compose com frontend, backend e Cloudflare Tunnel.
 - [x] Deploy orientado a TrueNAS e Cloudflare Tunnel.
 - [x] Testes automatizados no backend.
 - [x] Lint e build configurados no frontend.
 
-## Parcialmente concluido
+## Parcialmente concluído
 
-- [ ] Administracao: existem endpoints administrativos no backend, mas ainda nao ha painel administrativo completo no frontend.
-- [ ] Temporadas: a modelagem suporta temporadas e temporada ativa, mas ainda nao ha experiencia completa para navegacao historica de temporadas.
-- [ ] Jogadores: a sincronizacao e a modelagem existem, mas jogadores ainda nao compoem um fluxo de palpite funcional.
-- [ ] MVP: a modelagem possui campos de MVP, mas criacao, edicao e pontuacao por MVP nao estao implementadas no fluxo atual.
-- [ ] Logs de sincronizacao: o model `SyncLog` existe, mas ainda nao e usado de forma efetiva pelos servicos.
-- [ ] Estatisticas avancadas: existem estatisticas do usuario, mas ainda ha espaco para metricas mais detalhadas, comparacoes e historico.
+- [ ] Administração: existem endpoints administrativos no backend, mas ainda não há painel administrativo completo no frontend.
+- [ ] Temporadas: a modelagem suporta temporadas e temporada ativa, mas ainda não há experiência completa para navegação histórica de temporadas.
+- [ ] Jogadores: a sincronização e a modelagem existem, mas jogadores ainda não compõem um fluxo de palpite funcional.
+- [ ] MVP: a modelagem possui campos de MVP, mas criação, edição e pontuação por MVP não estão implementadas no fluxo atual.
+- [ ] Logs de sincronização: o model `SyncLog` existe, mas ainda não é usado de forma efetiva pelos serviços.
+- [ ] Estatísticas avançadas: existem estatísticas do usuário, mas ainda há espaço para métricas mais detalhadas, comparações e histórico.
 
 ## Pendente
 
-### Administracao
+### Administração
 
 - [ ] Painel administrativo no frontend.
-- [ ] Controle visual de sincronizacoes.
-- [ ] Visualizacao de falhas de sincronizacao.
-- [ ] CRUD administrativo de ligas, temporadas, times e partidas, se necessario.
+- [ ] Controle visual de sincronizações.
+- [ ] Visualização de falhas de sincronização.
+- [ ] CRUD administrativo de ligas, temporadas, times e partidas, se necessário.
 - [ ] Uso efetivo de `SyncLog`.
 
-### Experiencia do usuario
+### Experiência do usuário
 
-- [ ] Perfil publico de participantes.
+- [ ] Perfil público de participantes.
 - [ ] Avatar personalizado.
 - [ ] Compartilhamento de ranking.
-- [ ] Melhor sequencia de acertos.
+- [ ] Melhor sequência de acertos.
 - [ ] Conquistas e medalhas.
 - [ ] Notificacoes.
 
-### Competicoes e temporadas
+### Competições e temporadas
 
-- [ ] Historico completo de temporadas anteriores.
-- [ ] Historico de campeoes.
-- [ ] Suporte de produto para multiplas competicoes.
+- [ ] Histórico completo de temporadas anteriores.
+- [ ] Histórico de campeões.
+- [ ] Suporte de produto para múltiplas competições.
 - [ ] Bundesliga.
 - [ ] La Liga.
 - [ ] Serie A.
-- [ ] Brasileirao.
+- [ ] Brasileirão.
 - [ ] Copa do Mundo.
 - [ ] Copa Libertadores.
 
 ### Social
 
 - [ ] Ligas privadas.
-- [ ] Convites por codigo.
+- [ ] Convites por código.
 - [ ] Ranking por liga.
-- [ ] Comentarios nas partidas.
+- [ ] Comentários nas partidas.
 
-### Autenticacao e plataforma
+### Autenticação e plataforma
 
 - [ ] Login com Google.
 - [ ] Login com GitHub.
 - [ ] Login com Discord.
-- [ ] Internacionalizacao.
+- [ ] Internacionalização.
 - [ ] Aplicativo mobile.
 
-## Itens que nao fazem mais sentido como descritos originalmente
+## Itens que não fazem mais sentido como descritos originalmente
 
-- Deploy em Vercel e Railway nao representa a topologia atual documentada, que usa Docker, TrueNAS e Cloudflare Tunnel.
-- API-Football nao representa a integracao atual; o codigo usa APIs da ESPN.
-- MVP obrigatorio no palpite nao representa o contrato atual, que aceita apenas placar.
-- "Desenvolvimento sera iniciado" nao representa mais o estado do projeto, pois a aplicacao ja possui frontend, backend, banco, autenticacao e fluxos principais implementados.
+- Deploy em Vercel e Railway não representa a topologia atual documentada, que usa Docker, TrueNAS e Cloudflare Tunnel.
+- API-Football não representa a integração atual; o código usa APIs da ESPN.
+- MVP obrigatório no palpite não representa o contrato atual, que aceita apenas placar.
+- "Desenvolvimento será iniciado" não representa mais o estado do projeto, pois a aplicação já possui frontend, backend, banco, autenticação e fluxos principais implementados.
 
-## Proximos passos recomendados
+## Próximos passos recomendados
 
-1. Criar painel administrativo minimo para acompanhar sincronizacoes e executar rotinas com mais seguranca operacional.
+1. Criar painel administrativo mínimo para acompanhar sincronizações e executar rotinas com mais segurança operacional.
 2. Persistir logs reais no model `SyncLog`.
-3. Melhorar a atualizacao visual de paginas sensiveis a horario, como "Meus Palpites", no momento do kickoff.
-4. Definir se MVP sera removido do modelo ou implementado como funcionalidade real.
-5. Evoluir historico de temporadas antes de adicionar multiplas competicoes.
-6. Ampliar testes de integracao e fluxos end-to-end do frontend.
+3. Melhorar a atualização visual de páginas sensíveis a horário, como "Meus Palpites", no momento do kickoff.
+4. Definir se MVP será removido do modelo ou implementado como funcionalidade real.
+5. Evoluir histórico de temporadas antes de adicionar múltiplas competições.
+6. Ampliar testes de integração e fluxos end-to-end do frontend.

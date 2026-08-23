@@ -35,7 +35,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN03 - Recuperação de Senha
+## RN03 - Recuperação de senha
 
 - A solicitação de recuperação recebe apenas o e-mail.
 - A resposta da solicitação é sempre genérica, independentemente de o e-mail existir ou não.
@@ -63,7 +63,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN05 - Competições e Temporadas
+## RN05 - Competições e temporadas
 
 - O sistema está configurado para operar inicialmente com a Premier League.
 - A liga e a temporada ativa são sincronizadas a partir das APIs da ESPN.
@@ -73,7 +73,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN06 - Times, Jogadores e Partidas
+## RN06 - Times, jogadores e partidas
 
 - Times, jogadores, partidas e resultados são sincronizados a partir das APIs da ESPN.
 - Times são identificados localmente por UUID e externamente por `apiTeamId`.
@@ -92,7 +92,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN07 - Listagem de Partidas
+## RN07 - Listagem de partidas
 
 - Apenas usuários autenticados podem listar partidas.
 - A listagem retorna partidas da base local.
@@ -111,7 +111,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN08 - Registro de Palpites
+## RN08 - Registro de palpites
 
 - Apenas usuários autenticados podem registrar palpites.
 - Cada usuário pode registrar no máximo um palpite por partida.
@@ -129,7 +129,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN09 - Edição e Exclusão de Palpites
+## RN09 - Edição e exclusão de palpites
 
 - Apenas o dono do palpite pode editá-lo ou excluí-lo.
 - Um palpite só pode ser editado enquanto a partida estiver aberta para palpite.
@@ -141,7 +141,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN10 - Fechamento dos Palpites
+## RN10 - Fechamento dos palpites
 
 - O fechamento dos palpites é calculado por partida.
 - Uma partida está fechada para palpite quando qualquer condição abaixo é verdadeira:
@@ -164,7 +164,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN12 - Transparência de Palpites
+## RN12 - Transparência de palpites
 
 - A transparência é consultada por fixture.
 - Antes do fechamento dos palpites, a consulta retorna somente o palpite do usuário autenticado, se existir.
@@ -190,7 +190,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN14 - Processamento de Resultados
+## RN14 - Processamento de resultados
 
 - Uma fixture só pode ser processada se existir.
 - Uma fixture só pode ser processada se estiver com status `FT`.
@@ -224,7 +224,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN16 - Estatísticas do Usuário
+## RN16 - Estatísticas do usuário
 
 - As estatísticas são calculadas para o usuário autenticado na temporada ativa.
 - O total de palpites considera palpites do usuário na temporada ativa.
@@ -252,7 +252,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN18 - Integridade e Segurança
+## RN18 - Integridade e segurança
 
 - A API usa validação global com `whitelist`, transformação de tipos e rejeição de campos não permitidos.
 - IDs recebidos em parâmetros de rota de palpites são validados como UUID v4.
@@ -265,7 +265,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN19 - Limitações Atuais
+## RN19 - Limitações atuais
 
 - Não há endpoint público específico para listar ligas, temporadas, times ou jogadores.
 - Não há painel administrativo no frontend.

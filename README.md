@@ -1,19 +1,19 @@
 # MatchPredict
 
-MatchPredict e uma plataforma full-stack de palpites de futebol focada na Premier League. Usuarios autenticados acompanham partidas sincronizadas, registram palpites de placar antes do kickoff e acompanham ranking, estatisticas, transparencia e historico dos seus palpites.
+MatchPredict é uma plataforma full-stack de palpites de futebol focada na Premier League. Usuários autenticados acompanham partidas sincronizadas, registram palpites de placar antes do kickoff e acompanham ranking, estatísticas, transparência e histórico dos seus palpites.
 
 ![MatchPredict](docs/images/MatchPredict.png)
 
 ## Destaques
 
-- Cadastro, login JWT e recuperacao de senha por e-mail.
-- Listagem de partidas com filtros, paginacao, status, rodada, times e placar quando disponivel.
-- Criacao, edicao e exclusao de palpites antes do bloqueio por kickoff/status.
-- Pagina "Meus Palpites" exibindo exclusivamente palpites ja feitos pelo usuario, separados entre ativos e historico por rodada.
-- Transparencia de palpites por partida, respeitando ocultacao antes do kickoff.
-- Pontuacao automatica: 3 pontos por placar exato, 1 por vencedor/empate correto e 0 por erro.
-- Ranking geral, ranking do usuario autenticado e estatisticas individuais.
-- Sincronizacao administrativa de liga, times, jogadores, partidas e resultados via ESPN.
+- Cadastro, login JWT e recuperação de senha por e-mail.
+- Listagem de partidas com filtros, paginação, status, rodada, times e placar quando disponível.
+- Criação, edição e exclusão de palpites antes do bloqueio por kickoff/status.
+- Página "Meus Palpites" exibindo exclusivamente palpites já feitos pelo usuário, separados entre ativos e histórico por rodada.
+- Transparência de palpites por partida, respeitando ocultação antes do kickoff.
+- Pontuação automática: 3 pontos por placar exato, 1 por vencedor/empate correto e 0 por erro.
+- Ranking geral, ranking do usuário autenticado e estatísticas individuais.
+- Sincronização administrativa de liga, times, jogadores, partidas e resultados via ESPN.
 - Scheduler backend para atualizar resultados e processar fixtures encerradas.
 - Deploy com Docker Compose, backend, frontend e Cloudflare Tunnel.
 
@@ -65,39 +65,39 @@ Usuario
 
 API NestJS
   -> ESPN APIs para dados esportivos
-  -> SMTP para recuperacao de senha
-  -> Scheduler para resultados e processamento de pontuacao
+  -> SMTP para recuperação de senha
+  -> Scheduler para resultados e processamento de pontuação
 ```
 
-O frontend e separado do backend e consome a API REST por services HTTP. O backend concentra autenticacao, validacao, regras de negocio, sincronizacao esportiva, processamento de resultados e persistencia.
+O frontend é separado do backend e consome a API REST por services HTTP. O backend concentra autenticação, validação, regras de negócio, sincronização esportiva, processamento de resultados e persistência.
 
-## Principais modulos
+## Principais módulos
 
-- `Auth`: cadastro, login, recuperacao e redefinicao de senha.
-- `Users`: perfil e estatisticas do usuario autenticado.
-- `Football`: listagem e sincronizacao de dados esportivos.
-- `Predictions`: criacao, edicao, exclusao, transparencia e processamento de palpites.
-- `Standings`: ranking geral e posicao do usuario.
-- `Email`: envio SMTP de recuperacao de senha.
+- `Auth`: cadastro, login, recuperação e redefinição de senha.
+- `Users`: perfil e estatísticas do usuário autenticado.
+- `Football`: listagem e sincronização de dados esportivos.
+- `Predictions`: criação, edição, exclusão, transparência e processamento de palpites.
+- `Standings`: ranking geral e posição do usuário.
+- `Email`: envio SMTP de recuperação de senha.
 - `Prisma`: acesso ao banco PostgreSQL.
 
-## Documentacao
+## Documentação
 
-- [Visao geral](docs/01-visao-geral.md)
+- [Visão geral](docs/01-visao-geral.md)
 - [Requisitos funcionais](docs/02-requisitos-funcionais.md)
-- [Regras de negocio](docs/03-regras-de-negocio.md)
+- [Regras de negócio](docs/03-regras-de-negocio.md)
 - [Modelagem do banco](docs/04-modelagem-do-banco.md)
 - [Endpoints da API](docs/05-endpoints.md)
 - [Arquitetura](docs/06-arquitetura.md)
 - [Roadmap](docs/07-roadmap.md)
 
-## Execucao local
+## Execução local
 
-### Pre-requisitos
+### Pré-requisitos
 
 - Node.js 20+
 - npm
-- PostgreSQL acessivel localmente ou via Neon
+- PostgreSQL acessível localmente ou via Neon
 
 ### Backend
 
@@ -109,9 +109,9 @@ npx prisma generate
 npm run start:dev
 ```
 
-Configure `backend/.env` com valores reais no ambiente local. Nao versionar secrets.
+Configure `backend/.env` com valores reais no ambiente local. Não versione secrets.
 
-Variaveis principais:
+Variáveis principais:
 
 ```env
 PORT=3000
@@ -140,7 +140,7 @@ npm install
 npm run dev
 ```
 
-Variavel publica usada pelo frontend:
+Variável pública usada pelo frontend:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
@@ -148,13 +148,13 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 
 ## Docker
 
-O repositorio possui `compose.yaml` com tres servicos principais:
+O repositório possui `compose.yaml` com três serviços principais:
 
 - `backend`: API NestJS exposta localmente em `127.0.0.1:3001` no host.
-- `frontend`: aplicacao Next.js exposta em `3002` no host.
-- `cloudflared`: tunnel Cloudflare usando configuracao local em `./cloudflared`.
+- `frontend`: aplicação Next.js exposta em `3002` no host.
+- `cloudflared`: túnel Cloudflare usando configuração local em `./cloudflared`.
 
-Exemplo de execucao:
+Exemplo de execução:
 
 ```bash
 docker compose up --build
@@ -162,7 +162,7 @@ docker compose up --build
 
 Antes de usar Docker, configure os arquivos de ambiente locais esperados pelo compose e mantenha secrets fora do Git.
 
-## Scripts uteis
+## Scripts úteis
 
 Backend:
 
@@ -182,23 +182,23 @@ npm run lint
 npm run build
 ```
 
-## Seguranca
+## Segurança
 
-- JWT e usado para proteger rotas autenticadas.
-- Rotas administrativas exigem usuario com papel `ADMIN`.
-- DTOs usam validacao com whitelist e bloqueio de campos nao permitidos.
-- Recuperacao de senha armazena apenas hash do token.
-- Exemplos de ambiente neste README usam placeholders e nao devem conter credenciais reais.
+- JWT é usado para proteger rotas autenticadas.
+- Rotas administrativas exigem usuário com papel `ADMIN`.
+- DTOs usam validação com whitelist e bloqueio de campos não permitidos.
+- Recuperação de senha armazena apenas hash do token.
+- Exemplos de ambiente neste README usam placeholders e não devem conter credenciais reais.
 - Arquivos `.env` locais devem permanecer fora dos commits.
 
-## Estado atual e limitacoes
+## Estado atual e limitações
 
-- A pontuacao atual considera apenas placar previsto.
-- MVP existe na modelagem, mas nao esta implementado no fluxo funcional de palpite ou pontuacao.
-- A modelagem suporta ligas e temporadas, mas a experiencia atual e focada na temporada ativa da Premier League.
-- Existem endpoints administrativos no backend, mas ainda nao ha painel administrativo completo no frontend.
-- `SyncLog` existe no schema, mas ainda nao e usado para registrar sincronizacoes reais.
+- A pontuação atual considera apenas placar previsto.
+- MVP existe na modelagem, mas não está implementado no fluxo funcional de palpite ou pontuação.
+- A modelagem suporta ligas e temporadas, mas a experiência atual é focada na temporada ativa da Premier League.
+- Existem endpoints administrativos no backend, mas ainda não há painel administrativo completo no frontend.
+- `SyncLog` existe no schema, mas ainda não é usado para registrar sincronizações reais.
 
-## Licenca
+## Licença
 
-Projeto de portfolio. Defina uma licenca formal antes de distribuir ou reutilizar em outro contexto.
+Projeto de portfólio. Defina uma licença formal antes de distribuir ou reutilizar em outro contexto.

@@ -18,7 +18,7 @@ Os dados esportivos são sincronizados a partir das APIs da ESPN e persistidos l
 
 ---
 
-## Datasource e Client
+## Datasource e client
 
 O Prisma usa:
 
@@ -73,7 +73,7 @@ A modelagem atual contém:
 
 ---
 
-## Diagrama Entidade-Relacionamento
+## Diagrama entidade-relacionamento
 
 O repositório possui um diagrama em:
 
@@ -89,7 +89,7 @@ Esse diagrama deve ser revisado sempre que a modelagem mudar, pois o schema atua
 
 Armazena usuários, credenciais, papel de acesso e dados de recuperação de senha.
 
-### Campos Principais
+### Campos principais
 
 | Campo | Tipo | Observações |
 | --- | --- | --- |
@@ -122,7 +122,7 @@ Tabela física: `users`.
 
 Representa a liga sincronizada.
 
-### Campos Principais
+### Campos principais
 
 | Campo | Tipo | Observações |
 | --- | --- | --- |
@@ -151,7 +151,7 @@ Tabela física: `leagues`.
 
 Representa uma temporada de uma liga.
 
-### Campos Principais
+### Campos principais
 
 | Campo | Tipo | Observações |
 | --- | --- | --- |
@@ -184,7 +184,7 @@ Tabela física: `seasons`.
 
 Armazena times sincronizados.
 
-### Campos Principais
+### Campos principais
 
 | Campo | Tipo | Observações |
 | --- | --- | --- |
@@ -214,7 +214,7 @@ Tabela física: `teams`.
 
 Representa uma partida sincronizada.
 
-### Campos Principais
+### Campos principais
 
 | Campo | Tipo | Observações |
 | --- | --- | --- |
@@ -256,7 +256,7 @@ Tabela física: `fixtures`.
 
 Representa o palpite de um usuário para uma partida.
 
-### Campos Principais
+### Campos principais
 
 | Campo | Tipo | Observações |
 | --- | --- | --- |
@@ -298,7 +298,7 @@ Observação: os campos de MVP estão modelados, mas o fluxo atual de criação/
 
 Armazena a classificação agregada de um usuário em uma temporada.
 
-### Campos Principais
+### Campos principais
 
 | Campo | Tipo | Observações |
 | --- | --- | --- |
@@ -336,7 +336,7 @@ Observação: `position` existe no schema, mas a posição exibida pelo ranking 
 
 Modelo reservado para histórico de sincronizações.
 
-### Campos Principais
+### Campos principais
 
 | Campo | Tipo | Observações |
 | --- | --- | --- |
@@ -358,7 +358,7 @@ Observação: o modelo existe no schema, mas não há fluxo atual no backend gra
 
 Armazena jogadores sincronizados dos times cadastrados.
 
-### Campos Principais
+### Campos principais
 
 | Campo | Tipo | Observações |
 | --- | --- | --- |
@@ -386,7 +386,7 @@ Tabela física: `players`.
 
 ---
 
-## Relações Principais
+## Relações principais
 
 - `League 1:N Season`
 - `Season 1:N Fixture`
@@ -401,7 +401,7 @@ Tabela física: `players`.
 
 ---
 
-## Regras de Integridade Relevantes
+## Regras de integridade relevantes
 
 - E-mail de usuário é único.
 - Token de recuperação de senha é único quando preenchido.

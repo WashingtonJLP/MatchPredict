@@ -110,7 +110,7 @@ Acesso: público.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `409 Conflict`: e-mail já cadastrado.
 - `400 Bad Request`: dados inválidos, conforme validação global.
@@ -144,7 +144,7 @@ Acesso: público.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: e-mail ou senha inválidos.
 - `400 Bad Request`: dados inválidos.
@@ -176,7 +176,7 @@ Acesso: público.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `400 Bad Request`: dados inválidos.
 - `429 Too Many Requests`: limite de requisições excedido.
@@ -213,7 +213,7 @@ Acesso: público.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `400 Bad Request`: senhas diferentes, token inválido ou token expirado.
 - `400 Bad Request`: dados inválidos.
@@ -242,7 +242,7 @@ Acesso: autenticado.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente, inválido ou usuário não encontrado.
 
@@ -283,7 +283,7 @@ Todos os campos são opcionais. Para alterar senha, `currentPassword` é obrigat
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `400 Bad Request`: `newPassword` enviado sem `currentPassword`.
 - `401 Unauthorized`: JWT ausente/inválido ou senha atual incorreta.
@@ -320,7 +320,7 @@ Acesso: autenticado.
 
 `bestRound` e `worstRound` podem ser `null`.
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `404 Not Found`: temporada ativa não encontrada.
@@ -390,7 +390,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `400 Bad Request`: query inválida.
@@ -429,7 +429,7 @@ Acesso: ADMIN.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `403 Forbidden`: usuário não é ADMIN.
@@ -453,7 +453,7 @@ Acesso: ADMIN.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `403 Forbidden`: usuário não é ADMIN.
@@ -477,7 +477,7 @@ Acesso: ADMIN.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `403 Forbidden`: usuário não é ADMIN.
@@ -499,7 +499,7 @@ Acesso: ADMIN.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `403 Forbidden`: usuário não é ADMIN.
@@ -522,7 +522,7 @@ Acesso: ADMIN.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `403 Forbidden`: usuário não é ADMIN.
@@ -599,7 +599,7 @@ Retorna o palpite criado com a fixture e os times relacionados.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `404 Not Found`: partida não encontrada.
@@ -656,7 +656,7 @@ Ordenação: `createdAt` descendente.
 ]
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 
@@ -668,7 +668,7 @@ Acesso: autenticado.
 
 Antes do fechamento dos palpites, retorna apenas o palpite do usuário autenticado, se existir. Após o fechamento, retorna os palpites de todos os usuários para a fixture.
 
-### Parâmetros De Rota
+### Parâmetros de rota
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
@@ -718,7 +718,7 @@ Antes do fechamento dos palpites, retorna apenas o palpite do usuário autentica
 
 `finalResult` será `null` se a fixture não estiver `FT` ou ainda não tiver placar final.
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `400 Bad Request`: `fixtureId` não é UUID v4.
@@ -732,7 +732,7 @@ Acesso: autenticado.
 
 Antes do fechamento dos palpites, retorna apenas o palpite do usuário autenticado, se existir. Após o fechamento, retorna todos os palpites da fixture.
 
-### Parâmetros De Rota
+### Parâmetros de rota
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
@@ -759,7 +759,7 @@ Antes do fechamento dos palpites, retorna apenas o palpite do usuário autentica
 
 Ordenação: `createdAt` descendente.
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `400 Bad Request`: `fixtureId` não é UUID v4.
@@ -771,7 +771,7 @@ Atualiza um palpite próprio.
 
 Acesso: autenticado.
 
-### Parâmetros De Rota
+### Parâmetros de rota
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
@@ -798,7 +798,7 @@ Acesso: autenticado.
 
 Retorna o palpite atualizado com a fixture e os times relacionados.
 
-### Erros Relevantes
+### Erros relevantes
 
 - `400 Bad Request`: nenhum campo atualizável enviado ou `id` inválido.
 - `401 Unauthorized`: JWT ausente ou inválido.
@@ -813,7 +813,7 @@ Exclui um palpite próprio.
 
 Acesso: autenticado.
 
-### Parâmetros De Rota
+### Parâmetros de rota
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
@@ -832,7 +832,7 @@ Acesso: autenticado.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `400 Bad Request`: `id` não é UUID v4.
 - `401 Unauthorized`: JWT ausente ou inválido.
@@ -846,7 +846,7 @@ Calcula a pontuação de um palpite específico.
 
 Acesso: ADMIN.
 
-### Parâmetros De Rota
+### Parâmetros de rota
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
@@ -856,7 +856,7 @@ Acesso: ADMIN.
 
 Retorna o palpite atualizado com a fixture e os times relacionados.
 
-### Erros Relevantes
+### Erros relevantes
 
 - `400 Bad Request`: `predictionId` não é UUID v4.
 - `401 Unauthorized`: JWT ausente ou inválido.
@@ -869,7 +869,7 @@ Processa todos os palpites de uma partida finalizada e atualiza standings dos us
 
 Acesso: ADMIN.
 
-### Parâmetros De Rota
+### Parâmetros de rota
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
@@ -893,7 +893,7 @@ Acesso: ADMIN.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `400 Bad Request`: `fixtureId` não é UUID v4, partida não finalizada ou sem placar final.
 - `401 Unauthorized`: JWT ausente ou inválido.
@@ -936,7 +936,7 @@ Ordenação real do ranking:
 4. `wrongPredictions` ascendente.
 5. `createdAt` ascendente.
 
-### Erros Relevantes
+### Erros relevantes
 
 - `404 Not Found`: temporada ativa não encontrada.
 
@@ -958,7 +958,7 @@ Acesso: autenticado.
 }
 ```
 
-### Erros Relevantes
+### Erros relevantes
 
 - `401 Unauthorized`: JWT ausente ou inválido.
 - `404 Not Found`: temporada ativa não encontrada ou usuário não possui classificação na temporada ativa.

@@ -38,7 +38,7 @@ Backend NestJS /api/v1
 
 O frontend fica em `frontend/` e usa Next.js com App Router.
 
-### Principais Tecnologias
+### Principais tecnologias
 
 - Next.js 15
 - React 19
@@ -93,7 +93,7 @@ O frontend possui telas para:
 
 O backend fica em `backend/` e usa NestJS.
 
-### Principais Tecnologias
+### Principais tecnologias
 
 - NestJS 11
 - TypeScript
@@ -121,7 +121,7 @@ O backend fica em `backend/` e usa NestJS.
 - Fornecer ranking, estatísticas e transparência.
 - Enviar e-mails de recuperação de senha via SMTP.
 
-### Módulos Principais
+### Módulos principais
 
 - `AuthModule`: cadastro, login, recuperação e redefinição de senha.
 - `UsersModule`: perfil e estatísticas do usuário autenticado.
@@ -133,7 +133,7 @@ O backend fica em `backend/` e usa NestJS.
 
 ---
 
-## Banco de Dados
+## Banco de dados
 
 O banco usado pela aplicação é PostgreSQL, acessado via Prisma ORM.
 
@@ -159,11 +159,11 @@ O banco usado pela aplicação é PostgreSQL, acessado via Prisma ORM.
 
 ---
 
-## Integração Com Dados Esportivos
+## Integração com dados esportivos
 
 A integração esportiva atual usa APIs da ESPN.
 
-### Configurações Relevantes
+### Configurações relevantes
 
 - `ESPN_API_URL`
 - `ESPN_CORE_API_URL`
@@ -171,7 +171,7 @@ A integração esportiva atual usa APIs da ESPN.
 - `ESPN_COUNTRY`
 - `ESPN_LEAGUE_LOGO`
 
-### Fluxos De Sincronização
+### Fluxos de sincronização
 
 Administradores podem disparar:
 
@@ -192,7 +192,7 @@ O backend também possui um scheduler que executa a cada 5 minutos para:
 
 O backend envia e-mails de recuperação de senha via SMTP.
 
-### Configurações Relevantes
+### Configurações relevantes
 
 - `EMAIL_PROVIDER`
 - `SMTP_HOST`
