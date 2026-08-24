@@ -50,10 +50,7 @@ export default function TransparencyPage() {
   function handleSelectFixture(fixtureId: string) {
     setSelectedFixtureId(fixtureId);
 
-    if (
-      typeof window === "undefined" ||
-      !window.matchMedia("(max-width: 1279px)").matches
-    ) {
+    if (typeof window === "undefined") {
       return;
     }
 
