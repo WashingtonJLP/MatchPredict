@@ -32,6 +32,11 @@ export type FixturesResponse = {
   meta: FixturesMeta;
 };
 
+export type FixtureCurrentPageResponse = {
+  page: number;
+  round: number | null;
+};
+
 export type FixturesQuery = {
   status?: FixtureStatusValue;
   round?: number;

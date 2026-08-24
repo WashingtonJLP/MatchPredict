@@ -13,7 +13,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { MatchStatusBadge } from "@/features/matches/components/match-status-badge";
 import { TeamLogo } from "@/features/matches/components/team-logo";
-import { useFixtures } from "@/hooks/use-fixtures";
+import { useFixtureCurrentPage, useFixtures } from "@/hooks/use-fixtures";
 import { useFixtureTransparency } from "@/hooks/use-predictions";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
@@ -21,20 +21,40 @@ import type { MatchFixture } from "@/types/fixture";
 import type { FixtureTransparency, TransparencyPrediction } from "@/types/prediction";
 
 export default function TransparencyPage() {
-  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const [page, setPage] = useState<number | null>(null);
   const [selectedFixtureId, setSelectedFixtureId] = useState<string | null>(
     null,
   );
   const detailsRef = useRef<HTMLElement | null>(null);
+  const initialPageQuery = useFixtureCurrentPage(pageSize);
   const fixturesQuery = useFixtures({
-    page,
-    limit: 10,
+    page: page ?? 1,
+    limit: pageSize,
+  }, {
+    enabled: page !== null,
   });
   const fixtures = useMemo(
     () => fixturesQuery.data?.data ?? [],
     [fixturesQuery.data?.data],
   );
   const transparencyQuery = useFixtureTransparency(selectedFixtureId);
+  const isInitializingPage = page === null;
+
+  useEffect(() => {
+    if (page !== null) {
+      return;
+    }
+
+    if (initialPageQuery.data) {
+      setPage(initialPageQuery.data.page);
+      return;
+    }
+
+    if (initialPageQuery.isError) {
+      setPage(1);
+    }
+  }, [initialPageQuery.data, initialPageQuery.isError, page]);
 
   useEffect(() => {
     if (fixtures.length === 0) {
@@ -86,7 +106,7 @@ export default function TransparencyPage() {
               </div>
             </div>
 
-            {fixturesQuery.isLoading ? (
+            {isInitializingPage || fixturesQuery.isLoading ? (
               <LoadingCard rows={8} />
             ) : fixturesQuery.isError ? (
               <ErrorState

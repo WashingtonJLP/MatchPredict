@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { FixtureStatus, WinnerType } from '@prisma/client';
 import { of } from 'rxjs';
 
+import { activeSeasonWhere } from '../../common/prisma/query-presets';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { FootballService } from './football.service';
 
@@ -15,6 +16,7 @@ describe('FootballService', () => {
   let seasonFindFirst: jest.Mock;
   let playerFindMany: jest.Mock;
   let playerUpsert: jest.Mock;
+  let fixtureFindFirst: jest.Mock;
   let fixtureFindMany: jest.Mock;
   let fixtureUpsert: jest.Mock;
   let fixtureCount: jest.Mock;
@@ -27,6 +29,7 @@ describe('FootballService', () => {
     seasonFindFirst = jest.fn();
     playerFindMany = jest.fn();
     playerUpsert = jest.fn();
+    fixtureFindFirst = jest.fn();
     fixtureFindMany = jest.fn();
     fixtureUpsert = jest.fn();
     fixtureCount = jest.fn();
@@ -61,6 +64,7 @@ describe('FootballService', () => {
         upsert: playerUpsert,
       },
       fixture: {
+        findFirst: fixtureFindFirst,
         findMany: fixtureFindMany,
         upsert: fixtureUpsert,
         count: fixtureCount,
@@ -718,6 +722,205 @@ describe('FootballService', () => {
     });
     expect(fixtureCount).toHaveBeenCalledWith({
       where: expectedWhere,
+    });
+  });
+
+  describe('findCurrentFixturesPage', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-08-01T12:00:00.000Z'));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('usa a rodada de uma partida ao vivo como rodada atual', async () => {
+      fixtureFindFirst
+        .mockResolvedValueOnce({ round: 20 })
+        .mockResolvedValueOnce({
+          kickoff: new Date('2026-11-28T15:00:00.000Z'),
+          round: 20,
+        });
+      fixtureCount.mockResolvedValue(190);
+
+      await expect(
+        service.findCurrentFixturesPage({ limit: 10 }),
+      ).resolves.toEqual({
+        page: 20,
+        round: 20,
+      });
+
+      expect(fixtureFindFirst).toHaveBeenNthCalledWith(1, {
+        where: {
+          season: activeSeasonWhere,
+          status: FixtureStatus.LIVE,
+        },
+        orderBy: {
+          kickoff: 'asc',
+        },
+        select: {
+          round: true,
+        },
+      });
+      expect(fixtureCount).toHaveBeenCalledWith({
+        where: {
+          kickoff: {
+            lt: new Date('2026-11-28T15:00:00.000Z'),
+          },
+        },
+      });
+    });
+
+    it('usa a proxima partida futura quando nao ha partida ao vivo', async () => {
+      fixtureFindFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ round: 2 })
+        .mockResolvedValueOnce({
+          kickoff: new Date('2026-08-22T15:00:00.000Z'),
+          round: 2,
+        });
+      fixtureCount.mockResolvedValue(10);
+
+      await expect(
+        service.findCurrentFixturesPage({ limit: 10 }),
+      ).resolves.toEqual({
+        page: 2,
+        round: 2,
+      });
+
+      expect(fixtureFindFirst).toHaveBeenNthCalledWith(2, {
+        where: {
+          season: activeSeasonWhere,
+          kickoff: {
+            gt: new Date('2026-08-01T12:00:00.000Z'),
+          },
+        },
+        orderBy: {
+          kickoff: 'asc',
+        },
+        select: {
+          round: true,
+        },
+      });
+    });
+
+    it('usa a proxima rodada durante intervalo entre rodadas', async () => {
+      fixtureFindFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ round: 21 })
+        .mockResolvedValueOnce({
+          kickoff: new Date('2027-01-03T15:00:00.000Z'),
+          round: 21,
+        });
+      fixtureCount.mockResolvedValue(200);
+
+      await expect(
+        service.findCurrentFixturesPage({ limit: 10 }),
+      ).resolves.toEqual({
+        page: 21,
+        round: 21,
+      });
+    });
+
+    it('usa a ultima rodada finalizada quando nao ha partidas futuras', async () => {
+      fixtureFindFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ round: 38 })
+        .mockResolvedValueOnce({
+          kickoff: new Date('2027-05-23T15:00:00.000Z'),
+          round: 38,
+        });
+      fixtureCount.mockResolvedValue(370);
+
+      await expect(
+        service.findCurrentFixturesPage({ limit: 10 }),
+      ).resolves.toEqual({
+        page: 38,
+        round: 38,
+      });
+
+      expect(fixtureFindFirst).toHaveBeenNthCalledWith(3, {
+        where: {
+          season: activeSeasonWhere,
+          status: FixtureStatus.FT,
+        },
+        orderBy: {
+          kickoff: 'desc',
+        },
+        select: {
+          round: true,
+        },
+      });
+    });
+
+    it('retorna a primeira pagina antes do inicio da temporada', async () => {
+      fixtureFindFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ round: 1 })
+        .mockResolvedValueOnce({
+          kickoff: new Date('2026-08-15T15:00:00.000Z'),
+          round: 1,
+        });
+      fixtureCount.mockResolvedValue(0);
+
+      await expect(
+        service.findCurrentFixturesPage({ limit: 10 }),
+      ).resolves.toEqual({
+        page: 1,
+        round: 1,
+      });
+    });
+
+    it('calcula corretamente a pagina de uma rodada avancada', async () => {
+      fixtureFindFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ round: 30 })
+        .mockResolvedValueOnce({
+          kickoff: new Date('2027-03-14T15:00:00.000Z'),
+          round: 30,
+        });
+      fixtureCount.mockResolvedValue(290);
+
+      await expect(
+        service.findCurrentFixturesPage({ limit: 10 }),
+      ).resolves.toEqual({
+        page: 30,
+        round: 30,
+      });
+    });
+
+    it('calcula a pagina pelo inicio da rodada mesmo com partidas fora da sequencia cronologica', async () => {
+      fixtureFindFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ round: 5 })
+        .mockResolvedValueOnce({
+          kickoff: new Date('2026-09-12T15:00:00.000Z'),
+          round: 5,
+        });
+      fixtureCount.mockResolvedValue(40);
+
+      await expect(
+        service.findCurrentFixturesPage({ limit: 10 }),
+      ).resolves.toEqual({
+        page: 5,
+        round: 5,
+      });
+
+      expect(fixtureFindFirst).toHaveBeenNthCalledWith(3, {
+        where: {
+          season: activeSeasonWhere,
+          round: 5,
+        },
+        orderBy: {
+          kickoff: 'asc',
+        },
+        select: {
+          kickoff: true,
+          round: true,
+        },
+      });
     });
   });
 

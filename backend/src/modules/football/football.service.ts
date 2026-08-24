@@ -10,7 +10,9 @@ import { ConfigService } from '@nestjs/config';
 import { FixtureStatus, Prisma, Team, WinnerType } from '@prisma/client';
 import { AxiosError } from 'axios';
 import { firstValueFrom } from 'rxjs';
+import { activeSeasonWhere } from '../../common/prisma/query-presets';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { FixtureCurrentPageQueryDto } from './dto/fixture-current-page-query.dto';
 import { FixtureQueryDto } from './dto/fixture-query.dto';
 
 type EspnLogo = {
@@ -181,6 +183,11 @@ const fixtureListPayload = Prisma.validator<Prisma.FixtureDefaultArgs>()({
 });
 
 type FixtureListItem = Prisma.FixtureGetPayload<typeof fixtureListPayload>;
+
+type FixturePageTarget = {
+  kickoff: Date;
+  round: number;
+};
 
 @Injectable()
 export class FootballService {
@@ -565,6 +572,127 @@ export class FootballService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async findCurrentFixturesPage(query: FixtureCurrentPageQueryDto) {
+    const limit = query.limit ?? 20;
+    const targetRound = await this.findCurrentFixtureRound();
+
+    if (targetRound === null) {
+      return {
+        page: 1,
+        round: null,
+      };
+    }
+
+    const roundStart = await this.findRoundStartFixture(targetRound);
+
+    if (!roundStart) {
+      return {
+        page: 1,
+        round: targetRound,
+      };
+    }
+
+    const countBefore = await this.prisma.fixture.count({
+      where: {
+        kickoff: {
+          lt: roundStart.kickoff,
+        },
+      },
+    });
+
+    return {
+      page: Math.floor(countBefore / limit) + 1,
+      round: targetRound,
+    };
+  }
+
+  private async findCurrentFixtureRound() {
+    const liveFixture = await this.prisma.fixture.findFirst({
+      where: {
+        season: activeSeasonWhere,
+        status: FixtureStatus.LIVE,
+      },
+      orderBy: {
+        kickoff: 'asc',
+      },
+      select: {
+        round: true,
+      },
+    });
+
+    if (liveFixture) {
+      return liveFixture.round;
+    }
+
+    const nextFixture = await this.prisma.fixture.findFirst({
+      where: {
+        season: activeSeasonWhere,
+        kickoff: {
+          gt: new Date(),
+        },
+      },
+      orderBy: {
+        kickoff: 'asc',
+      },
+      select: {
+        round: true,
+      },
+    });
+
+    if (nextFixture) {
+      return nextFixture.round;
+    }
+
+    const latestFinishedFixture = await this.prisma.fixture.findFirst({
+      where: {
+        season: activeSeasonWhere,
+        status: FixtureStatus.FT,
+      },
+      orderBy: {
+        kickoff: 'desc',
+      },
+      select: {
+        round: true,
+      },
+    });
+
+    if (latestFinishedFixture) {
+      return latestFinishedFixture.round;
+    }
+
+    const latestFixture = await this.prisma.fixture.findFirst({
+      where: {
+        season: activeSeasonWhere,
+      },
+      orderBy: {
+        kickoff: 'desc',
+      },
+      select: {
+        round: true,
+      },
+    });
+
+    return latestFixture?.round ?? null;
+  }
+
+  private findRoundStartFixture(
+    round: number,
+  ): Promise<FixturePageTarget | null> {
+    return this.prisma.fixture.findFirst({
+      where: {
+        season: activeSeasonWhere,
+        round,
+      },
+      orderBy: {
+        kickoff: 'asc',
+      },
+      select: {
+        kickoff: true,
+        round: true,
+      },
+    });
   }
 
   private buildFixtureWhere(query: FixtureQueryDto): Prisma.FixtureWhereInput {

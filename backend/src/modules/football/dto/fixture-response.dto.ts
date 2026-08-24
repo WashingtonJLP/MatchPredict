@@ -82,3 +82,11 @@ export class FixtureListResponseDto {
   @ApiProperty({ type: FixturePaginationMetaResponseDto })
   meta!: FixturePaginationMetaResponseDto;
 }
+
+export class FixtureCurrentPageResponseDto {
+  @ApiProperty({ example: 20 })
+  page!: number;
+
+  @ApiProperty({ example: 20, nullable: true })
+  round!: number | null;
+}

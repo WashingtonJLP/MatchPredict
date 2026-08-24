@@ -18,14 +18,31 @@ import { Role } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FixtureCurrentPageQueryDto } from './dto/fixture-current-page-query.dto';
 import { FixtureQueryDto } from './dto/fixture-query.dto';
-import { FixtureListResponseDto } from './dto/fixture-response.dto';
+import {
+  FixtureCurrentPageResponseDto,
+  FixtureListResponseDto,
+} from './dto/fixture-response.dto';
 import { FootballService } from './football.service';
 
 @ApiTags('Football')
 @Controller('football')
 export class FootballController {
   constructor(private readonly footballService: FootballService) {}
+
+  @Get('fixtures/current-page')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obter página da rodada atual das fixtures' })
+  @ApiOkResponse({
+    description: 'Página inicial recomendada para a rodada atual.',
+    type: FixtureCurrentPageResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente ou invÃ¡lido.' })
+  findCurrentFixturesPage(@Query() query: FixtureCurrentPageQueryDto) {
+    return this.footballService.findCurrentFixturesPage(query);
+  }
 
   @Get('fixtures')
   @UseGuards(JwtAuthGuard)
