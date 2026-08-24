@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -117,6 +117,9 @@ export default function MatchesPage() {
   const [selectedFixture, setSelectedFixture] = useState<MatchFixture | null>(
     null,
   );
+  const resultsRef = useRef<HTMLDivElement | null>(null);
+  const pendingResultsScrollRef = useRef(false);
+  const [resultsScrollRequest, setResultsScrollRequest] = useState(0);
   const dateRange = useMemo(() => buildDateRange(dateFilter), [dateFilter]);
   const fixturesQueryParams = useMemo<FixturesQuery>(
     () => ({
@@ -147,9 +150,46 @@ export default function MatchesPage() {
   }, [fixturesQuery.data?.data, search]);
 
   function updateDateFilter(value: DateFilter) {
+    requestResultsScrollAfterQuery();
     setDateFilter(value);
     setPage(1);
   }
+
+  const scrollToResults = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      resultsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, []);
+
+  function requestResultsScrollAfterQuery() {
+    pendingResultsScrollRef.current = true;
+    setResultsScrollRequest((value) => value + 1);
+  }
+
+  useEffect(() => {
+    if (!pendingResultsScrollRef.current) {
+      return;
+    }
+
+    if (fixturesQuery.isLoading || fixturesQuery.isFetching) {
+      return;
+    }
+
+    pendingResultsScrollRef.current = false;
+    scrollToResults();
+  }, [
+    fixturesQuery.isFetching,
+    fixturesQuery.isLoading,
+    resultsScrollRequest,
+    scrollToResults,
+  ]);
 
   return (
     <DashboardShell>
@@ -169,6 +209,11 @@ export default function MatchesPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    scrollToResults();
+                  }
+                }}
                 aria-label="Buscar partidas por time"
                 placeholder="Buscar por time"
                 className="h-[52px] w-full rounded-xl border border-input bg-background pl-11 pr-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
@@ -179,6 +224,7 @@ export default function MatchesPage() {
               value={status}
               aria-label="Filtrar por status"
               onChange={(event) => {
+                requestResultsScrollAfterQuery();
                 setStatus(event.target.value as FixtureStatusValue | "");
                 setPage(1);
               }}
@@ -197,6 +243,7 @@ export default function MatchesPage() {
               value={round}
               aria-label="Filtrar por rodada"
               onChange={(event) => {
+                requestResultsScrollAfterQuery();
                 setRound(event.target.value);
                 setPage(1);
               }}
@@ -208,6 +255,7 @@ export default function MatchesPage() {
               value={teamId}
               aria-label="Filtrar por ID do time"
               onChange={(event) => {
+                requestResultsScrollAfterQuery();
                 setTeamId(event.target.value);
                 setPage(1);
               }}
@@ -235,7 +283,8 @@ export default function MatchesPage() {
           </div>
         </section>
 
-        {fixturesQuery.isLoading ? (
+        <div ref={resultsRef} className="space-y-9 scroll-mt-28 sm:scroll-mt-32">
+          {fixturesQuery.isLoading ? (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
               <LoadingCard key={index} rows={4} />
@@ -268,7 +317,7 @@ export default function MatchesPage() {
           </div>
         )}
 
-        {fixturesQuery.data ? (
+          {fixturesQuery.data ? (
           <Pagination
             page={fixturesQuery.data.meta.page}
             total={fixturesQuery.data.meta.total}
@@ -276,6 +325,7 @@ export default function MatchesPage() {
             onPageChange={setPage}
           />
         ) : null}
+        </div>
 
         <PredictionModal
           fixture={selectedFixture}
