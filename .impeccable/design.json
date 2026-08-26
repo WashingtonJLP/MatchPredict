@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-26T20:24:20.9268957-03:00",
+  "title": "Design System: MatchPredict",
+  "extensions": {
+    "colorMeta": {
+      "pitch-ink": {
+        "role": "primary",
+        "displayName": "Pitch Ink",
+        "canonical": "#0f172a",
+        "tonalRamp": ["oklch(15% 0.04 260)", "oklch(25% 0.05 260)", "oklch(35% 0.05 260)", "oklch(45% 0.04 260)", "oklch(60% 0.03 260)", "oklch(75% 0.02 260)", "oklch(88% 0.01 260)", "oklch(95% 0.006 260)"]
+      },
+      "field-green": {
+        "role": "secondary",
+        "displayName": "Field Green",
+        "canonical": "#22c55e",
+        "tonalRamp": ["oklch(15% 0.09 145)", "oklch(25% 0.12 145)", "oklch(35% 0.15 145)", "oklch(45% 0.17 145)", "oklch(58% 0.19 145)", "oklch(72% 0.16 145)", "oklch(86% 0.10 145)", "oklch(95% 0.04 145)"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Match Paper",
+        "canonical": "#f8fafc",
+        "tonalRamp": ["oklch(15% 0.01 250)", "oklch(25% 0.012 250)", "oklch(35% 0.012 250)", "oklch(50% 0.01 250)", "oklch(65% 0.008 250)", "oklch(78% 0.006 250)", "oklch(90% 0.004 250)", "oklch(98% 0.002 250)"]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(25% 0 0)", "oklch(35% 0 0)", "oklch(50% 0 0)", "oklch(65% 0 0)", "oklch(80% 0 0)", "oklch(92% 0 0)", "oklch(100% 0 0)"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Turf",
+        "canonical": "#f1f5f9",
+        "tonalRamp": ["oklch(15% 0.01 250)", "oklch(25% 0.012 250)", "oklch(35% 0.012 250)", "oklch(50% 0.01 250)", "oklch(65% 0.008 250)", "oklch(78% 0.006 250)", "oklch(90% 0.006 250)", "oklch(96% 0.004 250)"]
+      },
+      "error-red": {
+        "role": "tertiary",
+        "displayName": "Result Red",
+        "canonical": "#dc2626",
+        "tonalRamp": ["oklch(15% 0.08 25)", "oklch(25% 0.11 25)", "oklch(35% 0.14 25)", "oklch(45% 0.17 25)", "oklch(58% 0.20 25)", "oklch(72% 0.16 25)", "oklch(86% 0.09 25)", "oklch(95% 0.04 25)"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero product name and major page titles."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles and dashboard page headers."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles, ranking module titles, and compact section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Supporting explanation, fixture descriptions, and empty/error copy."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Table headers, status labels, eyebrow text, score labels, and metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "quiet-surface",
+        "value": "0 1px 2px rgb(15 23 42 / 0.05)",
+        "purpose": "Default cards, sidebar, brand marks, and compact containers."
+      },
+      {
+        "name": "interactive-lift",
+        "value": "0 10px 15px -3px rgb(15 23 42 / 0.10), 0 4px 6px -4px rgb(15 23 42 / 0.10)",
+        "purpose": "Card hover and elevated action buttons."
+      },
+      {
+        "name": "overlay-panel",
+        "value": "0 25px 50px -12px rgb(15 23 42 / 0.25)",
+        "purpose": "Drawers, modals, and ranking panel emphasis."
+      },
+      {
+        "name": "toast-lift",
+        "value": "0 1.25rem 2.5rem -1rem rgb(15 23 42 / 0.35)",
+        "purpose": "High-priority notification layer."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "200ms ease",
+        "purpose": "Default hover, drawer, overlay, and color transitions."
+      },
+      {
+        "name": "card-hover-lift",
+        "value": "translateY(-2px)",
+        "purpose": "Subtle lift for clickable or scan-focused cards."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default command button for save, account creation, and selected navigation.",
+      "html": "<button class=\"ds-btn-primary\">Salvar Palpite</button>",
+      "css": ".ds-btn-primary { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 6px; border: 1px solid transparent; border-radius: 11.2px; background: #0f172a; color: #ffffff; padding: 0 24px; font-family: Geist, Arial, sans-serif; font-size: 16px; font-weight: 700; white-space: nowrap; transition: background 200ms ease, box-shadow 200ms ease, transform 200ms ease; } .ds-btn-primary:hover { background: rgb(15 23 42 / 0.8); box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.10), 0 4px 6px -4px rgb(15 23 42 / 0.10); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(34 197 94 / 0.15); border-color: #22c55e; } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Accent Button",
+      "kind": "button",
+      "refersTo": "button-accent",
+      "description": "Public momentum button for account creation and positive calls to action.",
+      "html": "<button class=\"ds-btn-accent\">Criar Conta</button>",
+      "css": ".ds-btn-accent { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 11.2px; background: #22c55e; color: #052e16; padding: 0 28px; font-family: Geist, Arial, sans-serif; font-size: 16px; font-weight: 700; white-space: nowrap; box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.10), 0 4px 6px -4px rgb(15 23 42 / 0.10); transition: background 200ms ease, box-shadow 200ms ease, transform 200ms ease; } .ds-btn-accent:hover { background: rgb(34 197 94 / 0.9); } .ds-btn-accent:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(34 197 94 / 0.25); } .ds-btn-accent:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action button for sign-in, cancel, and rule navigation.",
+      "html": "<button class=\"ds-btn-outline\">Ver regras</button>",
+      "css": ".ds-btn-outline { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; border: 1px solid #e2e8f0; border-radius: 11.2px; background: transparent; color: #1e293b; padding: 0 24px; font-family: Geist, Arial, sans-serif; font-size: 16px; font-weight: 700; white-space: nowrap; transition: background 200ms ease, color 200ms ease, border-color 200ms ease; } .ds-btn-outline:hover { background: #f1f5f9; color: #1e293b; } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(34 197 94 / 0.15); border-color: #22c55e; }"
+    },
+    {
+      "name": "Stat Card",
+      "kind": "card",
+      "refersTo": "card-standard",
+      "description": "Metric container for points, ranking, accuracy, and season facts.",
+      "html": "<article class=\"ds-stat-card\"><div><p class=\"ds-stat-title\">Pontuacao</p><p class=\"ds-stat-value\">128</p></div><span class=\"ds-stat-icon\">#</span><p class=\"ds-stat-description\">Total acumulado na temporada.</p></article>",
+      "css": ".ds-stat-card { border: 1px solid #e2e8f0; border-radius: 14.4px; background: #ffffff; color: #1e293b; padding: 24px; font-family: Geist, Arial, sans-serif; box-shadow: 0 1px 2px rgb(15 23 42 / 0.05); transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease; } .ds-stat-card:hover { transform: translateY(-2px); border-color: rgb(34 197 94 / 0.4); box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.10), 0 4px 6px -4px rgb(15 23 42 / 0.10); } .ds-stat-title { margin: 0; color: #64748b; font-size: 14px; font-weight: 600; line-height: 24px; } .ds-stat-value { margin: 12px 0 0; color: #1e293b; font-size: 36px; font-weight: 800; line-height: 1.15; } .ds-stat-icon { float: right; display: inline-flex; width: 48px; height: 48px; align-items: center; justify-content: center; border: 1px solid rgb(34 197 94 / 0.15); border-radius: 14.4px; background: rgb(34 197 94 / 0.10); color: #22c55e; font-weight: 800; } .ds-stat-description { margin: 20px 0 0; color: #64748b; font-size: 16px; line-height: 1.75; }"
+    },
+    {
+      "name": "Score Input",
+      "kind": "input",
+      "refersTo": "input-score",
+      "description": "Large centered numeric input for score predictions.",
+      "html": "<label class=\"ds-score-label\"><span>Arsenal</span><input class=\"ds-score-input\" type=\"number\" min=\"0\" value=\"2\" /></label>",
+      "css": ".ds-score-label { display: block; min-width: 0; color: #1e293b; font-family: Geist, Arial, sans-serif; font-size: 16px; font-weight: 700; } .ds-score-label span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-score-input { margin-top: 8px; height: 56px; width: 100%; border: 1px solid #cbd5e1; border-radius: 11.2px; background: #f8fafc; color: #1e293b; padding: 0 16px; text-align: center; font-family: Geist, Arial, sans-serif; font-size: 24px; font-weight: 800; outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; } .ds-score-input:hover { border-color: #e2e8f0; } .ds-score-input:focus { border-color: #22c55e; box-shadow: 0 0 0 4px rgb(34 197 94 / 0.15); }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "chip-status",
+      "description": "Compact semantic label for live, registered, closed, and metadata states.",
+      "html": "<span class=\"ds-status-chip\">Palpite registrado</span>",
+      "css": ".ds-status-chip { display: inline-flex; min-height: 32px; align-items: center; gap: 8px; border-radius: 999px; background: rgb(34 197 94 / 0.15); color: #22c55e; padding: 4px 12px; font-family: Geist, Arial, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.025em; text-transform: uppercase; } .ds-status-chip:hover { background: rgb(34 197 94 / 0.20); } .ds-status-chip:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(34 197 94 / 0.15); }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-sidebar-item",
+      "description": "Logged-in navigation item with icon, label, hover, focus, and active states.",
+      "html": "<a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><span class=\"ds-nav-icon\">#</span>Dashboard</a>",
+      "css": ".ds-nav-item { display: flex; min-height: 48px; align-items: center; gap: 12px; border-radius: 11.2px; padding: 12px 16px; color: rgb(30 41 59 / 0.7); font-family: Geist, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; transition: background 200ms ease, color 200ms ease, box-shadow 200ms ease; } .ds-nav-item:hover { background: #f1f5f9; color: #0f172a; } .ds-nav-item:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(34 197 94 / 0.15); } .ds-nav-item-active { background: #0f172a; color: #ffffff; box-shadow: 0 1px 2px rgb(15 23 42 / 0.05); } .ds-nav-item-active:hover { background: #0f172a; color: #ffffff; } .ds-nav-icon { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; font-weight: 800; }"
+    },
+    {
+      "name": "Dialog Panel",
+      "kind": "custom",
+      "refersTo": "dialog-panel",
+      "description": "Modal panel for confirmation and prediction workflows.",
+      "html": "<div class=\"ds-dialog\"><h2>Excluir palpite?</h2><p>Esta acao nao podera ser desfeita.</p></div>",
+      "css": ".ds-dialog { width: min(100%, 448px); max-height: calc(100svh - 24px); overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 14.4px; background: #ffffff; color: #1e293b; padding: 24px; font-family: Geist, Arial, sans-serif; box-shadow: 0 25px 50px -12px rgb(15 23 42 / 0.25); } .ds-dialog h2 { margin: 0; color: #1e293b; font-size: 24px; font-weight: 800; line-height: 1.2; } .ds-dialog p { margin: 12px 0 0; color: #64748b; font-size: 16px; line-height: 1.75; } .ds-dialog:focus-visible { outline: none; box-shadow: 0 25px 50px -12px rgb(15 23 42 / 0.25), 0 0 0 4px rgb(34 197 94 / 0.15); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Matchday Control Room",
+    "overview": "MatchPredict should feel like a calm, trustworthy football operations surface: clear enough for a casual fan, structured enough for a competitive ranking product. The existing system uses crisp slate framing, field-green confirmation states, compact cards, and direct Portuguese product copy to keep the prediction loop easy to scan.\n\nThe interface is functional before it is decorative. Visual energy comes from score emphasis, ranking movement, trophy and football-adjacent icons, and restrained hover lift rather than large illustrations or ornamental effects. Public pages can be more persuasive, but logged-in surfaces should stay dense, predictable, and work-focused.",
+    "keyCharacteristics": [
+      "Slate authority with green match-state highlights.",
+      "White card surfaces over a pale app canvas.",
+      "Large, bold score and ranking numerals.",
+      "Rounded, touch-friendly controls with visible focus rings.",
+      "Responsive layouts that collapse into stacked cards and horizontal mobile navigation."
+    ],
+    "rules": [
+      {
+        "name": "The Green Means Action Rule",
+        "body": "Field Green is reserved for action, success, focus, live status, registered predictions, and important score feedback; do not use it as general decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Slate Owns Authority Rule",
+        "body": "Pitch Ink carries brand, navigation selection, hero authority, and primary commands. Avoid introducing another dominant brand hue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Score Weight Rule",
+        "body": "Scores, points, positions, and stat values should use the boldest weights available because they are the product's fastest-scanned facts.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lift Confirms Interactivity Rule",
+        "body": "Translation and shadow growth should appear on clickable or scan-focused cards only; static sections stay flat.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep user-facing copy in Brazilian Portuguese.",
+      "Do use Field Green for prediction success, focus, ranking emphasis, and primary public momentum.",
+      "Do keep prediction entry controls large, centered, and obviously editable before lock.",
+      "Do preserve the slate/green/white identity when adding new screens.",
+      "Do use cards and tables for scan-heavy app workflows rather than marketing-style compositions."
+    ],
+    "donts": [
+      "Don't add betting, prize, commercial, testimonial, or press claims that the product context does not confirm.",
+      "Don't turn Field Green into a decorative background pattern or secondary brand world.",
+      "Don't replace the functional dashboard density with oversized hero treatments.",
+      "Don't introduce a second typeface unless the product identity is intentionally redesigned.",
+      "Don't hide lock timing, prediction status, or ranking consequences behind vague labels."
+    ]
+  }
+}

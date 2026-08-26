@@ -12,57 +12,88 @@ import {
   Trophy,
   UserRound,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/providers/auth-provider";
 
-const sidebarLinks = [
+type SidebarLink = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  emphasis?: boolean;
+};
+
+type SidebarSection = {
+  label: string;
+  links: SidebarLink[];
+};
+
+const sidebarSections: SidebarSection[] = [
   {
-    href: "/dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
+    label: "Principal",
+    links: [
+      {
+        href: "/matches",
+        label: "Partidas",
+        icon: CalendarDays,
+        emphasis: true,
+      },
+      {
+        href: "/predictions",
+        label: "Meus Palpites",
+        icon: PieChart,
+        emphasis: true,
+      },
+      {
+        href: "/dashboard#ranking",
+        label: "Ranking",
+        icon: Trophy,
+        emphasis: true,
+      },
+    ],
   },
   {
-    href: "/matches",
-    label: "Partidas",
-    icon: CalendarDays,
+    label: "Acompanhar",
+    links: [
+      {
+        href: "/dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+      },
+      {
+        href: "/transparency",
+        label: "Transparência",
+        icon: Eye,
+      },
+      {
+        href: "/statistics",
+        label: "Estatísticas",
+        icon: BarChart3,
+      },
+    ],
   },
   {
-    href: "/predictions",
-    label: "Meus Palpites",
-    icon: PieChart,
-  },
-  {
-    href: "/transparency",
-    label: "Transparência",
-    icon: Eye,
-  },
-  {
-    href: "/dashboard#ranking",
-    label: "Ranking",
-    icon: Trophy,
-  },
-  {
-    href: "/statistics",
-    label: "Estatísticas",
-    icon: BarChart3,
-  },
-  {
-    href: "/rules",
-    label: "Regras",
-    icon: BookOpen,
-  },
-  {
-    href: "/profile",
-    label: "Perfil",
-    icon: UserRound,
+    label: "Conta",
+    links: [
+      {
+        href: "/rules",
+        label: "Regras",
+        icon: BookOpen,
+      },
+      {
+        href: "/profile",
+        label: "Perfil",
+        icon: UserRound,
+      },
+    ],
   },
 ];
 
@@ -70,15 +101,85 @@ type DashboardShellProps = {
   children: React.ReactNode;
 };
 
+function splitHref(href: string) {
+  const [path, hash] = href.split("#");
+
+  return {
+    path,
+    hash: hash ? `#${hash}` : "",
+  };
+}
+
+function isSidebarLinkActive(
+  item: SidebarLink,
+  pathname: string,
+  currentHash: string,
+) {
+  const { path, hash } = splitHref(item.href);
+
+  if (hash) {
+    return pathname === path && currentHash === hash;
+  }
+
+  if (item.href === "/dashboard") {
+    return pathname === "/dashboard" && currentHash !== "#ranking";
+  }
+
+  return pathname.startsWith(item.href);
+}
+
 export function DashboardShell({ children }: DashboardShellProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [currentHash, setCurrentHash] = useState("");
+  const mobileLinks = useMemo(
+    () => sidebarSections.flatMap((section) => section.links),
+    [],
+  );
+
+  useEffect(() => {
+    function updateHash() {
+      setCurrentHash(window.location.hash);
+    }
+
+    updateHash();
+    window.addEventListener("hashchange", updateHash);
+
+    return () => {
+      window.removeEventListener("hashchange", updateHash);
+    };
+  }, [pathname]);
 
   function handleLogout() {
     setIsDrawerOpen(false);
     toast.success("Logout realizado.");
     logout();
+  }
+
+  function renderSidebarLink(item: SidebarLink, onClick?: () => void) {
+    const isActive = isSidebarLinkActive(item, pathname, currentHash);
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-current={isActive ? "page" : undefined}
+        className={cn(
+          "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50",
+          item.emphasis && "text-sidebar-foreground",
+          isActive &&
+            "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
+        )}
+        onClick={onClick}
+      >
+        <item.icon
+          className={cn("size-[22px]", item.emphasis && "text-current")}
+          aria-hidden
+        />
+        {item.label}
+      </Link>
+    );
   }
 
   return (
@@ -94,31 +195,17 @@ export function DashboardShell({ children }: DashboardShellProps) {
           MatchPredict
         </Link>
 
-        <nav className="mt-10 space-y-2">
-          {sidebarLinks.map((item) => {
-            const isActive =
-              item.href.includes("#")
-                ? false
-                : item.href === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50",
-                  isActive &&
-                    "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
-                )}
-              >
-                <item.icon className="size-[22px]" aria-hidden />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="mt-8 space-y-7" aria-label="Navegação principal">
+          {sidebarSections.map((section) => (
+            <div key={section.label} className="space-y-2">
+              <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-sidebar-foreground/45">
+                {section.label}
+              </p>
+              <div className="space-y-1.5">
+                {section.links.map((item) => renderSidebarLink(item))}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <Button
@@ -182,13 +269,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
           className="flex gap-1 overflow-x-auto border-b border-border bg-card p-2 lg:hidden"
           aria-label="Navegação principal"
         >
-          {sidebarLinks.map((item) => {
-            const isActive =
-              item.href.includes("#")
-                ? false
-                : item.href === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.href);
+          {mobileLinks.map((item) => {
+            const isActive = isSidebarLinkActive(item, pathname, currentHash);
 
             return (
               <Link
@@ -197,6 +279,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex min-h-12 min-w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+                  item.emphasis && "text-foreground",
                   isActive && "bg-muted text-foreground",
                 )}
               >
@@ -248,32 +331,19 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </button>
         </div>
 
-        <nav className="mt-8 space-y-2">
-          {sidebarLinks.map((item) => {
-            const isActive =
-              item.href.includes("#")
-                ? false
-                : item.href === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring/50",
-                  isActive &&
-                    "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
+        <nav className="mt-8 space-y-7" aria-label="Navegação principal">
+          {sidebarSections.map((section) => (
+            <div key={section.label} className="space-y-2">
+              <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-sidebar-foreground/45">
+                {section.label}
+              </p>
+              <div className="space-y-1.5">
+                {section.links.map((item) =>
+                  renderSidebarLink(item, () => setIsDrawerOpen(false)),
                 )}
-                onClick={() => setIsDrawerOpen(false)}
-              >
-                <item.icon className="size-[22px]" aria-hidden />
-                {item.label}
-              </Link>
-            );
-          })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <Button
