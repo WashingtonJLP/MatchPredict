@@ -27,11 +27,11 @@ export function PredictionButton({ fixture, onClick }: PredictionButtonProps) {
       <Button
         type="button"
         variant="outline"
-        className="h-10 rounded-xl border-accent/50 bg-accent/10 px-4 text-sm font-bold text-accent hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="h-10 rounded-xl border-primary/25 bg-primary/5 px-4 text-sm font-bold text-primary shadow-sm shadow-primary/5 hover:bg-primary hover:text-primary-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
         onClick={onClick}
       >
         <Pencil className="size-4" aria-hidden />
-        Editar
+        Editar palpite
       </Button>
     );
   }

@@ -166,8 +166,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         href={item.href}
         aria-current={isActive ? "page" : undefined}
         className={cn(
-          "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-primary-foreground/70 transition hover:bg-primary-foreground/10 hover:text-primary-foreground focus-visible:ring-3 focus-visible:ring-accent/50",
-          item.emphasis && "text-primary-foreground",
+          "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-primary-foreground transition hover:bg-primary-foreground/10 focus-visible:ring-3 focus-visible:ring-accent/50",
           isActive &&
             "bg-accent text-accent-foreground shadow-lg shadow-accent/20 hover:bg-accent hover:text-accent-foreground",
         )}
@@ -198,7 +197,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <nav className="mt-8 space-y-7" aria-label="Navegação principal">
           {sidebarSections.map((section) => (
             <div key={section.label} className="space-y-2">
-              <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-primary-foreground/45">
+              <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-primary-foreground">
                 {section.label}
               </p>
               <div className="space-y-1.5">
@@ -211,7 +210,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <Button
           type="button"
           variant="ghost"
-          className="mt-8 h-12 w-full justify-start gap-3 px-4 text-base font-semibold text-primary-foreground/65 hover:bg-primary-foreground/10 hover:text-primary-foreground"
+          className="mt-8 h-12 w-full justify-start gap-3 px-4 text-base font-semibold text-primary-foreground hover:bg-primary-foreground/10"
           onClick={handleLogout}
         >
           <LogOut className="size-5" aria-hidden />
@@ -334,7 +333,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <nav className="mt-8 space-y-7" aria-label="Navegação principal">
           {sidebarSections.map((section) => (
             <div key={section.label} className="space-y-2">
-              <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-primary-foreground/45">
+              <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-primary-foreground">
                 {section.label}
               </p>
               <div className="space-y-1.5">
@@ -349,7 +348,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <Button
           type="button"
           variant="ghost"
-          className="mt-auto h-12 w-full justify-start gap-3 px-4 text-base font-semibold text-primary-foreground/65 hover:bg-primary-foreground/10 hover:text-primary-foreground"
+          className="mt-auto h-12 w-full justify-start gap-3 px-4 text-base font-semibold text-primary-foreground hover:bg-primary-foreground/10"
           onClick={handleLogout}
         >
           <LogOut className="size-5" aria-hidden />

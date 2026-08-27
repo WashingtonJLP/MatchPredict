@@ -71,7 +71,7 @@ export default function PredictionsPage() {
 
   return (
     <DashboardShell>
-      <div className="space-y-9">
+      <div className="space-y-6 sm:space-y-8">
         <PageHeader
           title="Meus Palpites"
           description="Acompanhe seus palpites, resultados das partidas e pontuação registrada."
@@ -92,14 +92,14 @@ export default function PredictionsPage() {
             description="Seus palpites aparecerão aqui quando forem cadastrados."
           />
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-8">
             {activeFixtures.length ? (
-              <section className="space-y-5">
-                <div>
+              <section className="space-y-4">
+                <div className="rounded-2xl border border-border bg-card px-4 py-4 shadow-sm shadow-primary/5 sm:px-5">
                   <h2 className="text-2xl font-extrabold text-foreground">
                     Seus palpites ativos
                   </h2>
-                  <p className="mt-2 text-base leading-7 text-muted-foreground">
+                  <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
                     Palpites que ainda podem ser alterados antes do início da
                     partida.
                   </p>
@@ -112,13 +112,13 @@ export default function PredictionsPage() {
               </section>
             ) : null}
 
-            <section className="space-y-5">
+            <section className="space-y-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
+                <div className="min-w-0 rounded-2xl border border-border bg-card px-4 py-4 shadow-sm shadow-primary/5 sm:flex-1 sm:px-5">
                   <h2 className="text-2xl font-extrabold text-foreground">
                     Histórico de palpites
                   </h2>
-                  <p className="mt-2 text-base leading-7 text-muted-foreground">
+                  <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
                     Palpites cujo período de alteração já terminou.
                   </p>
                 </div>
@@ -179,7 +179,7 @@ function PredictionGrid({
   showFinalResult = false,
 }: PredictionGridProps) {
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-5 xl:grid-cols-2">
       {fixtures.map((fixture) => (
         <PredictionFixtureCard
           key={fixture.userPrediction?.id ?? fixture.id}

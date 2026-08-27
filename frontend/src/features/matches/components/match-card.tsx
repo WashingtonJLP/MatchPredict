@@ -75,7 +75,7 @@ export function MatchCard({ fixture, onPredict }: MatchCardProps) {
     <article
       className={cn(
         "rounded-2xl border bg-card p-4 shadow-sm shadow-primary/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 sm:p-5",
-        hasPrediction && "border-accent/30 bg-accent/5",
+        hasPrediction && "border-border",
         isLive && "border-accent/40",
         isFinished && "border-border bg-muted/35",
       )}
@@ -100,12 +100,12 @@ export function MatchCard({ fixture, onPredict }: MatchCardProps) {
       </div>
 
       {fixture.userPrediction ? (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-accent/10 px-4 py-3 ring-1 ring-accent/20">
-          <span className="inline-flex items-center gap-2 text-sm font-bold text-accent">
-            <CheckCircle2 className="size-4" aria-hidden />
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3 ring-1 ring-border">
+          <span className="inline-flex items-center gap-2 text-sm font-bold text-foreground">
+            <CheckCircle2 className="size-4 text-accent" aria-hidden />
             Palpite registrado
           </span>
-          <span className="text-2xl font-extrabold leading-none text-accent tabular-nums">
+          <span className="text-2xl font-extrabold leading-none text-foreground tabular-nums">
             {fixture.userPrediction.homeGoals} x{" "}
             {fixture.userPrediction.awayGoals}
           </span>
