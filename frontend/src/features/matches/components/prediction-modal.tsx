@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { CalendarDays, X } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -94,8 +94,10 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
     }
   }
 
+  const title = fixture.userPrediction ? "Editar palpite" : "Criar palpite";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-primary/60 px-3 py-3 backdrop-blur-sm sm:items-center sm:px-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-primary/55 px-3 py-3 backdrop-blur-sm sm:items-center sm:px-4">
       <button
         type="button"
         aria-label="Fechar modal"
@@ -106,20 +108,21 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="prediction-modal-title"
-        className="relative max-h-[calc(100svh-1.5rem)] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-popover p-5 text-popover-foreground shadow-2xl sm:p-8"
+        className="relative max-h-[calc(100svh-1.5rem)] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl sm:p-6"
       >
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-accent">
-              Palpite
-            </p>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="min-w-0">
             <h2
               id="prediction-modal-title"
-              className="mt-2 text-2xl font-extrabold leading-tight text-popover-foreground sm:text-3xl"
+              className="text-2xl font-extrabold leading-tight text-popover-foreground"
             >
-              {fixture.homeTeam.name} x {fixture.awayTeam.name}
+              {title}
             </h2>
-            <p className="mt-2 text-base font-semibold leading-7 text-muted-foreground">
+            <p className="mt-2 truncate text-base font-bold leading-6 text-popover-foreground">
+              {fixture.homeTeam.name} x {fixture.awayTeam.name}
+            </p>
+            <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <CalendarDays className="size-4" aria-hidden />
               Rodada {fixture.round}
             </p>
           </div>

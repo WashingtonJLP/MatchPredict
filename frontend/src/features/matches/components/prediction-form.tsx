@@ -35,7 +35,7 @@ export function PredictionForm({
 
   return (
     <form
-      className="space-y-6"
+      className="space-y-5"
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit({
@@ -44,40 +44,46 @@ export function PredictionForm({
         });
       }}
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-3 sm:gap-4">
+      <div className="grid items-stretch gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:gap-4">
         <ScoreInput
-          label={fixture.homeTeam.name}
+          team={fixture.homeTeam}
           value={homeGoals}
           onChange={setHomeGoals}
         />
-        <span className="pb-4 text-2xl font-extrabold text-muted-foreground">x</span>
+        <span className="flex items-center justify-center rounded-2xl bg-muted px-3 py-2 text-sm font-extrabold uppercase tracking-wide text-muted-foreground sm:self-center">
+          x
+        </span>
         <ScoreInput
-          label={fixture.awayTeam.name}
+          team={fixture.awayTeam}
           value={awayGoals}
           onChange={setAwayGoals}
         />
       </div>
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+      <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
         {fixture.userPrediction && onDelete ? (
           <Button
             type="button"
             variant="destructive"
-            className="h-12 rounded-xl text-base font-bold"
+            className="h-10 rounded-xl px-4 text-sm font-bold"
             onClick={() => setIsDeleteDialogOpen(true)}
             disabled={isSubmitting}
           >
-            Excluir Palpite
+            Excluir
           </Button>
         ) : (
           <span />
         )}
         <Button
           type="submit"
-          className="h-12 rounded-xl bg-primary px-6 text-base font-bold text-primary-foreground hover:bg-primary/80"
+          className="h-10 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground hover:bg-primary/80"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Salvando..." : "Salvar Palpite"}
+          {isSubmitting
+            ? "Salvando..."
+            : fixture.userPrediction
+              ? "Salvar alterações"
+              : "Salvar palpite"}
         </Button>
       </div>
 

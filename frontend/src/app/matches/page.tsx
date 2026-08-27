@@ -346,7 +346,7 @@ export default function MatchesPage() {
 
         <div ref={resultsRef} className="space-y-6 scroll-mt-28 sm:scroll-mt-32">
           {fixturesQuery.isLoading ? (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-5 xl:grid-cols-2">
               {Array.from({ length: 6 }).map((_, index) => (
                 <LoadingCard key={index} rows={4} />
               ))}
@@ -392,7 +392,7 @@ export default function MatchesPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid gap-5 xl:grid-cols-2">
                     {group.fixtures.map((fixture) => (
                       <MatchCard
                         key={fixture.id}

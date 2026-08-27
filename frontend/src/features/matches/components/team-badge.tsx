@@ -4,19 +4,27 @@ import type { Team } from "@/types/prediction";
 type TeamBadgeProps = {
   team: Pick<Team, "name" | "logo">;
   align?: "left" | "right";
+  label?: string;
 };
 
-export function TeamBadge({ team, align = "left" }: TeamBadgeProps) {
+export function TeamBadge({ team, align = "left", label }: TeamBadgeProps) {
   return (
     <div
-      className={`flex min-w-0 flex-col items-center gap-2 text-center sm:gap-3 ${
+      className={`flex min-w-0 flex-col items-center gap-2 text-center ${
         align === "right" ? "text-right" : ""
       }`}
     >
       <TeamLogo team={team} />
-      <span className="line-clamp-2 min-h-10 break-words text-base font-extrabold leading-5 text-foreground sm:text-lg sm:leading-6">
-        {team.name}
-      </span>
+      <div className="w-full min-w-0">
+        {label ? (
+          <span className="block text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+            {label}
+          </span>
+        ) : null}
+        <span className="block truncate text-base font-extrabold leading-5 text-foreground sm:text-lg sm:leading-6">
+          {team.name}
+        </span>
+      </div>
     </div>
   );
 }

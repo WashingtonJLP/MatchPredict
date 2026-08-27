@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, Clock3 } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock3, Pencil } from "lucide-react";
 
 import { MatchHeader } from "@/features/matches/components/match-header";
 import { PredictionButton } from "@/features/matches/components/prediction-button";
@@ -23,11 +23,18 @@ function MatchCenter({ fixture, time }: MatchCenterProps) {
 
   if ((isLive || isFinished) && hasScore) {
     return (
-      <div className="mt-2 flex min-w-[6.75rem] flex-col items-center rounded-2xl bg-primary px-3 py-3 text-primary-foreground shadow-sm shadow-primary/10 sm:min-w-32">
-        <span className="text-[0.75rem] font-bold uppercase tracking-wide opacity-80">
-          {isLive ? "Placar atual" : "Resultado final"}
+      <div
+        className={cn(
+          "flex min-w-[5.75rem] flex-col items-center rounded-2xl px-3 py-2.5 shadow-sm sm:min-w-28",
+          isLive
+            ? "bg-accent text-accent-foreground shadow-accent/20"
+            : "bg-primary text-primary-foreground shadow-primary/15",
+        )}
+      >
+        <span className="text-xs font-extrabold uppercase tracking-wide opacity-80">
+          {isLive ? "Ao vivo" : "Final"}
         </span>
-        <span className="mt-1 text-3xl font-extrabold leading-none tabular-nums sm:text-4xl">
+        <span className="mt-1 text-2xl font-extrabold leading-none tabular-nums sm:text-3xl">
           {fixture.homeGoals} x {fixture.awayGoals}
         </span>
       </div>
@@ -35,12 +42,12 @@ function MatchCenter({ fixture, time }: MatchCenterProps) {
   }
 
   return (
-    <div className="mt-2 flex min-w-[5.75rem] flex-col items-center rounded-2xl bg-muted px-3 py-3 text-center sm:min-w-28">
-      <span className="text-2xl font-extrabold leading-none text-foreground tabular-nums sm:text-3xl">
-        {time}
-      </span>
-      <span className="mt-2 rounded-full bg-background px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+    <div className="flex min-w-[4.5rem] flex-col items-center rounded-2xl bg-muted px-3 py-2.5 text-center sm:min-w-20">
+      <span className="text-sm font-extrabold uppercase tracking-wide text-foreground">
         VS
+      </span>
+      <span className="mt-1 text-sm font-bold leading-none text-muted-foreground tabular-nums">
+        {time}
       </span>
     </div>
   );
@@ -48,6 +55,10 @@ function MatchCenter({ fixture, time }: MatchCenterProps) {
 
 export function MatchCard({ fixture, onPredict }: MatchCardProps) {
   const kickoff = new Date(fixture.kickoff);
+  const predictionClosed =
+    kickoff.getTime() <= Date.now() ||
+    fixture.status === "LIVE" ||
+    fixture.status === "FT";
   const hasPrediction = Boolean(fixture.userPrediction);
   const isFinished = fixture.status === "FT";
   const isLive = fixture.status === "LIVE";
@@ -63,49 +74,64 @@ export function MatchCard({ fixture, onPredict }: MatchCardProps) {
   return (
     <article
       className={cn(
-        "rounded-2xl border bg-card p-5 shadow-sm shadow-primary/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 sm:p-6",
+        "rounded-2xl border bg-card p-4 shadow-sm shadow-primary/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 sm:p-5",
         hasPrediction && "border-accent/30 bg-accent/5",
         isLive && "border-accent/40",
-        isFinished && "border-border bg-muted/40",
+        isFinished && "border-border bg-muted/35",
       )}
     >
       <MatchHeader fixture={fixture} />
 
-      <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3 sm:gap-4">
-        <TeamBadge team={fixture.homeTeam} />
+      <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
+        <TeamBadge team={fixture.homeTeam} label="Casa" />
         <MatchCenter fixture={fixture} time={time} />
-        <TeamBadge team={fixture.awayTeam} align="right" />
+        <TeamBadge team={fixture.awayTeam} align="right" label="Fora" />
       </div>
 
-      <div className="mt-5 grid gap-3 border-t border-border pt-4 text-sm font-semibold text-muted-foreground sm:grid-cols-2">
-        <span className="flex min-h-10 items-center gap-2 rounded-xl bg-background px-3">
-          <CalendarDays className="size-5" aria-hidden />
+      <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4 text-sm font-semibold text-muted-foreground">
+        <span className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-background px-3">
+          <CalendarDays className="size-4" aria-hidden />
           {date}
         </span>
-        <span className="flex min-h-10 items-center gap-2 rounded-xl bg-background px-3 sm:justify-end">
-          <Clock3 className="size-5" aria-hidden />
+        <span className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-background px-3">
+          <Clock3 className="size-4" aria-hidden />
           {isFinished ? "Encerrada" : isLive ? "Em andamento" : time}
         </span>
       </div>
 
       {fixture.userPrediction ? (
-        <div className="mt-5 rounded-2xl border border-accent/20 bg-accent/10 p-4">
-          <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-accent/15 px-3 py-1 text-xs font-bold uppercase tracking-wide text-accent">
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-accent/10 px-4 py-3 ring-1 ring-accent/20">
+          <span className="inline-flex items-center gap-2 text-sm font-bold text-accent">
             <CheckCircle2 className="size-4" aria-hidden />
             Palpite registrado
           </span>
-          <p className="mt-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">
-            Seu palpite
-          </p>
-          <p className="mt-1 text-3xl font-extrabold leading-none text-accent tabular-nums">
+          <span className="text-2xl font-extrabold leading-none text-accent tabular-nums">
             {fixture.userPrediction.homeGoals} x{" "}
             {fixture.userPrediction.awayGoals}
-          </p>
+          </span>
         </div>
       ) : null}
 
-      <div className="mt-5">
-        <PredictionButton fixture={fixture} onClick={() => onPredict(fixture)} />
+      <div className="mt-4 flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          {predictionClosed ? (
+            <p className="text-sm font-semibold text-muted-foreground">
+              Palpites encerrados
+            </p>
+          ) : hasPrediction ? (
+            <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+              <Pencil className="size-4" aria-hidden />
+              Editável até o início
+            </p>
+          ) : (
+            <p className="text-sm font-semibold text-muted-foreground">
+              Aberta para palpite
+            </p>
+          )}
+        </div>
+        <div className="shrink-0">
+          <PredictionButton fixture={fixture} onClick={() => onPredict(fixture)} />
+        </div>
       </div>
     </article>
   );
