@@ -4,7 +4,6 @@ import { CalendarDays, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
@@ -190,27 +189,34 @@ function FixtureOption({
     <button
       type="button"
       className={cn(
-        "w-full min-w-0 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-accent/40 hover:bg-accent/5 focus-visible:ring-3 focus-visible:ring-ring/50",
+        "w-full min-w-0 rounded-2xl border border-border bg-card p-3 text-left shadow-sm transition hover:border-accent/40 hover:bg-accent/5 focus-visible:ring-3 focus-visible:ring-ring/50 sm:p-4",
         selected && "border-accent/50 bg-accent/10",
       )}
       onClick={onSelect}
     >
-      <div className="flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-muted-foreground">
-            Rodada {fixture.round}
-          </p>
-          <p className="mt-1 truncate text-base font-extrabold text-foreground">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <TeamLogo team={fixture.homeTeam} size="sm" />
+            <span className="shrink-0 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+              x
+            </span>
+            <TeamLogo team={fixture.awayTeam} size="sm" />
+            <span className="ml-1 truncate text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Rodada {fixture.round}
+            </span>
+          </div>
+          <p className="mt-3 truncate text-base font-extrabold text-foreground">
             {fixture.homeTeam.name} x {fixture.awayTeam.name}
+          </p>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
+            {formatDateTime(fixture.kickoff)}
           </p>
         </div>
         <div className="shrink-0">
           <MatchStatusBadge status={fixture.status} />
         </div>
       </div>
-      <p className="mt-3 text-sm font-medium text-muted-foreground">
-        {formatDateTime(fixture.kickoff)}
-      </p>
     </button>
   );
 }
@@ -226,9 +232,6 @@ function TransparencyPanel({ data }: { data: FixtureTransparency }) {
             <p className="text-sm font-bold uppercase tracking-wide text-accent">
               Rodada {fixture.round}
             </p>
-            <h2 className="mt-2 break-words text-2xl font-extrabold leading-tight text-card-foreground sm:text-3xl">
-              {fixture.homeTeam.name} x {fixture.awayTeam.name}
-            </h2>
             <p className="mt-2 text-base font-semibold text-muted-foreground">
               {formatDateTime(fixture.kickoff)}
             </p>
@@ -236,20 +239,20 @@ function TransparencyPanel({ data }: { data: FixtureTransparency }) {
           <MatchStatusBadge status={fixture.status} />
         </div>
 
-        <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl bg-muted/35 px-3 py-4 sm:gap-5 sm:px-5">
           <TeamSummary name={fixture.homeTeam.name} logo={fixture.homeTeam.logo} />
-          <span className="rounded-xl bg-muted px-3 py-2 text-sm font-extrabold text-muted-foreground">
+          <span className="rounded-xl bg-background px-3 py-2 text-sm font-extrabold text-muted-foreground shadow-sm">
             VS
           </span>
           <TeamSummary name={fixture.awayTeam.name} logo={fixture.awayTeam.logo} />
         </div>
 
         {finalResult ? (
-          <div className="mt-6 rounded-2xl border border-border bg-background p-4 text-center">
-            <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+          <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-border bg-background px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground sm:text-sm">
               Resultado final
             </p>
-            <p className="mt-2 text-3xl font-extrabold text-foreground">
+            <p className="shrink-0 text-3xl font-extrabold leading-none text-foreground tabular-nums sm:text-4xl">
               {finalResult.homeGoals} x {finalResult.awayGoals}
             </p>
           </div>
@@ -279,38 +282,7 @@ function TransparencyPanel({ data }: { data: FixtureTransparency }) {
           }
         />
       ) : (
-        <DataTable<TransparencyPrediction>
-          data={predictions}
-          getRowKey={(prediction) => prediction.id}
-          columns={[
-            {
-              key: "user",
-              header: "Usuário",
-              render: (prediction) => (
-                <div className="flex items-center gap-3">
-                  <UserAvatar name={prediction.user.name} size="sm" />
-                  <span className="font-medium text-foreground">
-                    {prediction.user.name}
-                  </span>
-                </div>
-              ),
-            },
-            {
-              key: "prediction",
-              header: "Palpite",
-              render: (prediction) => (
-                <span className="font-mono text-xl font-extrabold text-foreground">
-                  {prediction.homeGoals} x {prediction.awayGoals}
-                </span>
-              ),
-            },
-            {
-              key: "points",
-              header: "Pontos",
-              render: (prediction) => formatPredictionPoints(prediction, data),
-            },
-          ]}
-        />
+        <PredictionsTable predictions={predictions} data={data} />
       )}
     </div>
   );
@@ -320,8 +292,94 @@ function TeamSummary({ logo, name }: { logo: string; name: string }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-2 text-center">
       <TeamLogo team={{ name, logo }} />
-      <span className="line-clamp-2 min-h-10 break-words text-base font-extrabold leading-5 text-foreground">
+      <span className="line-clamp-2 min-h-10 break-words text-sm font-extrabold leading-5 text-foreground sm:text-base">
         {name}
+      </span>
+    </div>
+  );
+}
+
+function PredictionsTable({
+  data,
+  predictions,
+}: {
+  data: FixtureTransparency;
+  predictions: TransparencyPrediction[];
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm shadow-primary/5">
+      <div className="md:hidden">
+        <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] gap-3 border-b border-border bg-muted/70 px-4 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          <span>Usuário</span>
+          <span className="text-center">Palpite</span>
+          <span className="text-right">Pontos</span>
+        </div>
+        {predictions.map((prediction) => (
+          <PredictionMobileRow
+            key={prediction.id}
+            prediction={prediction}
+            data={data}
+          />
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block" tabIndex={0}>
+        <table className="w-full min-w-[680px] border-collapse text-left text-sm">
+          <thead className="bg-muted/80 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-5 py-4 first:pl-6">Usuário</th>
+              <th className="px-5 py-4 text-center">Palpite</th>
+              <th className="px-5 py-4 text-right last:pr-6">Pontos</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {predictions.map((prediction) => (
+              <tr key={prediction.id} className="transition hover:bg-muted/70">
+                <td className="px-5 py-5 align-middle first:pl-6">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <UserAvatar name={prediction.user.name} size="sm" />
+                    <span className="truncate font-medium text-foreground">
+                      {prediction.user.name}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-5 py-5 text-center align-middle">
+                  <span className="text-xl font-extrabold text-foreground tabular-nums">
+                    {prediction.homeGoals} x {prediction.awayGoals}
+                  </span>
+                </td>
+                <td className="px-5 py-5 text-right align-middle font-semibold last:pr-6">
+                  {formatPredictionPoints(prediction, data)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PredictionMobileRow({
+  data,
+  prediction,
+}: {
+  data: FixtureTransparency;
+  prediction: TransparencyPrediction;
+}) {
+  return (
+    <div className="grid min-h-14 grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] items-center gap-3 border-b border-border px-4 py-3 last:border-b-0">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <UserAvatar name={prediction.user.name} size="sm" />
+        <span className="truncate text-sm font-bold text-foreground">
+          {prediction.user.name}
+        </span>
+      </div>
+      <span className="text-center text-base font-extrabold text-foreground tabular-nums">
+        {prediction.homeGoals} x {prediction.awayGoals}
+      </span>
+      <span className="text-right text-sm font-extrabold text-accent tabular-nums">
+        {formatPredictionPoints(prediction, data)}
       </span>
     </div>
   );
@@ -341,9 +399,13 @@ function formatPredictionPoints(
 
   return (
     <span className="font-semibold text-accent">
-      {prediction.totalPoints} pts
+      {formatPoints(prediction.totalPoints)}
     </span>
   );
+}
+
+function formatPoints(points: number) {
+  return `${points} ${points === 1 ? "pt" : "pts"}`;
 }
 
 function formatDateTime(value: string) {

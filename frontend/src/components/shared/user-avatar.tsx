@@ -21,7 +21,7 @@ export function UserAvatar({ name, size = "md" }: UserAvatarProps) {
 
   return (
     <span
-      className={`${sizeClasses[size]} flex items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground`}
+      className={`${sizeClasses[size]} flex shrink-0 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground`}
     >
       {initials || <UserRound className="size-4" aria-hidden />}
     </span>
