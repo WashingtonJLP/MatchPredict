@@ -60,9 +60,13 @@ function formatExactScoresLabel(value: number) {
   return `${value} ${value === 1 ? "placar exato" : "placares exatos"}`;
 }
 
-function formatCorrectWinnersLabel(value: number) {
+function getCorrectWinnersWithoutExact(standing: Standing) {
+  return Math.max(standing.correctWinners - standing.exactScores, 0);
+}
+
+function formatWinnersWithoutExactLabel(value: number) {
   return `${value} ${
-    value === 1 ? "vencedor correto" : "vencedores corretos"
+    value === 1 ? "vencedor sem exato" : "vencedores sem exato"
   }`;
 }
 
@@ -388,7 +392,9 @@ function RankingBoard({
                 </div>
                 <p className="text-right text-sm font-semibold leading-6 text-muted-foreground">
                   {formatExactScoresLabel(standing.exactScores)}<br />
-                  {formatCorrectWinnersLabel(standing.correctWinners)}
+                  {formatWinnersWithoutExactLabel(
+                    getCorrectWinnersWithoutExact(standing),
+                  )}
                 </p>
               </div>
             </article>
@@ -425,7 +431,7 @@ function RankingBoard({
                   <th className="px-5 py-4">Participante</th>
                   <th className="px-5 py-4 text-right">Pontos</th>
                   <th className="px-5 py-4 text-right">Exatos</th>
-                  <th className="px-5 py-4 text-right">Vencedores</th>
+                  <th className="px-5 py-4 text-right">Venc. sem exato</th>
                   <th className="px-5 py-4 text-right last:pr-6">Erros</th>
                 </tr>
               </thead>
@@ -477,9 +483,11 @@ function RankingTableRow({ standing, isCurrentUser }: RankingRowProps) {
             <p className="truncate text-base font-bold text-foreground">
               {standing.name}
             </p>
-            <p className="mt-0.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {isCurrentUser ? "Você" : getPositionLabel(standing.position)}
-            </p>
+            {isCurrentUser ? (
+              <p className="mt-0.5 text-xs font-bold uppercase tracking-wide text-accent">
+                Você
+              </p>
+            ) : null}
           </div>
         </div>
       </td>
@@ -490,7 +498,7 @@ function RankingTableRow({ standing, isCurrentUser }: RankingRowProps) {
         {standing.exactScores}
       </td>
       <td className="px-5 py-5 text-right align-middle font-bold text-foreground tabular-nums">
-        {standing.correctWinners}
+        {getCorrectWinnersWithoutExact(standing)}
       </td>
       <td className="px-5 py-5 text-right align-middle font-bold text-muted-foreground tabular-nums last:pr-6">
         {standing.wrongPredictions}
