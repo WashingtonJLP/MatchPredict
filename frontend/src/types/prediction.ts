@@ -12,6 +12,7 @@ export type Fixture = {
   status: "NS" | "LIVE" | "FT" | "POSTPONED" | "CANCELLED";
   homeGoals: number | null;
   awayGoals: number | null;
+  processedAt: string | null;
   homeTeam: Team;
   awayTeam: Team;
 };
