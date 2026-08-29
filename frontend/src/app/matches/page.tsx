@@ -145,12 +145,16 @@ function groupFixturesByRound(fixtures: MatchFixture[]) {
 }
 
 export default function MatchesPage() {
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [status, setStatus] = useState<FixtureStatusValue | "">("");
   const [round, setRound] = useState("");
   const [teamId, setTeamId] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [hasUserSelectedDateFilter, setHasUserSelectedDateFilter] =
+    useState(false);
+  const [hasAppliedInitialFallback, setHasAppliedInitialFallback] =
+    useState(false);
   const [selectedFixture, setSelectedFixture] = useState<MatchFixture | null>(
     null,
   );
@@ -193,6 +197,7 @@ export default function MatchesPage() {
 
   function updateDateFilter(value: DateFilter) {
     requestResultsScrollAfterQuery();
+    setHasUserSelectedDateFilter(true);
     setDateFilter(value);
     setPage(1);
   }
@@ -231,6 +236,33 @@ export default function MatchesPage() {
     fixturesQuery.isLoading,
     resultsScrollRequest,
     scrollToResults,
+  ]);
+
+  useEffect(() => {
+    if (
+      hasUserSelectedDateFilter ||
+      hasAppliedInitialFallback ||
+      dateFilter !== "today" ||
+      fixturesQuery.isLoading ||
+      fixturesQuery.isFetching ||
+      fixturesQuery.isError ||
+      !fixturesQuery.data ||
+      fixturesQuery.data.data.length > 0
+    ) {
+      return;
+    }
+
+    setHasAppliedInitialFallback(true);
+    setDateFilter("upcoming");
+    setPage(1);
+  }, [
+    dateFilter,
+    fixturesQuery.data,
+    fixturesQuery.isError,
+    fixturesQuery.isFetching,
+    fixturesQuery.isLoading,
+    hasAppliedInitialFallback,
+    hasUserSelectedDateFilter,
   ]);
 
   return (
