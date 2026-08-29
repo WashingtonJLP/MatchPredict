@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { UserAvatar } from "@/components/shared/user-avatar";
@@ -159,18 +159,36 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   function renderSidebarLink(item: SidebarLink, onClick?: () => void) {
     const isActive = isSidebarLinkActive(item, pathname, currentHash);
+    const { path, hash } = splitHref(item.href);
+
+    function handleLinkClick(event: MouseEvent<HTMLAnchorElement>) {
+      onClick?.();
+
+      if (!hash || pathname !== path || typeof window === "undefined") {
+        return;
+      }
+
+      event.preventDefault();
+      window.history.pushState(null, "", item.href);
+      setCurrentHash(hash);
+      document.getElementById(hash.slice(1))?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
 
     return (
       <Link
         key={item.href}
         href={item.href}
+        prefetch={!hash}
         aria-current={isActive ? "page" : undefined}
         className={cn(
           "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-primary-foreground transition hover:bg-primary-foreground/10 focus-visible:ring-3 focus-visible:ring-accent/50",
           isActive &&
             "bg-accent text-accent-foreground shadow-lg shadow-accent/20 hover:bg-accent hover:text-accent-foreground",
         )}
-        onClick={onClick}
+        onClick={handleLinkClick}
       >
         <item.icon
           className={cn("size-[22px]", item.emphasis && "text-current")}
