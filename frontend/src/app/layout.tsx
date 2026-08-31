@@ -13,24 +13,43 @@ const geist = Geist({
   subsets: ["latin"],
 });
 
+const siteUrl = "https://matchpredict.com.br";
+const title = "MatchPredict";
+const description = "Palpites esportivos com ranking competitivo.";
+const ogImage = "/og-matchpredict.jpg";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://matchpredict.com.br"),
-  title: "MatchPredict",
-  description: "Palpites esportivos com ranking competitivo.",
+  metadataBase: new URL(siteUrl),
+  title,
+  description,
+  manifest: "/manifest.webmanifest",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: ["/favicon.ico"],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   openGraph: {
-    title: "MatchPredict",
-    description: "Palpites esportivos com ranking competitivo.",
-    url: "https://matchpredict.com.br",
-    siteName: "MatchPredict",
+    title,
+    description,
+    url: siteUrl,
+    siteName: title,
     images: [
       {
-        url: "/MatchPredict.png",
-        width: 1536,
-        height: 1024,
-        alt: "MatchPredict",
+        url: ogImage,
+        width: 1200,
+        height: 630,
+        alt: "MatchPredict - Palpites esportivos com ranking competitivo",
+        type: "image/jpeg",
       },
     ],
     locale: "pt_BR",
@@ -38,9 +57,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "MatchPredict",
-    description: "Palpites esportivos com ranking competitivo.",
-    images: ["/MatchPredict.png"],
+    title,
+    description,
+    images: [ogImage],
   },
 };
 

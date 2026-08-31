@@ -10,9 +10,12 @@ const privateRoutes = [
   "/transparency",
 ];
 const publicAuthRoutes = ["/login", "/register"];
+const socialPreviewCrawlerPattern =
+  /facebookexternalhit|facebot|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|googlebot|bingbot/i;
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const userAgent = request.headers.get("user-agent") ?? "";
   const token = request.cookies.get(authCookieName)?.value;
   const isPrivateRoute = privateRoutes.some((route) =>
     pathname.startsWith(route),
@@ -20,6 +23,10 @@ export function middleware(request: NextRequest) {
   const isPublicAuthRoute = publicAuthRoutes.includes(pathname);
 
   if (isPrivateRoute && !token) {
+    if (socialPreviewCrawlerPattern.test(userAgent)) {
+      return NextResponse.rewrite(new URL("/", request.url));
+    }
+
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
