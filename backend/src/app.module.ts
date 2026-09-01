@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { FootballModule } from './modules/football/football.module';
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { StandingsModule } from './modules/standings/standings.module';
+import { DailyGamesModule } from './modules/daily-games/daily-games.module';
 
 @Module({
   imports: [
@@ -33,6 +34,8 @@ import { StandingsModule } from './modules/standings/standings.module';
     AuthModule,
 
     FootballModule,
+
+    DailyGamesModule,
 
     PredictionsModule,
 
