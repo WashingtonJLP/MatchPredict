@@ -6,6 +6,7 @@ import {
   DAILY_GAMES_COMPETITIONS_VERSION,
   DAILY_GAMES_TIMEZONE,
   DailyGame,
+  DailyGameStage,
   DailyGamesCompetition,
   DailyGamesCompetitionConfig,
   DailyGamesResponse,
@@ -18,6 +19,44 @@ import {
   EspnScoreboardLeague,
   EspnScoreboardStatus,
 } from './types/espn-scoreboard.types';
+
+const stageBySeasonSlug: Record<string, DailyGameStage> = {
+  'group-stage': {
+    label: 'Fase de grupos',
+    number: null,
+    type: 'GROUP_STAGE',
+  },
+  'league-phase': {
+    label: 'Fase de liga',
+    number: null,
+    type: 'LEAGUE_PHASE',
+  },
+  'round-of-16': {
+    label: 'Oitavas de final',
+    number: null,
+    type: 'KNOCKOUT',
+  },
+  quarterfinals: {
+    label: 'Quartas de final',
+    number: null,
+    type: 'KNOCKOUT',
+  },
+  semifinals: {
+    label: 'Semifinal',
+    number: null,
+    type: 'KNOCKOUT',
+  },
+  final: {
+    label: 'Final',
+    number: null,
+    type: 'KNOCKOUT',
+  },
+  finals: {
+    label: 'Final',
+    number: null,
+    type: 'KNOCKOUT',
+  },
+};
 
 type CachedDailyGames = {
   expiresAt: number;
@@ -199,7 +238,16 @@ export class DailyGamesService {
         home: shouldExposeScore ? this.parseScore(homeCompetitor.score) : null,
         away: shouldExposeScore ? this.parseScore(awayCompetitor.score) : null,
       },
+      stage: this.resolveStage(event.season?.slug),
     };
+  }
+
+  private resolveStage(seasonSlug: unknown): DailyGameStage | null {
+    if (typeof seasonSlug !== 'string') {
+      return null;
+    }
+
+    return stageBySeasonSlug[seasonSlug] ?? null;
   }
 
   private toDailyGameTeam(competitor: EspnScoreboardCompetitor) {

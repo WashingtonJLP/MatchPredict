@@ -22,6 +22,18 @@ export type DailyGameScore = {
   away: number | null;
 };
 
+export type DailyGameStage =
+  | {
+      label: string;
+      number: number;
+      type: "ROUND";
+    }
+  | {
+      label: string;
+      number: null;
+      type: "GROUP_STAGE" | "KNOCKOUT" | "LEAGUE_PHASE";
+    };
+
 export type DailyGame = {
   id: string;
   sourceEventId: string;
@@ -35,6 +47,7 @@ export type DailyGame = {
   homeTeam: DailyGameTeam;
   awayTeam: DailyGameTeam;
   score: DailyGameScore;
+  stage: DailyGameStage | null;
 };
 
 export type DailyGamesCompetition = {

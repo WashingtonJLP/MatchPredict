@@ -51,7 +51,7 @@ export const DAILY_GAMES_COMPETITIONS = [
   },
 ] as const;
 
-export const DAILY_GAMES_COMPETITIONS_VERSION = 'v1';
+export const DAILY_GAMES_COMPETITIONS_VERSION = 'v2';
 
 export type DailyGamesCompetitionId =
   (typeof DAILY_GAMES_COMPETITIONS)[number]['id'];
@@ -80,6 +80,18 @@ export type DailyGameScore = {
   home: number | null;
 };
 
+export type DailyGameStage =
+  | {
+      label: string;
+      number: number;
+      type: 'ROUND';
+    }
+  | {
+      label: string;
+      number: null;
+      type: 'GROUP_STAGE' | 'KNOCKOUT' | 'LEAGUE_PHASE';
+    };
+
 export type DailyGame = {
   awayTeam: DailyGameTeam;
   homeTeam: DailyGameTeam;
@@ -91,6 +103,7 @@ export type DailyGame = {
   period: number | null;
   score: DailyGameScore;
   sourceEventId: string;
+  stage: DailyGameStage | null;
   status: DailyGameStatus;
   statusLabel: string;
 };

@@ -1,18 +1,18 @@
 export function DailyGamesLoading() {
   return (
-    <div className="space-y-4" aria-label="Carregando jogos">
+    <div className="space-y-6 sm:space-y-8" aria-label="Carregando jogos">
       {Array.from({ length: 3 }).map((_, competitionIndex) => (
         <section
           key={competitionIndex}
-          className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border"
+          className="overflow-hidden rounded-2xl border border-border bg-card"
         >
-          <div className="flex items-stretch gap-3 border-b border-border bg-muted/50 px-3.5 py-3 sm:px-4">
+          <div className="flex items-stretch gap-3 border-b border-border bg-secondary/60 px-4 py-3.5">
             <div className="w-1 shrink-0 rounded-full bg-accent/60" />
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="size-9 rounded-xl bg-card ring-1 ring-border motion-safe:animate-pulse" />
+              <div className="size-10 rounded-xl bg-card shadow-sm motion-safe:animate-pulse" />
               <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-5 w-48 max-w-full rounded bg-background motion-safe:animate-pulse" />
-              <div className="h-3 w-16 rounded bg-background motion-safe:animate-pulse" />
+                <div className="h-5 w-48 max-w-full rounded bg-background motion-safe:animate-pulse" />
+                <div className="h-3 w-16 rounded bg-background motion-safe:animate-pulse" />
               </div>
             </div>
           </div>

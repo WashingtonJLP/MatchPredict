@@ -10,6 +10,12 @@ export type EspnScoreboardLeague = {
   slug?: string;
 };
 
+export type EspnScoreboardSeason = {
+  slug?: string;
+  type?: number;
+  year?: number;
+};
+
 export type EspnScoreboardStatus = {
   clock?: number;
   displayClock?: string;
@@ -52,6 +58,7 @@ export type EspnScoreboardEvent = {
   date?: string;
   id?: string;
   name?: string;
+  season?: EspnScoreboardSeason;
   status?: EspnScoreboardStatus;
 };
 

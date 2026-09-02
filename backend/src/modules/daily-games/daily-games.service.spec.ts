@@ -341,6 +341,125 @@ describe('DailyGamesService', () => {
     expect(game.statusLabel).toBe('Suspenso');
   });
 
+  it('nao inventa rodada de liga quando a ESPN fornece apenas a season anual', async () => {
+    getScoreboard.mockImplementation((league: string) =>
+      Promise.resolve(
+        league === 'eng.1'
+          ? scoreboard([
+              createEvent({
+                seasonSlug: '2025-26-english-premier-league',
+              }),
+            ])
+          : emptyScoreboard(),
+      ),
+    );
+
+    const [game] = (await service.findDailyGames('2026-09-01')).competitions[0]
+      .games;
+
+    expect(game.stage).toBeNull();
+  });
+
+  it('normaliza fase de liga a partir de events[].season.slug', async () => {
+    getScoreboard.mockImplementation((league: string) =>
+      Promise.resolve(
+        league === 'uefa.champions'
+          ? scoreboard([createEvent({ seasonSlug: 'league-phase' })])
+          : emptyScoreboard(),
+      ),
+    );
+
+    const [game] = (await service.findDailyGames('2026-09-01')).competitions[0]
+      .games;
+
+    expect(game.stage).toEqual({
+      label: 'Fase de liga',
+      number: null,
+      type: 'LEAGUE_PHASE',
+    });
+  });
+
+  it('normaliza fase mata-mata a partir de events[].season.slug', async () => {
+    getScoreboard.mockImplementation((league: string) =>
+      Promise.resolve(
+        league === 'bra.copa_do_brazil'
+          ? scoreboard([createEvent({ seasonSlug: 'quarterfinals' })])
+          : emptyScoreboard(),
+      ),
+    );
+
+    const [game] = (await service.findDailyGames('2026-09-01')).competitions[0]
+      .games;
+
+    expect(game.stage).toEqual({
+      label: 'Quartas de final',
+      number: null,
+      type: 'KNOCKOUT',
+    });
+  });
+
+  it('retorna stage null quando a ESPN nao fornece season.slug', async () => {
+    getScoreboard.mockImplementation((league: string) =>
+      Promise.resolve(
+        league === 'bra.2' ? scoreboard([createEvent()]) : emptyScoreboard(),
+      ),
+    );
+
+    const [game] = (await service.findDailyGames('2026-09-01')).competitions[0]
+      .games;
+
+    expect(game.stage).toBeNull();
+  });
+
+  it('retorna stage null para season.slug inesperado', async () => {
+    const malformedEvent = {
+      ...createEvent(),
+      season: {
+        slug: { value: 'quarterfinals' },
+      },
+    } as unknown as EspnScoreboardEvent;
+
+    getScoreboard.mockImplementation((league: string) =>
+      Promise.resolve(
+        league === 'bra.copa_do_brazil'
+          ? scoreboard([malformedEvent])
+          : emptyScoreboard(),
+      ),
+    );
+
+    const [game] = (await service.findDailyGames('2026-09-01')).competitions[0]
+      .games;
+
+    expect(game.stage).toBeNull();
+  });
+
+  it('preserva fases diferentes por jogo quando a mesma data as mistura', async () => {
+    getScoreboard.mockImplementation((league: string) =>
+      Promise.resolve(
+        league === 'uefa.champions'
+          ? scoreboard([
+              createEvent({
+                id: 'league-phase-game',
+                seasonSlug: 'league-phase',
+              }),
+              createEvent({
+                id: 'quarterfinal-game',
+                seasonSlug: 'quarterfinals',
+              }),
+            ])
+          : emptyScoreboard(),
+      ),
+    );
+
+    const games = (await service.findDailyGames('2026-09-01')).competitions[0]
+      .games;
+
+    expect(games.map((game) => game.stage?.label)).toEqual([
+      'Fase de liga',
+      'Quartas de final',
+    ]);
+  });
+
   it('mantem resposta parcial quando uma competicao falha', async () => {
     getScoreboard.mockImplementation((league: string) => {
       if (league === 'eng.1') {
@@ -413,6 +532,7 @@ function createEvent(
     displayClock?: string;
     id?: string;
     period?: number;
+    seasonSlug?: string;
     state?: string;
     statusName?: string;
     wasSuspended?: boolean;
@@ -435,6 +555,13 @@ function createEvent(
   return {
     id: overrides.id ?? '401860308',
     date: overrides.date ?? '2026-09-01T22:30Z',
+    season: overrides.seasonSlug
+      ? {
+          slug: overrides.seasonSlug,
+          type: 13281,
+          year: 2026,
+        }
+      : undefined,
     status,
     competitions: [
       {

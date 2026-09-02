@@ -1,6 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { DailyGameStatus } from '../types/daily-game.types';
+import { DailyGameStage, DailyGameStatus } from '../types/daily-game.types';
+
+export class DailyGameStageResponseDto {
+  @ApiProperty({
+    enum: ['ROUND', 'GROUP_STAGE', 'KNOCKOUT', 'LEAGUE_PHASE'],
+    example: 'KNOCKOUT',
+  })
+  type!: DailyGameStage['type'];
+
+  @ApiProperty({ example: 'Quartas de final' })
+  label!: string;
+
+  @ApiProperty({ example: null, nullable: true })
+  number!: number | null;
+}
 
 export class DailyGameTeamResponseDto {
   @ApiProperty({ example: '17333' })
@@ -77,6 +91,12 @@ export class DailyGameResponseDto {
 
   @ApiProperty({ type: DailyGameScoreResponseDto })
   score!: DailyGameScoreResponseDto;
+
+  @ApiProperty({
+    type: DailyGameStageResponseDto,
+    nullable: true,
+  })
+  stage!: DailyGameStageResponseDto | null;
 }
 
 export class DailyGamesCompetitionResponseDto {
