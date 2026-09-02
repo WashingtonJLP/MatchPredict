@@ -15,6 +15,10 @@ const navLinks = [
     label: "Home",
   },
   {
+    href: "/daily-games",
+    label: "Jogos do Dia",
+  },
+  {
     href: "/#ranking",
     label: "Ranking",
   },

@@ -69,6 +69,11 @@ const sidebarSections: SidebarSection[] = [
         icon: LayoutDashboard,
       },
       {
+        href: "/daily-games",
+        label: "Jogos do Dia",
+        icon: CalendarDays,
+      },
+      {
         href: "/transparency",
         label: "Transparência",
         icon: Eye,
