@@ -1,6 +1,10 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 
 import { DailyGameRow } from "@/features/daily-games/components/daily-game-row";
+import { findNextScheduledVisualBoundary } from "@/features/daily-games/components/daily-game-timing";
 import type {
   DailyGameStage,
   DailyGamesCompetition,
@@ -10,7 +14,30 @@ type DailyGamesListProps = {
   competitions: DailyGamesCompetition[];
 };
 
+const maxTimerDelayMs = 2_147_483_647;
+
 export function DailyGamesList({ competitions }: DailyGamesListProps) {
+  const [visualClockRevision, setVisualClockRevision] = useState(0);
+
+  useEffect(() => {
+    const currentTime = Date.now();
+    const nextBoundary = findNextScheduledVisualBoundary(
+      competitions,
+      currentTime,
+    );
+
+    if (nextBoundary === null) {
+      return;
+    }
+
+    const delay = Math.min(nextBoundary - currentTime, maxTimerDelayMs);
+    const timer = window.setTimeout(() => {
+      setVisualClockRevision((revision) => revision + 1);
+    }, delay);
+
+    return () => window.clearTimeout(timer);
+  }, [competitions, visualClockRevision]);
+
   return (
     <div className="space-y-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 sm:space-y-8">
       {competitions.map((competition) => {

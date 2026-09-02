@@ -1,10 +1,9 @@
 import { Clock3 } from "lucide-react";
 
 import { DailyGameStatus } from "@/features/daily-games/components/daily-game-status";
+import { isWithinPregameWindow } from "@/features/daily-games/components/daily-game-timing";
 import { cn } from "@/lib/utils";
 import type { DailyGame, DailyGameTeam } from "@/types/daily-game";
-
-const pregameWindowMs = 60 * 60 * 1000;
 
 type DailyGameRowProps = {
   game: DailyGame;
@@ -101,15 +100,7 @@ function shouldShowStatusLabel(game: DailyGame) {
 }
 
 function isKickoffSoon(kickoff: string) {
-  const kickoffTime = Date.parse(kickoff);
-
-  if (Number.isNaN(kickoffTime)) {
-    return false;
-  }
-
-  const timeUntilKickoff = kickoffTime - Date.now();
-
-  return timeUntilKickoff >= 0 && timeUntilKickoff <= pregameWindowMs;
+  return isWithinPregameWindow(kickoff, Date.now());
 }
 
 function TeamCell({

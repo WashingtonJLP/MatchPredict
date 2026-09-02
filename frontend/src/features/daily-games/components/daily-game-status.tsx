@@ -47,13 +47,14 @@ export function DailyGameStatus({
   return (
     <span
       className={cn(
-        "inline-flex min-h-6 items-center justify-center gap-1 rounded-full border px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide",
+        "inline-flex min-h-6 w-max shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide",
         statusClasses[status],
-        compact && "px-1.5",
+        compact &&
+          "px-1 tracking-normal sm:px-1.5 sm:tracking-wide",
       )}
     >
       {isLive ? (
-        <span className="size-1.5 rounded-full bg-current motion-safe:animate-pulse" />
+        <span className="size-1.5 shrink-0 rounded-full bg-current motion-safe:animate-pulse" />
       ) : null}
       {isLive && minute !== null ? `${displayLabel} · ${minute}'` : displayLabel}
     </span>
