@@ -269,8 +269,8 @@ export default function MatchesPage() {
     <DashboardShell>
       <div className="space-y-6 sm:space-y-8">
         <PageHeader
-          title="Partidas"
-          description="Acompanhe a rodada, veja jogos abertos e registre seus palpites antes do início."
+          title="Palpites da Premier League"
+          description="Faça seus palpites para os jogos da rodada."
         />
 
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 sm:p-5">

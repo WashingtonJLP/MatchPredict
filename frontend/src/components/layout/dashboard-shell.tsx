@@ -42,7 +42,7 @@ const sidebarSections: SidebarSection[] = [
     links: [
       {
         href: "/matches",
-        label: "Partidas",
+        label: "Palpites",
         icon: CalendarDays,
         emphasis: true,
       },
