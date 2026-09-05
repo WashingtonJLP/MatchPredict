@@ -14,6 +14,7 @@ import { DailyGameStatus } from "@/features/daily-games/components/daily-game-st
 import { formatDateInSaoPaulo } from "@/features/daily-games/components/date-utils";
 import { MatchStatusBadge } from "@/features/matches/components/match-status-badge";
 import { TeamLogo } from "@/features/matches/components/team-logo";
+import { TransparencyFixtureCard } from "@/features/transparency/components/transparency-fixture-card";
 import {
   buildPremierLeagueGamesBySourceEventId,
   getDailyGameForFixture,
@@ -29,7 +30,6 @@ import { useFixtureTransparency } from "@/hooks/use-predictions";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 import type { DailyGame } from "@/types/daily-game";
-import type { MatchFixture } from "@/types/fixture";
 import type { FixtureTransparency, TransparencyPrediction } from "@/types/prediction";
 
 export default function TransparencyPage() {
@@ -156,7 +156,7 @@ export default function TransparencyPage() {
             ) : (
               <div className="grid min-w-0 gap-3">
                 {fixtures.map((fixture) => (
-                  <FixtureOption
+                  <TransparencyFixtureCard
                     key={fixture.id}
                     fixture={fixture}
                     dailyGame={getDailyGameForFixture(
@@ -214,70 +214,6 @@ export default function TransparencyPage() {
         </div>
       </div>
     </DashboardShell>
-  );
-}
-
-function FixtureOption({
-  dailyGame,
-  fixture,
-  onSelect,
-  selected,
-}: {
-  dailyGame?: DailyGame;
-  fixture: MatchFixture;
-  onSelect: () => void;
-  selected: boolean;
-}) {
-  const visualDailyGame = getTransparencyVisualGame(dailyGame);
-  const hasDailyScore = hasCompleteDailyGameScore(visualDailyGame);
-
-  return (
-    <button
-      type="button"
-      className={cn(
-        "w-full min-w-0 rounded-2xl border border-border bg-card p-3 text-left shadow-sm transition hover:border-accent/40 hover:bg-accent/5 focus-visible:ring-3 focus-visible:ring-ring/50 sm:p-4",
-        selected && "border-accent/50 bg-accent/10",
-      )}
-      onClick={onSelect}
-    >
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <TeamLogo team={fixture.homeTeam} size="sm" />
-            <span className="shrink-0 text-sm font-extrabold text-foreground tabular-nums">
-              {hasDailyScore
-                ? `${visualDailyGame.score.home} × ${visualDailyGame.score.away}`
-                : "×"}
-            </span>
-            <TeamLogo team={fixture.awayTeam} size="sm" />
-            <span className="ml-1 truncate text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Rodada {fixture.round}
-            </span>
-          </div>
-          <p className="mt-3 truncate text-base font-extrabold text-foreground">
-            {fixture.homeTeam.name} x {fixture.awayTeam.name}
-          </p>
-          <p className="mt-1 text-sm font-medium text-muted-foreground">
-            {formatDateTime(fixture.kickoff)}
-          </p>
-        </div>
-        <div className="shrink-0">
-          {visualDailyGame ? (
-            <DailyGameStatus
-              compact
-              label={getTransparencyStatusLabel(visualDailyGame)}
-              minute={visualDailyGame.minute}
-              status={visualDailyGame.status}
-            />
-          ) : (
-            <MatchStatusBadge
-              label={getTransparencyFixtureStatusLabel(fixture.status)}
-              status={fixture.status}
-            />
-          )}
-        </div>
-      </div>
-    </button>
   );
 }
 
