@@ -7,7 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "test:transparency": "node --experimental-strip-types --test src/features/transparency/transparency-live-game.test.ts"
+    "test:transparency": "node --experimental-strip-types --test src/features/transparency/transparency-live-game.test.ts",
+    "test:match-live-context": "node --experimental-strip-types --test src/features/matches/match-live-context.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

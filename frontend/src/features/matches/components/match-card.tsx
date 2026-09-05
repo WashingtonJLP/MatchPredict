@@ -1,22 +1,26 @@
 import { CalendarDays, CheckCircle2, Clock3, Pencil } from "lucide-react";
 
 import { MatchHeader } from "@/features/matches/components/match-header";
+import { MatchLiveContextLabel } from "@/features/matches/components/match-live-context-label";
 import { PredictionButton } from "@/features/matches/components/prediction-button";
 import { TeamBadge } from "@/features/matches/components/team-badge";
 import { cn } from "@/lib/utils";
+import type { DailyGame } from "@/types/daily-game";
 import type { MatchFixture } from "@/types/fixture";
 
 type MatchCardProps = {
   fixture: MatchFixture;
+  dailyGame?: DailyGame;
   onPredict: (fixture: MatchFixture) => void;
 };
 
 type MatchCenterProps = {
   fixture: MatchFixture;
+  dailyGame?: DailyGame;
   time: string;
 };
 
-function MatchCenter({ fixture, time }: MatchCenterProps) {
+function MatchCenter({ dailyGame, fixture, time }: MatchCenterProps) {
   const hasScore = fixture.homeGoals !== null && fixture.awayGoals !== null;
   const isLive = fixture.status === "LIVE";
   const isFinished = fixture.status === "FT";
@@ -25,15 +29,16 @@ function MatchCenter({ fixture, time }: MatchCenterProps) {
     return (
       <div
         className={cn(
-          "flex min-w-[5.75rem] flex-col items-center rounded-2xl px-3 py-2.5 shadow-sm sm:min-w-28",
+          "flex w-[5.75rem] flex-col items-center rounded-2xl px-1.5 py-2.5 shadow-sm sm:w-28 sm:px-3",
           isLive
             ? "bg-accent text-accent-foreground shadow-accent/20"
             : "bg-primary text-primary-foreground shadow-primary/15",
         )}
       >
-        <span className="text-xs font-extrabold uppercase tracking-wide opacity-80">
-          {isLive ? "Ao vivo" : "Final"}
-        </span>
+        <MatchLiveContextLabel
+          dailyGame={dailyGame}
+          fallbackLabel={isLive ? "Ao vivo" : "Final"}
+        />
         <span className="mt-1 text-2xl font-extrabold leading-none tabular-nums sm:text-3xl">
           {fixture.homeGoals} x {fixture.awayGoals}
         </span>
@@ -53,7 +58,7 @@ function MatchCenter({ fixture, time }: MatchCenterProps) {
   );
 }
 
-export function MatchCard({ fixture, onPredict }: MatchCardProps) {
+export function MatchCard({ dailyGame, fixture, onPredict }: MatchCardProps) {
   const kickoff = new Date(fixture.kickoff);
   const predictionClosed =
     kickoff.getTime() <= Date.now() ||
@@ -84,7 +89,7 @@ export function MatchCard({ fixture, onPredict }: MatchCardProps) {
 
       <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
         <TeamBadge team={fixture.homeTeam} label="Casa" />
-        <MatchCenter fixture={fixture} time={time} />
+        <MatchCenter dailyGame={dailyGame} fixture={fixture} time={time} />
         <TeamBadge team={fixture.awayTeam} align="right" label="Fora" />
       </div>
 

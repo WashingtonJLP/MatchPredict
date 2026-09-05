@@ -12,7 +12,9 @@ import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
 import { MatchCard } from "@/features/matches/components/match-card";
 import { PredictionModal } from "@/features/matches/components/prediction-modal";
+import { getDailyGameForFixture } from "@/features/transparency/transparency-live-game";
 import { useFixtures } from "@/hooks/use-fixtures";
+import { usePremierLeagueLiveGames } from "@/hooks/use-premier-league-live-games";
 import { getApiErrorMessage } from "@/lib/api-error";
 import type {
   FixtureStatusValue,
@@ -189,6 +191,7 @@ export default function MatchesPage() {
         .includes(normalizedSearch),
     );
   }, [fixturesQuery.data?.data, search]);
+  const liveGamesBySourceEventId = usePremierLeagueLiveGames(fixtures);
   const fixtureGroups = useMemo(() => groupFixturesByRound(fixtures), [fixtures]);
   const totalOpenFixtures = useMemo(
     () => fixtures.filter(canFixtureReceivePrediction).length,
@@ -428,6 +431,10 @@ export default function MatchesPage() {
                     {group.fixtures.map((fixture) => (
                       <MatchCard
                         key={fixture.id}
+                        dailyGame={getDailyGameForFixture(
+                          liveGamesBySourceEventId,
+                          fixture,
+                        )}
                         fixture={fixture}
                         onPredict={setSelectedFixture}
                       />

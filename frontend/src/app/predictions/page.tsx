@@ -10,7 +10,10 @@ import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { PredictionFixtureCard } from "@/features/matches/components/prediction-fixture-card";
 import { PredictionModal } from "@/features/matches/components/prediction-modal";
+import { getDailyGameForFixture } from "@/features/transparency/transparency-live-game";
+import { usePremierLeagueLiveGames } from "@/hooks/use-premier-league-live-games";
 import { useMyPredictions } from "@/hooks/use-predictions";
+import type { DailyGame } from "@/types/daily-game";
 import type { MatchFixture } from "@/types/fixture";
 import type { Prediction } from "@/types/prediction";
 
@@ -51,9 +54,19 @@ export default function PredictionsPage() {
     selectedHistoryRound !== null && historyRounds.includes(selectedHistoryRound)
       ? selectedHistoryRound
       : (historyRounds[0] ?? null);
-  const selectedHistoryFixtures = historyFixtures.filter(
-    (fixture) => fixture.round === currentHistoryRound,
+  const selectedHistoryFixtures = useMemo(
+    () =>
+      historyFixtures.filter(
+        (fixture) => fixture.round === currentHistoryRound,
+      ),
+    [currentHistoryRound, historyFixtures],
   );
+  const visibleFixtures = useMemo(
+    () => [...activeFixtures, ...selectedHistoryFixtures],
+    [activeFixtures, selectedHistoryFixtures],
+  );
+  const liveGamesBySourceEventId =
+    usePremierLeagueLiveGames(visibleFixtures);
 
   useEffect(() => {
     if (!historyRounds.length) {
@@ -107,6 +120,7 @@ export default function PredictionsPage() {
 
                 <PredictionGrid
                   fixtures={activeFixtures}
+                  liveGamesBySourceEventId={liveGamesBySourceEventId}
                   onPredict={setSelectedFixture}
                 />
               </section>
@@ -146,6 +160,7 @@ export default function PredictionsPage() {
               {historyFixtures.length ? (
                 <PredictionGrid
                   fixtures={selectedHistoryFixtures}
+                  liveGamesBySourceEventId={liveGamesBySourceEventId}
                   onPredict={setSelectedFixture}
                   showFinalResult
                 />
@@ -169,12 +184,14 @@ export default function PredictionsPage() {
 
 type PredictionGridProps = {
   fixtures: MatchFixture[];
+  liveGamesBySourceEventId: Map<string, DailyGame>;
   onPredict: (fixture: MatchFixture) => void;
   showFinalResult?: boolean;
 };
 
 function PredictionGrid({
   fixtures,
+  liveGamesBySourceEventId,
   onPredict,
   showFinalResult = false,
 }: PredictionGridProps) {
@@ -183,6 +200,10 @@ function PredictionGrid({
       {fixtures.map((fixture) => (
         <PredictionFixtureCard
           key={fixture.userPrediction?.id ?? fixture.id}
+          dailyGame={getDailyGameForFixture(
+            liveGamesBySourceEventId,
+            fixture,
+          )}
           fixture={fixture}
           onPredict={onPredict}
           showFinalResult={showFinalResult}

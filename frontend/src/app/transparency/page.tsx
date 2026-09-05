@@ -11,21 +11,18 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Pagination } from "@/components/shared/pagination";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { DailyGameStatus } from "@/features/daily-games/components/daily-game-status";
-import { formatDateInSaoPaulo } from "@/features/daily-games/components/date-utils";
 import { MatchStatusBadge } from "@/features/matches/components/match-status-badge";
 import { TeamLogo } from "@/features/matches/components/team-logo";
 import { TransparencyFixtureCard } from "@/features/transparency/components/transparency-fixture-card";
 import {
-  buildPremierLeagueGamesBySourceEventId,
   getDailyGameForFixture,
   getTransparencyFixtureStatusLabel,
   getTransparencyStatusLabel,
   getTransparencyVisualGame,
-  getUniqueFixtureDates,
   hasCompleteDailyGameScore,
 } from "@/features/transparency/transparency-live-game";
-import { useDailyGamesForDates } from "@/hooks/use-daily-games";
 import { useFixtureCurrentPage, useFixtures } from "@/hooks/use-fixtures";
+import { usePremierLeagueLiveGames } from "@/hooks/use-premier-league-live-games";
 import { useFixtureTransparency } from "@/hooks/use-predictions";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
@@ -50,24 +47,7 @@ export default function TransparencyPage() {
     () => fixturesQuery.data?.data ?? [],
     [fixturesQuery.data?.data],
   );
-  const fixtureDates = useMemo(
-    () =>
-      getUniqueFixtureDates(fixtures, (kickoff) =>
-        formatDateInSaoPaulo(new Date(kickoff)),
-      ),
-    [fixtures],
-  );
-  const dailyGamesQueries = useDailyGamesForDates(fixtureDates, {
-    competition: "eng.1",
-    enabled: fixtureDates.length > 0,
-  });
-  const dailyGamesBySourceEventId = buildPremierLeagueGamesBySourceEventId(
-    dailyGamesQueries.flatMap((query) =>
-      query.isError || query.isRefetchError
-        ? []
-        : (query.data?.competitions ?? []),
-    ),
-  );
+  const dailyGamesBySourceEventId = usePremierLeagueLiveGames(fixtures);
   const transparencyQuery = useFixtureTransparency(selectedFixtureId);
   const isInitializingPage = page === null;
 
