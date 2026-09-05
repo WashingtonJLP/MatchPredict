@@ -9,6 +9,7 @@ import {
   DailyGameStage,
   DailyGamesCompetition,
   DailyGamesCompetitionConfig,
+  DailyGamesCompetitionId,
   DailyGamesResponse,
   DailyGameStatus,
 } from './types/daily-game.types';
@@ -89,10 +90,19 @@ export class DailyGamesService {
 
   constructor(private readonly espnClient: DailyGamesEspnClient) {}
 
-  async findDailyGames(date: string): Promise<DailyGamesResponse> {
+  async findDailyGames(
+    date: string,
+    competitionId?: DailyGamesCompetitionId,
+  ): Promise<DailyGamesResponse> {
     this.ensureValidPlainDate(date);
 
-    const cacheKey = this.buildCacheKey(date);
+    const competitionConfigs: readonly DailyGamesCompetitionConfig[] =
+      competitionId
+        ? DAILY_GAMES_COMPETITIONS.filter(
+            (competition) => competition.id === competitionId,
+          )
+        : DAILY_GAMES_COMPETITIONS;
+    const cacheKey = this.buildCacheKey(date, competitionId);
     const cached = this.cache.get(cacheKey);
 
     if (cached && cached.expiresAt > Date.now()) {
@@ -101,7 +111,7 @@ export class DailyGamesService {
 
     const dates = this.buildEspnDateRange(date);
     const results = await Promise.all(
-      DAILY_GAMES_COMPETITIONS.map((competition) =>
+      competitionConfigs.map((competition) =>
         this.fetchCompetition(competition, date, dates),
       ),
     );
@@ -122,7 +132,7 @@ export class DailyGamesService {
       meta: {
         generatedAt: new Date().toISOString(),
         cacheTtlSeconds,
-        requestedCompetitions: DAILY_GAMES_COMPETITIONS.length,
+        requestedCompetitions: competitionConfigs.length,
         successfulCompetitions: successfulResults.length,
         failedCompetitions: results.length - successfulResults.length,
       },
@@ -441,12 +451,16 @@ export class DailyGamesService {
     return 1_800;
   }
 
-  private buildCacheKey(date: string): string {
+  private buildCacheKey(
+    date: string,
+    competitionId?: DailyGamesCompetitionId,
+  ): string {
     return [
       'daily-games',
       date,
       this.timezone,
       DAILY_GAMES_COMPETITIONS_VERSION,
+      competitionId ?? 'all',
     ].join(':');
   }
 

@@ -731,6 +731,7 @@ export class FootballService {
 
     return {
       id: fixture.id,
+      sourceEventId: String(fixture.apiFixtureId),
       round: fixture.round,
       kickoff: fixture.kickoff,
       status: fixture.status,

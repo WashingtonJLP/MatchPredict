@@ -1,4 +1,8 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQueries,
+  useQuery,
+} from "@tanstack/react-query";
 
 import { getDailyGames } from "@/services/daily-games-service";
 import type { DailyGamesResponse } from "@/types/daily-game";
@@ -23,12 +27,38 @@ function resolveRefetchInterval(data: DailyGamesResponse | undefined) {
   return Math.max(data.meta.cacheTtlSeconds * 1000, 300_000);
 }
 
-export function useDailyGames(date: string) {
-  return useQuery({
-    queryKey: ["daily-games", date],
-    queryFn: () => getDailyGames(date),
+type DailyGamesOptions = {
+  competition?: string;
+  enabled?: boolean;
+};
+
+function dailyGamesQueryOptions(
+  date: string,
+  options?: DailyGamesOptions,
+) {
+  const competition = options?.competition;
+
+  return {
+    queryKey: ["daily-games", date, competition ?? "all"],
+    queryFn: () => getDailyGames(date, competition),
+    enabled: options?.enabled ?? true,
     placeholderData: keepPreviousData,
-    refetchInterval: (query) =>
-      resolveRefetchInterval(query.state.data as DailyGamesResponse | undefined),
+    refetchInterval: (query: {
+      state: { data: DailyGamesResponse | undefined };
+    }) => resolveRefetchInterval(query.state.data),
+    refetchIntervalInBackground: false,
+  };
+}
+
+export function useDailyGames(date: string, options?: DailyGamesOptions) {
+  return useQuery(dailyGamesQueryOptions(date, options));
+}
+
+export function useDailyGamesForDates(
+  dates: string[],
+  options?: DailyGamesOptions,
+) {
+  return useQueries({
+    queries: dates.map((date) => dailyGamesQueryOptions(date, options)),
   });
 }

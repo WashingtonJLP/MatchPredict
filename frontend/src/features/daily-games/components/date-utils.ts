@@ -39,7 +39,7 @@ export function formatShortDate(value: string) {
   }).format(parsePlainDate(value));
 }
 
-function formatDateInSaoPaulo(date: Date) {
+export function formatDateInSaoPaulo(date: Date) {
   const parts = new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
     month: "2-digit",

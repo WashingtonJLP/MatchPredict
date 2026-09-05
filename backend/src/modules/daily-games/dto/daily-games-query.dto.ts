@@ -1,5 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Matches } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsIn, IsOptional, Matches } from 'class-validator';
+
+import {
+  DAILY_GAMES_COMPETITIONS,
+  DailyGamesCompetitionId,
+} from '../types/daily-game.types';
+
+const dailyGamesCompetitionIds = DAILY_GAMES_COMPETITIONS.map(
+  (competition) => competition.id,
+);
 
 export class DailyGamesQueryDto {
   @ApiProperty({
@@ -10,4 +19,14 @@ export class DailyGamesQueryDto {
     message: 'date deve estar no formato YYYY-MM-DD.',
   })
   date!: string;
+
+  @ApiPropertyOptional({
+    enum: dailyGamesCompetitionIds,
+    example: 'eng.1',
+    description:
+      'Limita a resposta a uma competicao. Quando omitido, mantem todas as competicoes configuradas.',
+  })
+  @IsOptional()
+  @IsIn(dailyGamesCompetitionIds)
+  competition?: DailyGamesCompetitionId;
 }

@@ -189,6 +189,9 @@ describe('PredictionsService', () => {
     await expect(
       service.findFixtureTransparency(userId, fixtureId),
     ).resolves.toMatchObject({
+      fixture: {
+        sourceEventId: '123',
+      },
       isClosedForPrediction: false,
       finalResult: null,
       predictions,

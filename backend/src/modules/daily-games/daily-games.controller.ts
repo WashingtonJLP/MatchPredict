@@ -19,6 +19,6 @@ export class DailyGamesController {
     type: DailyGamesResponseDto,
   })
   findDailyGames(@Query() query: DailyGamesQueryDto) {
-    return this.dailyGamesService.findDailyGames(query.date);
+    return this.dailyGamesService.findDailyGames(query.date, query.competition);
   }
 }

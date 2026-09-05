@@ -117,6 +117,7 @@ export class PredictionsService {
       },
       select: {
         id: true,
+        apiFixtureId: true,
         round: true,
         kickoff: true,
         status: true,
@@ -176,6 +177,7 @@ export class PredictionsService {
     return {
       fixture: {
         id: fixture.id,
+        sourceEventId: String(fixture.apiFixtureId),
         round: fixture.round,
         kickoff: fixture.kickoff,
         status: fixture.status,

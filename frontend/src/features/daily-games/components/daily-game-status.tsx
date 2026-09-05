@@ -54,7 +54,10 @@ export function DailyGameStatus({
       )}
     >
       {isLive ? (
-        <span className="size-1.5 shrink-0 rounded-full bg-current motion-safe:animate-pulse" />
+        <span
+          className="size-1.5 shrink-0 rounded-full bg-current motion-safe:animate-pulse"
+          aria-hidden
+        />
       ) : null}
       {isLive && minute !== null ? `${displayLabel} · ${minute}'` : displayLabel}
     </span>

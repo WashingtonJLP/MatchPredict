@@ -8,7 +8,13 @@ const statusLabels: Record<FixtureStatusValue, string> = {
   CANCELLED: "Cancelada",
 };
 
-export function MatchStatusBadge({ status }: { status: FixtureStatusValue }) {
+export function MatchStatusBadge({
+  label,
+  status,
+}: {
+  label?: string;
+  status: FixtureStatusValue;
+}) {
   const isLive = status === "LIVE";
   const isFinished = status === "FT";
 
@@ -22,7 +28,7 @@ export function MatchStatusBadge({ status }: { status: FixtureStatusValue }) {
             : "bg-muted text-muted-foreground"
       }`}
     >
-      {statusLabels[status]}
+      {label ?? statusLabels[status]}
     </span>
   );
 }

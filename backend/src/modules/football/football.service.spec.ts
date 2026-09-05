@@ -634,6 +634,7 @@ describe('FootballService', () => {
       data: [
         {
           id: fixtureId,
+          sourceEventId: '123',
           round: 12,
           kickoff,
           status: FixtureStatus.NS,
@@ -938,6 +939,7 @@ describe('FootballService', () => {
       data: [
         {
           canPredict: true,
+          sourceEventId: '123',
           userPrediction: null,
         },
       ],

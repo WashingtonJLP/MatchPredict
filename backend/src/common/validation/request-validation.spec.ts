@@ -11,6 +11,7 @@ import { UpdateUserDto } from '../../modules/users/dto/update-user.dto';
 import { CreatePredictionDto } from '../../modules/predictions/dto/create-prediction.dto';
 import { UpdatePredictionDto } from '../../modules/predictions/dto/update-prediction.dto';
 import { FixtureQueryDto } from '../../modules/football/dto/fixture-query.dto';
+import { DailyGamesQueryDto } from '../../modules/daily-games/dto/daily-games-query.dto';
 
 describe('request DTO validation', () => {
   const pipe = new ValidationPipe({
@@ -108,6 +109,35 @@ describe('request DTO validation', () => {
       limit: 50,
       round: 10,
     });
+  });
+
+  it('accepts a configured Daily Games competition filter', async () => {
+    await expect(
+      transform(
+        DailyGamesQueryDto,
+        {
+          date: '2026-09-01',
+          competition: 'eng.1',
+        },
+        'query',
+      ),
+    ).resolves.toMatchObject({
+      date: '2026-09-01',
+      competition: 'eng.1',
+    });
+  });
+
+  it('rejects an unknown Daily Games competition filter', async () => {
+    await expect(
+      transform(
+        DailyGamesQueryDto,
+        {
+          date: '2026-09-01',
+          competition: 'unknown.league',
+        },
+        'query',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects oversized auth fields', async () => {

@@ -484,6 +484,29 @@ describe('DailyGamesService', () => {
     expect(response.competitions[0].id).toBe('bra.2');
   });
 
+  it('consulta somente a competicao solicitada sem alterar o modo padrao', async () => {
+    getScoreboard.mockResolvedValue(scoreboard([createEvent()]));
+
+    const response = await service.findDailyGames('2026-09-01', 'eng.1');
+
+    expect(getScoreboard).toHaveBeenCalledTimes(1);
+    expect(getScoreboard).toHaveBeenCalledWith('eng.1', '20260831-20260902');
+    expect(response.meta).toMatchObject({
+      requestedCompetitions: 1,
+      successfulCompetitions: 1,
+      failedCompetitions: 0,
+    });
+    expect(response.competitions).toHaveLength(1);
+    expect(response.competitions[0]).toMatchObject({
+      id: 'eng.1',
+      games: [
+        expect.objectContaining({
+          sourceEventId: '401860308',
+        }),
+      ],
+    });
+  });
+
   it('usa cache basico por data', async () => {
     getScoreboard.mockImplementation((league: string) =>
       Promise.resolve(

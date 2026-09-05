@@ -10,12 +10,25 @@ import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { Pagination } from "@/components/shared/pagination";
 import { UserAvatar } from "@/components/shared/user-avatar";
+import { DailyGameStatus } from "@/features/daily-games/components/daily-game-status";
+import { formatDateInSaoPaulo } from "@/features/daily-games/components/date-utils";
 import { MatchStatusBadge } from "@/features/matches/components/match-status-badge";
 import { TeamLogo } from "@/features/matches/components/team-logo";
+import {
+  buildPremierLeagueGamesBySourceEventId,
+  getDailyGameForFixture,
+  getTransparencyFixtureStatusLabel,
+  getTransparencyStatusLabel,
+  getTransparencyVisualGame,
+  getUniqueFixtureDates,
+  hasCompleteDailyGameScore,
+} from "@/features/transparency/transparency-live-game";
+import { useDailyGamesForDates } from "@/hooks/use-daily-games";
 import { useFixtureCurrentPage, useFixtures } from "@/hooks/use-fixtures";
 import { useFixtureTransparency } from "@/hooks/use-predictions";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
+import type { DailyGame } from "@/types/daily-game";
 import type { MatchFixture } from "@/types/fixture";
 import type { FixtureTransparency, TransparencyPrediction } from "@/types/prediction";
 
@@ -36,6 +49,24 @@ export default function TransparencyPage() {
   const fixtures = useMemo(
     () => fixturesQuery.data?.data ?? [],
     [fixturesQuery.data?.data],
+  );
+  const fixtureDates = useMemo(
+    () =>
+      getUniqueFixtureDates(fixtures, (kickoff) =>
+        formatDateInSaoPaulo(new Date(kickoff)),
+      ),
+    [fixtures],
+  );
+  const dailyGamesQueries = useDailyGamesForDates(fixtureDates, {
+    competition: "eng.1",
+    enabled: fixtureDates.length > 0,
+  });
+  const dailyGamesBySourceEventId = buildPremierLeagueGamesBySourceEventId(
+    dailyGamesQueries.flatMap((query) =>
+      query.isError || query.isRefetchError
+        ? []
+        : (query.data?.competitions ?? []),
+    ),
   );
   const transparencyQuery = useFixtureTransparency(selectedFixtureId);
   const isInitializingPage = page === null;
@@ -128,6 +159,10 @@ export default function TransparencyPage() {
                   <FixtureOption
                     key={fixture.id}
                     fixture={fixture}
+                    dailyGame={getDailyGameForFixture(
+                      dailyGamesBySourceEventId,
+                      fixture,
+                    )}
                     selected={fixture.id === selectedFixtureId}
                     onSelect={() => handleSelectFixture(fixture.id)}
                   />
@@ -161,7 +196,13 @@ export default function TransparencyPage() {
                 )}
               />
             ) : transparencyQuery.data ? (
-              <TransparencyPanel data={transparencyQuery.data} />
+              <TransparencyPanel
+                data={transparencyQuery.data}
+                dailyGame={getDailyGameForFixture(
+                  dailyGamesBySourceEventId,
+                  transparencyQuery.data.fixture,
+                )}
+              />
             ) : (
               <EmptyState
                 icon={Eye}
@@ -177,14 +218,19 @@ export default function TransparencyPage() {
 }
 
 function FixtureOption({
+  dailyGame,
   fixture,
   onSelect,
   selected,
 }: {
+  dailyGame?: DailyGame;
   fixture: MatchFixture;
   onSelect: () => void;
   selected: boolean;
 }) {
+  const visualDailyGame = getTransparencyVisualGame(dailyGame);
+  const hasDailyScore = hasCompleteDailyGameScore(visualDailyGame);
+
   return (
     <button
       type="button"
@@ -198,8 +244,10 @@ function FixtureOption({
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
             <TeamLogo team={fixture.homeTeam} size="sm" />
-            <span className="shrink-0 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
-              x
+            <span className="shrink-0 text-sm font-extrabold text-foreground tabular-nums">
+              {hasDailyScore
+                ? `${visualDailyGame.score.home} × ${visualDailyGame.score.away}`
+                : "×"}
             </span>
             <TeamLogo team={fixture.awayTeam} size="sm" />
             <span className="ml-1 truncate text-xs font-bold uppercase tracking-wide text-muted-foreground">
@@ -214,15 +262,35 @@ function FixtureOption({
           </p>
         </div>
         <div className="shrink-0">
-          <MatchStatusBadge status={fixture.status} />
+          {visualDailyGame ? (
+            <DailyGameStatus
+              compact
+              label={getTransparencyStatusLabel(visualDailyGame)}
+              minute={visualDailyGame.minute}
+              status={visualDailyGame.status}
+            />
+          ) : (
+            <MatchStatusBadge
+              label={getTransparencyFixtureStatusLabel(fixture.status)}
+              status={fixture.status}
+            />
+          )}
         </div>
       </div>
     </button>
   );
 }
 
-function TransparencyPanel({ data }: { data: FixtureTransparency }) {
+function TransparencyPanel({
+  dailyGame,
+  data,
+}: {
+  dailyGame?: DailyGame;
+  data: FixtureTransparency;
+}) {
   const { fixture, finalResult, isClosedForPrediction, predictions } = data;
+  const visualDailyGame = getTransparencyVisualGame(dailyGame);
+  const hasDailyScore = hasCompleteDailyGameScore(visualDailyGame);
 
   return (
     <div className="min-w-0 space-y-5">
@@ -236,18 +304,21 @@ function TransparencyPanel({ data }: { data: FixtureTransparency }) {
               {formatDateTime(fixture.kickoff)}
             </p>
           </div>
-          <MatchStatusBadge status={fixture.status} />
+          {!visualDailyGame ? (
+            <MatchStatusBadge
+              label={getTransparencyFixtureStatusLabel(fixture.status)}
+              status={fixture.status}
+            />
+          ) : null}
         </div>
 
         <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl bg-muted/35 px-3 py-4 sm:gap-5 sm:px-5">
           <TeamSummary name={fixture.homeTeam.name} logo={fixture.homeTeam.logo} />
-          <span className="rounded-xl bg-background px-3 py-2 text-sm font-extrabold text-muted-foreground shadow-sm">
-            VS
-          </span>
+          <MatchVisualState dailyGame={visualDailyGame} />
           <TeamSummary name={fixture.awayTeam.name} logo={fixture.awayTeam.logo} />
         </div>
 
-        {finalResult ? (
+        {finalResult && !hasDailyScore ? (
           <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-border bg-background px-4 py-3">
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground sm:text-sm">
               Resultado final
@@ -288,6 +359,55 @@ function TransparencyPanel({ data }: { data: FixtureTransparency }) {
   );
 }
 
+function MatchVisualState({ dailyGame }: { dailyGame?: DailyGame }) {
+  const hasScore = hasCompleteDailyGameScore(dailyGame);
+
+  if (!dailyGame) {
+    return (
+      <span className="rounded-xl bg-background px-3 py-2 text-sm font-extrabold text-muted-foreground shadow-sm">
+        VS
+      </span>
+    );
+  }
+
+  return (
+    <div
+      className="flex min-w-0 flex-col items-center justify-center gap-2 text-center"
+      aria-atomic="true"
+      aria-live="polite"
+    >
+      {hasScore ? (
+        <div
+          className={cn(
+            "flex items-baseline justify-center gap-1.5 rounded-xl bg-primary px-2.5 py-2 text-primary-foreground shadow-sm tabular-nums sm:gap-2 sm:px-3",
+            dailyGame.status === "LIVE" &&
+              "bg-accent text-accent-foreground shadow-accent/20",
+          )}
+        >
+          <span className="min-w-4 text-center text-2xl font-extrabold leading-none sm:text-3xl">
+            {dailyGame.score.home}
+          </span>
+          <span className="text-sm font-extrabold opacity-70">×</span>
+          <span className="min-w-4 text-center text-2xl font-extrabold leading-none sm:text-3xl">
+            {dailyGame.score.away}
+          </span>
+        </div>
+      ) : (
+        <span className="rounded-xl bg-background px-3 py-2 text-sm font-extrabold text-muted-foreground shadow-sm">
+          VS
+        </span>
+      )}
+
+      <DailyGameStatus
+        compact
+        label={getTransparencyStatusLabel(dailyGame)}
+        minute={dailyGame.minute}
+        status={dailyGame.status}
+      />
+    </div>
+  );
+}
+
 function TeamSummary({ logo, name }: { logo: string; name: string }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-2 text-center">
@@ -309,7 +429,7 @@ function PredictionsTable({
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm shadow-primary/5">
       <div className="md:hidden">
-        <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] gap-3 border-b border-border bg-muted/70 px-4 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        <div className="grid grid-cols-[minmax(0,1fr)_4rem_3.75rem] gap-2 border-b border-border bg-muted/70 px-3 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:px-4">
           <span>Usuário</span>
           <span className="text-center">Palpite</span>
           <span className="text-right">Pontos</span>
@@ -368,10 +488,10 @@ function PredictionMobileRow({
   prediction: TransparencyPrediction;
 }) {
   return (
-    <div className="grid min-h-14 grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] items-center gap-3 border-b border-border px-4 py-3 last:border-b-0">
+    <div className="grid min-h-16 grid-cols-[minmax(0,1fr)_4rem_3.75rem] items-center gap-2 border-b border-border px-3 py-3 last:border-b-0 sm:px-4">
       <div className="flex min-w-0 items-center gap-2.5">
         <UserAvatar name={prediction.user.name} size="sm" />
-        <span className="truncate text-sm font-bold text-foreground">
+        <span className="line-clamp-2 min-w-0 break-words text-sm font-bold leading-5 text-foreground">
           {prediction.user.name}
         </span>
       </div>

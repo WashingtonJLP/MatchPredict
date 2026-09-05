@@ -30,6 +30,9 @@ export class FixtureResponseDto {
   @ApiProperty({ example: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' })
   id!: string;
 
+  @ApiProperty({ example: '401860308' })
+  sourceEventId!: string;
+
   @ApiProperty({ example: 12 })
   round!: number;
 

@@ -7,6 +7,7 @@ export type Team = {
 
 export type Fixture = {
   id: string;
+  sourceEventId: string;
   round: number;
   kickoff: string;
   status: "NS" | "LIVE" | "FT" | "POSTPONED" | "CANCELLED";
@@ -43,7 +44,7 @@ export type TransparencyPrediction = {
 };
 
 export type FixtureTransparency = {
-  fixture: Pick<Fixture, "id" | "round" | "kickoff" | "status" | "homeTeam" | "awayTeam"> & {
+  fixture: Pick<Fixture, "id" | "sourceEventId" | "round" | "kickoff" | "status" | "homeTeam" | "awayTeam"> & {
     processedAt: string | null;
   };
   isClosedForPrediction: boolean;
