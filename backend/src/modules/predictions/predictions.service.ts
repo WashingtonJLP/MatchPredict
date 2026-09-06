@@ -77,7 +77,7 @@ export class PredictionsService {
   }
 
   async findMy(userId: string) {
-    return this.prisma.prediction.findMany({
+    const predictions = await this.prisma.prediction.findMany({
       where: {
         userId,
       },
@@ -85,6 +85,18 @@ export class PredictionsService {
         createdAt: 'desc',
       },
       include: predictionWithFixtureTeams.include,
+    });
+
+    return predictions.map(({ fixture, ...prediction }) => {
+      const { apiFixtureId, ...fixtureData } = fixture;
+
+      return {
+        ...prediction,
+        fixture: {
+          ...fixtureData,
+          sourceEventId: String(apiFixtureId),
+        },
+      };
     });
   }
 

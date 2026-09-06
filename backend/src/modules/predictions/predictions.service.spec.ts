@@ -157,6 +157,22 @@ describe('PredictionsService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(predictionUpdate).not.toHaveBeenCalled();
   });
+  it('expoe sourceEventId nos meus palpites para enriquecer partidas ao vivo', async () => {
+    const fixture = createTransparencyFixture({ apiFixtureId: 401860308 });
+    const prediction = createPrediction({ fixture });
+
+    predictionFindMany.mockResolvedValue([prediction]);
+
+    const result = await service.findMy(userId);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].fixture).toMatchObject({
+      id: fixture.id,
+      sourceEventId: '401860308',
+    });
+    expect(result[0].fixture).not.toHaveProperty('apiFixtureId');
+  });
+
   it('limita endpoint antigo ao palpite prÃ³prio antes do kickoff', async () => {
     const fixture = createFixture({
       kickoff: new Date('2026-08-20T16:00:00.000Z'),
