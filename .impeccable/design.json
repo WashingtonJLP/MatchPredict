@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-26T20:24:20.9268957-03:00",
+  "generatedAt": "2026-09-07T15:50:53.8666758-03:00",
   "title": "Design System: MatchPredict",
   "extensions": {
     "colorMeta": {
@@ -10,10 +10,22 @@
         "canonical": "#0f172a",
         "tonalRamp": ["oklch(15% 0.04 260)", "oklch(25% 0.05 260)", "oklch(35% 0.05 260)", "oklch(45% 0.04 260)", "oklch(60% 0.03 260)", "oklch(75% 0.02 260)", "oklch(88% 0.01 260)", "oklch(95% 0.006 260)"]
       },
+      "pitch-ink-dark": {
+        "role": "primary",
+        "displayName": "Night Pitch",
+        "canonical": "#020617",
+        "tonalRamp": ["oklch(15% 0.04 260)", "oklch(25% 0.05 260)", "oklch(35% 0.05 260)", "oklch(45% 0.04 260)", "oklch(60% 0.03 260)", "oklch(75% 0.02 260)", "oklch(88% 0.01 260)", "oklch(95% 0.006 260)"]
+      },
       "field-green": {
         "role": "secondary",
         "displayName": "Field Green",
         "canonical": "#22c55e",
+        "tonalRamp": ["oklch(15% 0.09 145)", "oklch(25% 0.12 145)", "oklch(35% 0.15 145)", "oklch(45% 0.17 145)", "oklch(58% 0.19 145)", "oklch(72% 0.16 145)", "oklch(86% 0.10 145)", "oklch(95% 0.04 145)"]
+      },
+      "field-green-deep": {
+        "role": "secondary",
+        "displayName": "Deep Field Green",
+        "canonical": "#16a34a",
         "tonalRamp": ["oklch(15% 0.09 145)", "oklch(25% 0.12 145)", "oklch(35% 0.15 145)", "oklch(45% 0.17 145)", "oklch(58% 0.19 145)", "oklch(72% 0.16 145)", "oklch(86% 0.10 145)", "oklch(95% 0.04 145)"]
       },
       "paper": {
@@ -28,17 +40,47 @@
         "canonical": "#ffffff",
         "tonalRamp": ["oklch(15% 0 0)", "oklch(25% 0 0)", "oklch(35% 0 0)", "oklch(50% 0 0)", "oklch(65% 0 0)", "oklch(80% 0 0)", "oklch(92% 0 0)", "oklch(100% 0 0)"]
       },
+      "text": {
+        "role": "neutral",
+        "displayName": "Score Text",
+        "canonical": "#1e293b",
+        "tonalRamp": ["oklch(15% 0.025 255)", "oklch(25% 0.03 255)", "oklch(35% 0.03 255)", "oklch(50% 0.025 255)", "oklch(65% 0.02 255)", "oklch(78% 0.014 255)", "oklch(90% 0.008 255)", "oklch(95% 0.004 255)"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Quiet Line",
+        "canonical": "#e2e8f0",
+        "tonalRamp": ["oklch(15% 0.01 250)", "oklch(25% 0.012 250)", "oklch(35% 0.012 250)", "oklch(50% 0.01 250)", "oklch(65% 0.008 250)", "oklch(78% 0.006 250)", "oklch(90% 0.004 250)", "oklch(95% 0.002 250)"]
+      },
       "muted": {
         "role": "neutral",
         "displayName": "Muted Turf",
         "canonical": "#f1f5f9",
         "tonalRamp": ["oklch(15% 0.01 250)", "oklch(25% 0.012 250)", "oklch(35% 0.012 250)", "oklch(50% 0.01 250)", "oklch(65% 0.008 250)", "oklch(78% 0.006 250)", "oklch(90% 0.006 250)", "oklch(96% 0.004 250)"]
       },
+      "muted-text": {
+        "role": "neutral",
+        "displayName": "Muted Commentary",
+        "canonical": "#64748b",
+        "tonalRamp": ["oklch(15% 0.02 250)", "oklch(25% 0.025 250)", "oklch(35% 0.03 250)", "oklch(50% 0.028 250)", "oklch(65% 0.022 250)", "oklch(78% 0.015 250)", "oklch(90% 0.008 250)", "oklch(95% 0.004 250)"]
+      },
+      "goal-amber": {
+        "role": "tertiary",
+        "displayName": "Goal Amber",
+        "canonical": "#f59e0b",
+        "tonalRamp": ["oklch(15% 0.07 75)", "oklch(25% 0.10 75)", "oklch(35% 0.13 75)", "oklch(45% 0.16 75)", "oklch(58% 0.18 75)", "oklch(72% 0.15 75)", "oklch(86% 0.09 75)", "oklch(95% 0.04 75)"]
+      },
       "error-red": {
         "role": "tertiary",
         "displayName": "Result Red",
         "canonical": "#dc2626",
         "tonalRamp": ["oklch(15% 0.08 25)", "oklch(25% 0.11 25)", "oklch(35% 0.14 25)", "oklch(45% 0.17 25)", "oklch(58% 0.20 25)", "oklch(72% 0.16 25)", "oklch(86% 0.09 25)", "oklch(95% 0.04 25)"]
+      },
+      "info-blue": {
+        "role": "tertiary",
+        "displayName": "Fixture Info Blue",
+        "canonical": "#0284c7",
+        "tonalRamp": ["oklch(15% 0.06 235)", "oklch(25% 0.09 235)", "oklch(35% 0.12 235)", "oklch(45% 0.15 235)", "oklch(58% 0.17 235)", "oklch(72% 0.14 235)", "oklch(86% 0.08 235)", "oklch(95% 0.035 235)"]
       }
     },
     "typographyMeta": {

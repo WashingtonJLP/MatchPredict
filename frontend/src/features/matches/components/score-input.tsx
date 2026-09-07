@@ -1,17 +1,32 @@
+"use client";
+
 import { Minus, Plus } from "lucide-react";
+import { useState } from "react";
 
 import { TeamLogo } from "@/features/matches/components/team-logo";
+import {
+  decrementScore,
+  getScoreInputState,
+  incrementScore,
+  MAX_SCORE,
+  MIN_SCORE,
+} from "@/features/matches/score-input-value";
 import type { Team } from "@/types/prediction";
 
 type ScoreInputProps = {
   team: Pick<Team, "name" | "logo">;
-  value: number;
-  onChange: (value: number) => void;
+  value: number | null;
+  onChange: (value: number | null) => void;
 };
 
 export function ScoreInput({ team, value, onChange }: ScoreInputProps) {
-  function updateValue(nextValue: number) {
-    onChange(Math.max(0, nextValue));
+  const [inputValue, setInputValue] = useState(
+    value === null ? "" : String(value),
+  );
+
+  function updateValue(nextValue: number | null) {
+    setInputValue(nextValue === null ? "" : String(nextValue));
+    onChange(nextValue);
   }
 
   return (
@@ -33,24 +48,30 @@ export function ScoreInput({ team, value, onChange }: ScoreInputProps) {
           type="button"
           aria-label={`Diminuir placar de ${team.name}`}
           className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-40"
-          onClick={() => updateValue(value - 1)}
-          disabled={value <= 0}
+          onClick={() => updateValue(decrementScore(value))}
+          disabled={value === null || value <= MIN_SCORE}
         >
           <Minus className="size-4" aria-hidden />
         </button>
         <input
           type="number"
-          min={0}
+          min={MIN_SCORE}
+          max={MAX_SCORE}
           aria-label={`Placar de ${team.name}`}
-          value={value}
-          onChange={(event) => updateValue(Number(event.target.value))}
+          value={inputValue}
+          onChange={(event) => {
+            const nextState = getScoreInputState(event.target.value);
+
+            setInputValue(nextState.inputValue);
+            onChange(nextState.value);
+          }}
           className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-card px-3 text-center text-2xl font-extrabold leading-none text-foreground outline-none transition tabular-nums hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
         />
         <button
           type="button"
           aria-label={`Aumentar placar de ${team.name}`}
           className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-          onClick={() => updateValue(value + 1)}
+          onClick={() => updateValue(incrementScore(value))}
         >
           <Plus className="size-4" aria-hidden />
         </button>
