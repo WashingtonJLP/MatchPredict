@@ -952,27 +952,37 @@ function RecentPredictionRow({ prediction }: { prediction: Prediction }) {
   const { awayTeam, homeTeam } = prediction.fixture;
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-3 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_5rem_5rem] sm:px-4">
-      <div className="min-w-0">
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:gap-3">
-          <RecentTeam team={homeTeam} />
-          <span className="text-xs font-black uppercase text-muted-foreground">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_2.75rem] items-center gap-x-1 border-b border-border px-1 py-4 last:border-b-0 max-[360px]:gap-x-px max-[360px]:px-0 sm:grid-cols-[minmax(0,1fr)_5rem_5rem] sm:gap-3 sm:px-4 sm:py-3">
+      <div className="contents sm:block sm:min-w-0">
+        <div className="contents sm:flex sm:min-w-0 sm:items-center sm:gap-3">
+          <RecentTeam mobileColumn="home" team={homeTeam} />
+          <span className="col-start-2 row-start-1 text-sm font-extrabold text-muted-foreground sm:text-xs sm:font-black sm:uppercase">
             x
           </span>
-          <RecentTeam team={awayTeam} />
+          <RecentTeam mobileColumn="away" team={awayTeam} />
         </div>
-        <p className="mt-2 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:mt-1">
+        <div className="col-span-4 row-start-2 mt-3 flex items-baseline gap-5 sm:hidden">
+          <p className="flex items-baseline gap-1 text-sm text-muted-foreground">
+            <span className="font-medium">Rodada</span>
+            <span className="font-bold text-foreground tabular-nums">
+              {prediction.fixture.round}
+            </span>
+          </p>
+          <p className="flex items-baseline gap-1 text-sm text-muted-foreground">
+            <span className="font-medium">Palpite</span>
+            <span className="font-extrabold text-foreground tabular-nums">
+              {prediction.homeGoals} x {prediction.awayGoals}
+            </span>
+          </p>
+        </div>
+        <p className="mt-1 hidden text-xs font-bold uppercase tracking-wide text-muted-foreground sm:block">
           Rodada {prediction.fixture.round}
-          <span className="sm:hidden">
-            {" "}
-            · Palpite {prediction.homeGoals} x {prediction.awayGoals}
-          </span>
         </p>
       </div>
       <p className="hidden text-center text-base font-black text-foreground tabular-nums sm:block">
         {prediction.homeGoals} x {prediction.awayGoals}
       </p>
-      <p className="text-right text-lg font-black text-accent tabular-nums">
+      <p className="col-start-4 row-start-1 w-full whitespace-nowrap text-right text-base font-black text-accent tabular-nums sm:col-start-auto sm:row-start-auto sm:w-auto sm:text-lg">
         {formatPoints(prediction.totalPoints)}
       </p>
     </div>
@@ -980,14 +990,21 @@ function RecentPredictionRow({ prediction }: { prediction: Prediction }) {
 }
 
 function RecentTeam({
+  mobileColumn,
   team,
 }: {
+  mobileColumn: "away" | "home";
   team: Prediction["fixture"]["homeTeam"];
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div
+      className={cn(
+        "row-start-1 flex min-w-0 items-center gap-1 [&>span:first-child]:size-7 [&>span:first-child>img]:size-5 max-[360px]:gap-px max-[360px]:[&>span:first-child]:size-6 sm:gap-2 sm:[&>span:first-child]:size-9 sm:[&>span:first-child>img]:size-6",
+        mobileColumn === "home" ? "col-start-1" : "col-start-3",
+      )}
+    >
       <TeamLogo team={team} size="sm" />
-      <span className="truncate text-sm font-extrabold text-foreground">
+      <span className="line-clamp-2 min-h-10 min-w-0 flex-1 break-words text-sm font-bold leading-5 text-foreground max-[360px]:tracking-tight sm:line-clamp-none sm:min-h-0 sm:truncate sm:font-extrabold sm:leading-normal">
         {team.name}
       </span>
     </div>

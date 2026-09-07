@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, Filter, Search } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -161,8 +161,7 @@ export default function MatchesPage() {
     null,
   );
   const resultsRef = useRef<HTMLDivElement | null>(null);
-  const pendingResultsScrollRef = useRef(false);
-  const [resultsScrollRequest, setResultsScrollRequest] = useState(0);
+  const hasScrolledOnEntryRef = useRef(false);
   const dateRange = useMemo(() => buildDateRange(dateFilter), [dateFilter]);
   const fixturesQueryParams = useMemo<FixturesQuery>(
     () => ({
@@ -199,47 +198,28 @@ export default function MatchesPage() {
   );
 
   function updateDateFilter(value: DateFilter) {
-    requestResultsScrollAfterQuery();
     setHasUserSelectedDateFilter(true);
     setDateFilter(value);
     setPage(1);
   }
 
-  const scrollToResults = useCallback(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+  useEffect(() => {
+    const animationFrame = window.requestAnimationFrame(() => {
+      if (hasScrolledOnEntryRef.current) {
+        return;
+      }
 
-    window.requestAnimationFrame(() => {
+      hasScrolledOnEntryRef.current = true;
       resultsRef.current?.scrollIntoView({
-        behavior: "smooth",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
         block: "start",
       });
     });
+
+    return () => window.cancelAnimationFrame(animationFrame);
   }, []);
-
-  function requestResultsScrollAfterQuery() {
-    pendingResultsScrollRef.current = true;
-    setResultsScrollRequest((value) => value + 1);
-  }
-
-  useEffect(() => {
-    if (!pendingResultsScrollRef.current) {
-      return;
-    }
-
-    if (fixturesQuery.isLoading || fixturesQuery.isFetching) {
-      return;
-    }
-
-    pendingResultsScrollRef.current = false;
-    scrollToResults();
-  }, [
-    fixturesQuery.isFetching,
-    fixturesQuery.isLoading,
-    resultsScrollRequest,
-    scrollToResults,
-  ]);
 
   useEffect(() => {
     if (
@@ -318,11 +298,6 @@ export default function MatchesPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    scrollToResults();
-                  }
-                }}
                 aria-label="Buscar partidas por time"
                 placeholder="Buscar por time"
                 className="h-12 w-full rounded-xl border border-input bg-background pl-11 pr-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
@@ -333,7 +308,6 @@ export default function MatchesPage() {
               value={status}
               aria-label="Filtrar por status"
               onChange={(event) => {
-                requestResultsScrollAfterQuery();
                 setStatus(event.target.value as FixtureStatusValue | "");
                 setPage(1);
               }}
@@ -352,7 +326,6 @@ export default function MatchesPage() {
               value={round}
               aria-label="Filtrar por rodada"
               onChange={(event) => {
-                requestResultsScrollAfterQuery();
                 setRound(event.target.value);
                 setPage(1);
               }}
@@ -368,7 +341,6 @@ export default function MatchesPage() {
                 value={teamId}
                 aria-label="Filtrar por ID do time"
                 onChange={(event) => {
-                  requestResultsScrollAfterQuery();
                   setTeamId(event.target.value);
                   setPage(1);
                 }}
@@ -379,7 +351,11 @@ export default function MatchesPage() {
           </div>
         </section>
 
-        <div ref={resultsRef} className="space-y-6 scroll-mt-28 sm:scroll-mt-32">
+        <div
+          id="available-matches"
+          ref={resultsRef}
+          className="space-y-6 scroll-mt-28 sm:scroll-mt-32"
+        >
           {fixturesQuery.isLoading ? (
             <div className="grid gap-5 xl:grid-cols-2">
               {Array.from({ length: 6 }).map((_, index) => (
