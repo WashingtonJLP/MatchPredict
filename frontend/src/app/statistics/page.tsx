@@ -18,10 +18,11 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
-import { TeamLogo } from "@/features/matches/components/team-logo";
+import { PredictionFixtureCard } from "@/features/matches/components/prediction-fixture-card";
 import { useMyPredictions } from "@/hooks/use-predictions";
 import { useMyStatistics } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
+import type { MatchFixture } from "@/types/fixture";
 import type { Prediction } from "@/types/prediction";
 import type { RoundStatistics, UserStatistics } from "@/types/statistics";
 
@@ -909,8 +910,8 @@ function HighlightStrip({
 
 function RecentForm({ predictions }: { predictions: Prediction[] }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+    <section className="space-y-4">
+      <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-accent">
             Desempenho recente
@@ -925,7 +926,7 @@ function RecentForm({ predictions }: { predictions: Prediction[] }) {
       </div>
 
       {predictions.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-border bg-muted/40 p-6 text-center">
+        <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-6 text-center">
           <p className="text-base font-bold text-foreground">
             Nenhum palpite avaliado ainda
           </p>
@@ -935,11 +936,14 @@ function RecentForm({ predictions }: { predictions: Prediction[] }) {
           </p>
         </div>
       ) : (
-        <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-background">
+        <div className="grid gap-5">
           {predictions.map((prediction) => (
-            <RecentPredictionRow
+            <PredictionFixtureCard
               key={prediction.id}
-              prediction={prediction}
+              fixture={toRecentMatchFixture(prediction)}
+              onPredict={ignorePredictionSelection}
+              showFinalResult
+              showPoints
             />
           ))}
         </div>
@@ -948,68 +952,23 @@ function RecentForm({ predictions }: { predictions: Prediction[] }) {
   );
 }
 
-function RecentPredictionRow({ prediction }: { prediction: Prediction }) {
-  const { awayTeam, homeTeam } = prediction.fixture;
-
-  return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_2.75rem] items-center gap-x-1 border-b border-border px-1 py-4 last:border-b-0 max-[360px]:gap-x-px max-[360px]:px-0 sm:grid-cols-[minmax(0,1fr)_5rem_5rem] sm:gap-3 sm:px-4 sm:py-3">
-      <div className="contents sm:block sm:min-w-0">
-        <div className="contents sm:flex sm:min-w-0 sm:items-center sm:gap-3">
-          <RecentTeam mobileColumn="home" team={homeTeam} />
-          <span className="col-start-2 row-start-1 text-sm font-extrabold text-muted-foreground sm:text-xs sm:font-black sm:uppercase">
-            x
-          </span>
-          <RecentTeam mobileColumn="away" team={awayTeam} />
-        </div>
-        <div className="col-span-4 row-start-2 mt-3 flex items-baseline gap-5 sm:hidden">
-          <p className="flex items-baseline gap-1 text-sm text-muted-foreground">
-            <span className="font-medium">Rodada</span>
-            <span className="font-bold text-foreground tabular-nums">
-              {prediction.fixture.round}
-            </span>
-          </p>
-          <p className="flex items-baseline gap-1 text-sm text-muted-foreground">
-            <span className="font-medium">Palpite</span>
-            <span className="font-extrabold text-foreground tabular-nums">
-              {prediction.homeGoals} x {prediction.awayGoals}
-            </span>
-          </p>
-        </div>
-        <p className="mt-1 hidden text-xs font-bold uppercase tracking-wide text-muted-foreground sm:block">
-          Rodada {prediction.fixture.round}
-        </p>
-      </div>
-      <p className="hidden text-center text-base font-black text-foreground tabular-nums sm:block">
-        {prediction.homeGoals} x {prediction.awayGoals}
-      </p>
-      <p className="col-start-4 row-start-1 w-full whitespace-nowrap text-right text-base font-black text-accent tabular-nums sm:col-start-auto sm:row-start-auto sm:w-auto sm:text-lg">
-        {formatPoints(prediction.totalPoints)}
-      </p>
-    </div>
-  );
+function toRecentMatchFixture(prediction: Prediction): MatchFixture {
+  return {
+    ...prediction.fixture,
+    canPredict: false,
+    competition: "Premier League",
+    league: "Premier League",
+    userPrediction: {
+      id: prediction.id,
+      awayGoals: prediction.awayGoals,
+      homeGoals: prediction.homeGoals,
+      totalPoints: prediction.totalPoints,
+    },
+    winnerType: null,
+  };
 }
 
-function RecentTeam({
-  mobileColumn,
-  team,
-}: {
-  mobileColumn: "away" | "home";
-  team: Prediction["fixture"]["homeTeam"];
-}) {
-  return (
-    <div
-      className={cn(
-        "row-start-1 flex min-w-0 items-center gap-1 [&>span:first-child]:size-7 [&>span:first-child>img]:size-5 max-[360px]:gap-px max-[360px]:[&>span:first-child]:size-6 sm:gap-2 sm:[&>span:first-child]:size-9 sm:[&>span:first-child>img]:size-6",
-        mobileColumn === "home" ? "col-start-1" : "col-start-3",
-      )}
-    >
-      <TeamLogo team={team} size="sm" />
-      <span className="line-clamp-2 min-h-10 min-w-0 flex-1 break-words text-sm font-bold leading-5 text-foreground max-[360px]:tracking-tight sm:line-clamp-none sm:min-h-0 sm:truncate sm:font-extrabold sm:leading-normal">
-        {team.name}
-      </span>
-    </div>
-  );
-}
+function ignorePredictionSelection() {}
 
 type StatisticsDashboard = {
   correctWinnerOnly: number;

@@ -13,12 +13,14 @@ type PredictionFixtureCardProps = {
   dailyGame?: DailyGame;
   onPredict: (fixture: MatchFixture) => void;
   showFinalResult?: boolean;
+  showPoints?: boolean;
 };
 
 export function PredictionFixtureCard({
   dailyGame,
   fixture,
   onPredict,
+  showPoints = false,
 }: PredictionFixtureCardProps) {
   const kickoff = new Date(fixture.kickoff);
   const date = new Intl.DateTimeFormat("pt-BR", {
@@ -96,20 +98,43 @@ export function PredictionFixtureCard({
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-3">
-        <p className="min-w-0 flex-1 text-sm font-semibold text-muted-foreground">
-          {prediction
-            ? canEdit
-              ? "Editável até o início"
-              : "Alteração encerrada"
-            : canCreate
-              ? "Aberta para palpite"
-              : "Indisponível"}
-        </p>
-        <PredictionButton fixture={fixture} onClick={() => onPredict(fixture)} />
-      </div>
+      {showPoints && prediction ? (
+        <div className="mt-4 flex items-end justify-between gap-3">
+          <p className="min-w-0 flex-1 text-sm font-semibold text-muted-foreground">
+            Alteração encerrada
+          </p>
+          <div className="shrink-0 text-right">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Pontuação obtida
+            </p>
+            <p className="mt-1 text-xl font-black leading-none text-accent tabular-nums">
+              {formatPredictionPoints(prediction.totalPoints)}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4 flex items-center gap-3">
+          <p className="min-w-0 flex-1 text-sm font-semibold text-muted-foreground">
+            {prediction
+              ? canEdit
+                ? "Editável até o início"
+                : "Alteração encerrada"
+              : canCreate
+                ? "Aberta para palpite"
+                : "Indisponível"}
+          </p>
+          <PredictionButton
+            fixture={fixture}
+            onClick={() => onPredict(fixture)}
+          />
+        </div>
+      )}
     </article>
   );
+}
+
+function formatPredictionPoints(points: number) {
+  return `${points} ${points === 1 ? "pt" : "pts"}`;
 }
 
 type ScoreCenterProps = {
