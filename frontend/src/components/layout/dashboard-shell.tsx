@@ -5,6 +5,7 @@ import {
   BookOpen,
   CalendarDays,
   Eye,
+  Globe2,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -72,6 +73,11 @@ const sidebarSections: SidebarSection[] = [
         href: "/daily-games",
         label: "Jogos do Dia",
         icon: CalendarDays,
+      },
+      {
+        href: "/competitions",
+        label: "Competições",
+        icon: Globe2,
       },
       {
         href: "/transparency",

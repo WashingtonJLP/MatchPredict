@@ -19,6 +19,10 @@ const navLinks = [
     label: "Jogos do Dia",
   },
   {
+    href: "/competitions",
+    label: "Competições",
+  },
+  {
     href: "/#ranking",
     label: "Ranking",
   },

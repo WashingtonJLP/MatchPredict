@@ -10,6 +10,7 @@ import { FootballModule } from './modules/football/football.module';
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { StandingsModule } from './modules/standings/standings.module';
 import { DailyGamesModule } from './modules/daily-games/daily-games.module';
+import { CompetitionsModule } from './modules/competitions/competitions.module';
 
 @Module({
   imports: [
@@ -36,6 +37,8 @@ import { DailyGamesModule } from './modules/daily-games/daily-games.module';
     FootballModule,
 
     DailyGamesModule,
+
+    CompetitionsModule,
 
     PredictionsModule,
 
