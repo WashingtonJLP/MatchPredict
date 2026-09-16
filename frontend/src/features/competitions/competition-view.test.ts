@@ -1,27 +1,41 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { FootballCompetition } from "../../types/competition.ts";
+import type {
+  FootballCompetition,
+  TournamentPhase,
+  TournamentTie,
+} from "../../types/competition.ts";
 import {
+  formatTournamentOutcome,
   formatTournamentScore,
+  formatTournamentStatus,
   formatStandingValue,
   getCompetitionDataState,
   getCompetitionTabs,
+  getGlobeMarkerSpecs,
   getGroupSections,
   getKnockoutPhases,
+  getRelevantKnockoutPhase,
+  getStandingZoneVisual,
   getTeamScore,
+  locationToGlobeAngles,
+  normalizeTournamentLabel,
+  resolveCompetitionForRegion,
   resolveCompetitionSelection,
+  shortestAngleDelta,
 } from "./competition-view.ts";
 
 function competition(
   id: string,
   capabilities: FootballCompetition["capabilities"],
+  regionId = "test",
 ): FootballCompetition {
   return {
     id,
     name: id,
     shortName: id,
-    regionId: "test",
+    regionId,
     format: "LEAGUE",
     logo: null,
     capabilities,
@@ -61,8 +75,44 @@ test("seleciona o id solicitado ou usa a primeira competição", () => {
   });
   const second = competition("bra.1", first.capabilities);
 
-  assert.equal(resolveCompetitionSelection("bra.1", [first, second])?.id, "bra.1");
-  assert.equal(resolveCompetitionSelection("invalid", [first, second])?.id, "eng.1");
+  assert.equal(
+    resolveCompetitionSelection("bra.1", [first, second])?.id,
+    "bra.1",
+  );
+  assert.equal(
+    resolveCompetitionSelection("invalid", [first, second])?.id,
+    "eng.1",
+  );
+});
+
+test("mantém competição e região sincronizadas por uma única seleção", () => {
+  const capabilities = {
+    games: true,
+    standings: true,
+    groups: false,
+    tournament: false,
+  };
+  const premier = competition("eng.1", capabilities, "england");
+  const brasileirao = competition("bra.1", capabilities, "brazil");
+  const copa = competition("bra.copa_do_brazil", capabilities, "brazil");
+
+  assert.equal(
+    resolveCompetitionForRegion("brazil", [premier, brasileirao, copa], "eng.1")
+      ?.id,
+    "bra.1",
+  );
+  assert.equal(
+    resolveCompetitionForRegion(
+      "brazil",
+      [premier, brasileirao, copa],
+      "bra.copa_do_brazil",
+    )?.id,
+    "bra.copa_do_brazil",
+  );
+  assert.equal(
+    resolveCompetitionSelection("eng.1", [premier, brasileirao])?.regionId,
+    "england",
+  );
 });
 
 test("formata ausências sem convertê-las em zero", () => {
@@ -99,3 +149,219 @@ test("preserva grupos densos com entradas e seleciona somente fases eliminatóri
     ["round-of-16"],
   );
 });
+
+test("mapeia zonas europeias e de rebaixamento sem inferir pela posição", () => {
+  assert.deepEqual(getStandingZoneVisual("Champions League"), {
+    kind: "champions",
+    label: "Champions League",
+  });
+  assert.equal(getStandingZoneVisual("Europa League").kind, "europa");
+  assert.equal(
+    getStandingZoneVisual("Conference League qualifying").kind,
+    "conference",
+  );
+  assert.deepEqual(getStandingZoneVisual("Relegation playoff"), {
+    kind: "relegation-playoff",
+    label: "Playoff contra o rebaixamento",
+  });
+  assert.deepEqual(getStandingZoneVisual("Relegation"), {
+    kind: "relegation",
+    label: "Rebaixamento",
+  });
+});
+
+test("escolhe a fase em andamento antes de uma próxima fase apenas TBD", () => {
+  const oldPhase = phase("quarterfinals", "Quartas de final", {
+    completed: true,
+    kickoff: "2026-08-20T20:00:00Z",
+  });
+  const currentPhase = phase("semifinals", "Semifinais", {
+    completed: false,
+    kickoff: "2026-09-18T20:00:00Z",
+    startDate: "2026-09-01T00:00:00Z",
+    endDate: "2026-10-01T00:00:00Z",
+  });
+  const nextPhase = phase("final", "Final", {
+    completed: false,
+    kickoff: "2026-11-10T20:00:00Z",
+    state: "TBD",
+    tieState: "TBD",
+  });
+
+  assert.equal(
+    getRelevantKnockoutPhase(
+      [oldPhase, currentPhase, nextPhase],
+      new Date("2026-09-15T12:00:00Z"),
+    )?.id,
+    "semifinals",
+  );
+});
+
+test("escolhe a próxima fase publicada e mantém fallback seguro", () => {
+  const nextPhase = phase("semifinals", "Semifinais", {
+    completed: false,
+    kickoff: "2026-11-01T20:00:00Z",
+  });
+  const laterPhase = phase("final", "Final", {
+    completed: false,
+    kickoff: "2026-12-01T20:00:00Z",
+  });
+  const unpublished = {
+    ...phase("round-of-16", "Oitavas de final", {
+      completed: false,
+      kickoff: null,
+    }),
+    state: "NOT_PUBLISHED" as const,
+    ties: [],
+  };
+
+  assert.equal(
+    getRelevantKnockoutPhase(
+      [nextPhase, laterPhase],
+      new Date("2026-09-15T12:00:00Z"),
+    )?.id,
+    "semifinals",
+  );
+  assert.equal(getRelevantKnockoutPhase([unpublished])?.id, "round-of-16");
+});
+
+test("normaliza labels conhecidos e monta desfecho com dados estruturados", () => {
+  assert.equal(normalizeTournamentLabel("ROUND OF 16"), "Oitavas de final");
+  assert.equal(normalizeTournamentLabel("QUARTERFINALS"), "Quartas de final");
+  assert.equal(normalizeTournamentLabel("SEMIFINALS"), "Semifinais");
+  assert.equal(normalizeTournamentLabel("FINAL"), "Final");
+  assert.equal(formatTournamentStatus("SCHEDULED"), "Agendado");
+  assert.equal(
+    formatTournamentStatus("FINAL_PENALTIES"),
+    "Encerrado nos pênaltis",
+  );
+
+  const tie = tournamentTie();
+
+  assert.equal(
+    formatTournamentOutcome(tie),
+    "Palmeiras avança por 5 x 3 no agregado",
+  );
+  assert.equal(
+    formatTournamentOutcome({
+      ...tie,
+      aggregate: [
+        { teamId: "palmeiras", value: 3 },
+        { teamId: "gremio", value: 3 },
+      ],
+      penalties: null,
+      winnerTeamId: null,
+    }),
+    "Empate no agregado",
+  );
+  assert.equal(
+    formatTournamentOutcome({
+      ...tie,
+      aggregate: [
+        { teamId: "palmeiras", value: 3 },
+        { teamId: "gremio", value: 3 },
+      ],
+      penalties: [
+        { teamId: "palmeiras", value: 5 },
+        { teamId: "gremio", value: 4 },
+      ],
+    }),
+    "Palmeiras vence nos pênaltis por 5 x 4",
+  );
+});
+
+test("calcula alvos e markers do globo a partir da região ativa", () => {
+  const regions = [
+    { id: "brazil", latitude: -14.2, longitude: -51.9 },
+    { id: "england", latitude: 52.4, longitude: -1.5 },
+  ];
+  const markers = getGlobeMarkerSpecs(regions, "england");
+  const englandAngles = locationToGlobeAngles(52.4, -1.5);
+
+  assert.equal(markers.find((marker) => marker.id === "england")?.active, true);
+  assert.equal(markers.find((marker) => marker.id === "brazil")?.active, false);
+  assert.ok(englandAngles.theta > 0);
+  assert.ok(
+    Math.abs(shortestAngleDelta(2 * Math.PI - 0.1, 0.1) - 0.2) < 0.0001,
+  );
+});
+
+function phase(
+  id: string,
+  name: string,
+  options: {
+    completed: boolean;
+    kickoff: string | null;
+    startDate?: string;
+    endDate?: string;
+    state?: TournamentPhase["state"];
+    tieState?: TournamentTie["state"];
+  },
+): TournamentPhase {
+  return {
+    id,
+    sourceTypeId: null,
+    slug: id,
+    name,
+    sourceName: name,
+    kind: "KNOCKOUT",
+    startDate: options.startDate ?? null,
+    endDate: options.endDate ?? null,
+    state: options.state ?? "AVAILABLE",
+    ties: [
+      {
+        ...tournamentTie(),
+        id: `${id}-tie`,
+        state: options.tieState ?? "AVAILABLE",
+        completed: options.completed,
+        legs: options.kickoff
+          ? [
+              {
+                id: `${id}-leg`,
+                kickoff: options.kickoff,
+                leg: 1,
+                legLabel: "Ida",
+                status: options.completed ? "FINAL" : "SCHEDULED",
+                statusLabel: "",
+                homeTeam: null,
+                awayTeam: null,
+                score: { home: null, away: null },
+              },
+            ]
+          : [],
+      },
+    ],
+  };
+}
+
+function tournamentTie(): TournamentTie {
+  return {
+    id: "tie",
+    title: "QUARTERFINALS",
+    state: "AVAILABLE",
+    teams: [
+      {
+        id: "palmeiras",
+        name: "Palmeiras",
+        abbreviation: null,
+        logo: null,
+      },
+      {
+        id: "gremio",
+        name: "Grêmio",
+        abbreviation: null,
+        logo: null,
+      },
+    ],
+    legs: [],
+    aggregate: [
+      { teamId: "palmeiras", value: 5 },
+      { teamId: "gremio", value: 3 },
+    ],
+    penalties: null,
+    winnerTeamId: "palmeiras",
+    completed: true,
+    note: "2nd Leg - Palmeiras advance 5-3 on aggregate",
+    progression: null,
+  };
+}

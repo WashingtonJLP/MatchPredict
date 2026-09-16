@@ -34,7 +34,9 @@ export function CompetitionExplorer({
   onRegionChange,
   onCompetitionChange,
 }: CompetitionExplorerProps) {
-  const selectedRegion = regions.find((region) => region.id === selectedRegionId);
+  const selectedRegion = regions.find(
+    (region) => region.id === selectedRegionId,
+  );
 
   return (
     <section
@@ -55,14 +57,15 @@ export function CompetitionExplorer({
             </h1>
           </div>
           <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-primary-foreground/70 sm:text-lg">
-            Acompanhe classificações, grupos e mata-mata dos principais campeonatos.
+            Acompanhe classificações, grupos e mata-mata dos principais
+            campeonatos.
           </p>
 
           <div className="mt-6">
             <p className="text-xs font-extrabold uppercase tracking-wide text-primary-foreground/60">
               Explore por região
             </p>
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-wrap lg:overflow-visible lg:pb-0" role="list">
+            <div className="mt-3 flex flex-wrap gap-2" role="list">
               {regions.map((region) => {
                 const isSelected = region.id === selectedRegionId;
 
@@ -71,7 +74,7 @@ export function CompetitionExplorer({
                     key={region.id}
                     type="button"
                     className={cn(
-                      "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-bold transition focus-visible:ring-3 focus-visible:ring-accent/60",
+                      "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-bold transition focus-visible:ring-3 focus-visible:ring-accent/60 sm:min-h-11 sm:gap-2 sm:px-3 sm:text-sm",
                       isSelected
                         ? "border-accent bg-accent text-accent-foreground shadow-lg shadow-accent/20"
                         : "border-primary-foreground/15 bg-primary-foreground/5 text-primary-foreground/80 hover:border-primary-foreground/30 hover:bg-primary-foreground/10",
@@ -97,7 +100,11 @@ export function CompetitionExplorer({
               onChange={(event) => onCompetitionChange(event.target.value)}
             >
               {competitions.map((competition) => (
-                <option key={competition.id} value={competition.id} className="bg-primary">
+                <option
+                  key={competition.id}
+                  value={competition.id}
+                  className="bg-primary"
+                >
                   {competition.name}
                 </option>
               ))}
@@ -105,15 +112,19 @@ export function CompetitionExplorer({
           </label>
         </div>
 
-        <div className="relative mx-auto w-full max-w-40 sm:max-w-72 lg:max-w-none">
+        <div className="relative mx-auto w-full max-w-56 sm:max-w-72 lg:max-w-none">
           <div className="pointer-events-none absolute inset-[16%] rounded-full bg-accent/10 blur-3xl" />
-          <CobeGlobe
-            regions={regions}
-            selectedRegionId={selectedRegionId}
-          />
-          <div className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-primary-foreground/15 bg-primary/85 px-3 py-1.5 text-xs font-bold text-primary-foreground/80 shadow-lg backdrop-blur">
-            <span className="size-2 rounded-full bg-accent" aria-hidden />
-            {selectedRegion?.name ?? "Região selecionada"}
+          <CobeGlobe regions={regions} selectedRegionId={selectedRegionId} />
+          <div className="pointer-events-none absolute bottom-2 left-1/2 flex max-w-[90%] -translate-x-1/2 items-center gap-2 rounded-full border border-primary-foreground/15 bg-primary/90 px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-lg backdrop-blur">
+            <span className="relative flex size-2.5 shrink-0" aria-hidden>
+              <span className="absolute inline-flex size-full rounded-full bg-accent/60 motion-safe:animate-ping" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-accent" />
+            </span>
+            <span className="truncate">
+              {selectedRegion?.name ?? "Região selecionada"}
+              <span className="text-primary-foreground/55"> · </span>
+              {selectedCompetition.shortName}
+            </span>
           </div>
         </div>
       </div>
@@ -121,7 +132,7 @@ export function CompetitionExplorer({
       <div className="border-t border-primary-foreground/10 bg-primary-foreground/[0.035]">
         <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
           <div
-            className="hidden grid-cols-3 gap-2 sm:grid lg:grid-cols-6"
+            className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0 lg:grid-cols-6"
             aria-label="Todas as competições"
           >
             {competitions.map((competition) => {
@@ -133,7 +144,7 @@ export function CompetitionExplorer({
                   type="button"
                   aria-pressed={isSelected}
                   className={cn(
-                    "relative flex min-h-16 min-w-0 items-center gap-2 overflow-hidden rounded-xl border px-2.5 py-2 text-left transition focus-visible:ring-3 focus-visible:ring-accent/60",
+                    "relative flex min-h-16 min-w-36 items-center gap-2 overflow-hidden rounded-xl border px-2.5 py-2 text-left transition focus-visible:ring-3 focus-visible:ring-accent/60 sm:min-w-0",
                     isSelected
                       ? "border-accent bg-accent text-accent-foreground shadow-lg shadow-accent/15"
                       : "border-primary-foreground/10 bg-primary-foreground/5 text-primary-foreground hover:border-primary-foreground/25 hover:bg-primary-foreground/10",
@@ -149,7 +160,10 @@ export function CompetitionExplorer({
                     {competition.shortName}
                   </span>
                   {isSelected ? (
-                    <Check className="absolute right-1.5 top-1.5 size-3" aria-hidden />
+                    <Check
+                      className="absolute right-1.5 top-1.5 size-3"
+                      aria-hidden
+                    />
                   ) : null}
                 </button>
               );

@@ -12,6 +12,7 @@ import { CompetitionLogo } from "@/features/competitions/components/competition-
 import {
   type CompetitionTabId,
   getCompetitionTabs,
+  resolveCompetitionForRegion,
   resolveCompetitionSelection,
 } from "@/features/competitions/competition-view";
 import {
@@ -38,7 +39,9 @@ export function CompetitionsPageContent() {
     () => (selectedCompetition ? getCompetitionTabs(selectedCompetition) : []),
     [selectedCompetition],
   );
-  const seasonQuery = useCurrentCompetitionSeason(selectedCompetition?.id ?? "");
+  const seasonQuery = useCurrentCompetitionSeason(
+    selectedCompetition?.id ?? "",
+  );
 
   useEffect(() => {
     if (!tabs.some((tab) => tab.id === activeTab)) {
@@ -54,12 +57,14 @@ export function CompetitionsPageContent() {
   }
 
   function selectRegion(regionId: string) {
-    const firstCompetition = catalogQuery.data?.competitions.find(
-      (competition) => competition.regionId === regionId,
+    const competition = resolveCompetitionForRegion(
+      regionId,
+      catalogQuery.data?.competitions ?? [],
+      selectedCompetition?.id,
     );
 
-    if (firstCompetition) {
-      selectCompetition(firstCompetition.id);
+    if (competition) {
+      selectCompetition(competition.id);
     }
   }
 
@@ -73,10 +78,17 @@ export function CompetitionsPageContent() {
         <ErrorState
           icon={Trophy}
           title="Não foi possível carregar as competições"
-          description={getApiErrorMessage(catalogQuery.error, "Tente novamente em instantes.")}
+          description={getApiErrorMessage(
+            catalogQuery.error,
+            "Tente novamente em instantes.",
+          )}
         />
         <div className="flex justify-center">
-          <Button type="button" className="h-11 rounded-xl" onClick={() => void catalogQuery.refetch()}>
+          <Button
+            type="button"
+            className="h-11 rounded-xl"
+            onClick={() => void catalogQuery.refetch()}
+          >
             <RefreshCw className="size-4" aria-hidden /> Tentar novamente
           </Button>
         </div>
@@ -105,25 +117,38 @@ export function CompetitionsPageContent() {
             />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-extrabold uppercase tracking-wide text-accent-foreground dark:text-accent">
-                {catalogQuery.data.regions.find((region) => region.id === selectedCompetition.regionId)?.name}
+                {
+                  catalogQuery.data.regions.find(
+                    (region) => region.id === selectedCompetition.regionId,
+                  )?.name
+                }
               </p>
               <h2 className="mt-1 line-clamp-2 text-xl font-extrabold leading-tight text-card-foreground [overflow-wrap:normal] [word-break:normal] sm:text-2xl">
                 {selectedCompetition.name}
               </h2>
               <p className="mt-1 text-sm font-semibold text-muted-foreground">
-                {seasonQuery.data?.displayName ?? (seasonQuery.isError ? "Temporada indisponível" : "Carregando temporada…")}
+                {seasonQuery.data?.displayName ??
+                  (seasonQuery.isError
+                    ? "Temporada indisponível"
+                    : "Carregando temporada…")}
               </p>
             </div>
           </header>
 
           {seasonQuery.data?.partial ? (
-            <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900" role="status">
+            <div
+              className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
+              role="status"
+            >
               <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
               Algumas fases da temporada ainda não foram publicadas pela ESPN.
             </div>
           ) : null}
 
-          <nav className="flex gap-1 overflow-x-auto border-b border-border bg-card px-3 pt-2" aria-label={`Conteúdo de ${selectedCompetition.name}`}>
+          <nav
+            className="flex gap-1 overflow-x-auto border-b border-border bg-card px-3 pt-2"
+            aria-label={`Conteúdo de ${selectedCompetition.name}`}
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -150,10 +175,6 @@ export function CompetitionsPageContent() {
             />
           </div>
         </section>
-
-        <p className="mt-4 text-center text-xs font-semibold leading-5 text-muted-foreground">
-          Dados esportivos fornecidos pela ESPN. Horários exibidos em America/São Paulo.
-        </p>
       </main>
     </div>
   );
