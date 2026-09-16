@@ -196,6 +196,15 @@ describe('CompetitionsService', () => {
     const result = await service.findTournament('conmebol.libertadores');
     const tie = result.phases[0].ties[0];
 
+    expect(espnClient.getScoreboard).toHaveBeenCalledWith(
+      'conmebol.libertadores',
+      '2026',
+    );
+    expect(
+      espnClient.getScoreboard.mock.calls.some(([, dates]) =>
+        /^\d{8}-\d{8}$/.test(dates),
+      ),
+    ).toBe(false);
     expect(tie.legs).toHaveLength(2);
     expect(tie.legs.map((leg) => leg.legLabel)).toEqual(['Ida', 'Volta']);
     expect(tie.aggregate).toEqual([
@@ -208,6 +217,87 @@ describe('CompetitionsService', () => {
     ]);
     expect(tie.winnerTeamId).toBe('away');
     expect(tie.progression).toBeNull();
+  });
+
+  it('consulta os anos civis de temporada europeia, consolida e deduplica eventos', async () => {
+    mockTournamentSeason('uefa.champions', {
+      endDate: '2027-07-01T03:59Z',
+      eventIds: ['1', '2', '3'],
+      startDate: '2026-07-01T04:00Z',
+    });
+    espnClient.getScoreboard.mockImplementation(
+      (_competitionId: string, year: string) => {
+        if (year === '2026') {
+          return Promise.resolve({
+            events: [
+              knockoutEvent('1', 1, '1', '0', false),
+              knockoutEvent('2', 2, '0', '1', true),
+            ],
+          });
+        }
+
+        return Promise.resolve({
+          events: [
+            knockoutEvent('2', 2, '0', '1', true),
+            {
+              ...knockoutEvent('3', 1, '2', '0', false),
+              season: { year: 2025, type: 100, slug: 'quarterfinals' },
+            },
+          ],
+        });
+      },
+    );
+
+    const result = await service.findTournament('uefa.champions');
+    const tie = result.phases[0].ties[0];
+
+    expect(espnClient.getScoreboard.mock.calls).toEqual([
+      ['uefa.champions', '2026'],
+      ['uefa.champions', '2027'],
+    ]);
+    expect(tie.legs.map((leg) => leg.id)).toEqual(['1', '2']);
+    expect(result.partial).toBe(false);
+  });
+
+  it('consulta somente o ano da temporada de ano civil', async () => {
+    mockTournamentSeason('conmebol.libertadores', {
+      endDate: '2027-01-01T04:59Z',
+      eventIds: ['1'],
+      startDate: '2026-01-01T05:00Z',
+    });
+    espnClient.getScoreboard.mockResolvedValue({
+      events: [knockoutEvent('1', 1, '1', '0', false)],
+    });
+
+    await service.findTournament('conmebol.libertadores');
+
+    expect(espnClient.getScoreboard.mock.calls).toEqual([
+      ['conmebol.libertadores', '2026'],
+    ]);
+  });
+
+  it('preserva eventos recuperados e sinaliza parcial quando um ano falha', async () => {
+    mockTournamentSeason('uefa.champions', {
+      endDate: '2027-07-01T03:59Z',
+      eventIds: ['1'],
+      startDate: '2026-07-01T04:00Z',
+    });
+    espnClient.getScoreboard.mockImplementation(
+      (_competitionId: string, year: string) =>
+        year === '2026'
+          ? Promise.resolve({
+              events: [knockoutEvent('1', 1, '1', '0', false)],
+            })
+          : Promise.reject(new Error('503')),
+    );
+
+    const result = await service.findTournament('uefa.champions');
+
+    expect(result.partial).toBe(true);
+    expect(result.phases[0].ties[0].legs).toHaveLength(1);
+    expect(result.warnings).toContain(
+      'Os detalhes dos confrontos estão temporariamente indisponíveis.',
+    );
   });
 
   it('diferencia fase não publicada de participantes TBD', async () => {
@@ -281,6 +371,7 @@ describe('CompetitionsService', () => {
     id: string,
     typeRefs: Array<{ $ref: string }> = [{ $ref: 'https://espn.test/types/1' }],
     tournament?: string,
+    period: { startDate?: string; endDate?: string } = {},
   ) {
     espnClient.getCore.mockImplementation((path: string) => {
       if (path.includes('/types?')) {
@@ -290,19 +381,29 @@ describe('CompetitionsService', () => {
       return Promise.resolve({
         year: 2026,
         displayName: `2026 ${id}`,
-        startDate: '2026-01-01T00:00Z',
-        endDate: '2026-12-31T23:59Z',
+        startDate: period.startDate ?? '2026-01-01T00:00Z',
+        endDate: period.endDate ?? '2026-12-31T23:59Z',
         tournament: tournament ? { $ref: tournament } : undefined,
       });
     });
   }
 
-  function mockTournamentSeason(id: string) {
+  function mockTournamentSeason(
+    id: string,
+    options: {
+      startDate?: string;
+      endDate?: string;
+      eventIds?: string[];
+    } = {},
+  ) {
     mockSeason(
       id,
       [{ $ref: 'https://espn.test/types/1' }],
       'https://espn.test/tournaments/1',
+      options,
     );
+    const eventIds = options.eventIds ?? ['1', '2'];
+
     espnClient.getRef.mockImplementation((ref: string) => {
       if (ref.includes('/types/')) {
         return Promise.resolve({
@@ -318,10 +419,9 @@ describe('CompetitionsService', () => {
           {
             id: '100',
             displayName: 'Quarterfinals',
-            matchups: [
-              { events: [{ $ref: 'https://espn.test/events/1' }] },
-              { events: [{ $ref: 'https://espn.test/events/2' }] },
-            ],
+            matchups: eventIds.map((eventId) => ({
+              events: [{ $ref: `https://espn.test/events/${eventId}` }],
+            })),
           },
         ],
       });

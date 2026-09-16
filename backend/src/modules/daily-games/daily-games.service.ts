@@ -18,6 +18,7 @@ import {
   EspnScoreboardCompetitor,
   EspnScoreboardEvent,
   EspnScoreboardLeague,
+  EspnScoreboardResponse,
   EspnScoreboardStatus,
 } from './types/espn-scoreboard.types';
 
@@ -109,7 +110,7 @@ export class DailyGamesService {
       return cached.response;
     }
 
-    const dates = this.buildEspnDateRange(date);
+    const dates = this.buildEspnDates(date);
     const results = await Promise.all(
       competitionConfigs.map((competition) =>
         this.fetchCompetition(competition, date, dates),
@@ -149,37 +150,25 @@ export class DailyGamesService {
   private async fetchCompetition(
     competitionConfig: DailyGamesCompetitionConfig,
     requestedDate: string,
-    dates: string,
+    dates: string[],
   ): Promise<CompetitionResult> {
-    try {
-      const scoreboard = await this.espnClient.getScoreboard(
-        competitionConfig.id,
-        dates,
-      );
-      const league = scoreboard.leagues?.[0];
-      const games = (scoreboard.events ?? [])
-        .map((event) =>
-          this.toDailyGame(event, competitionConfig.id, requestedDate),
-        )
-        .filter((game): game is DailyGame => game !== null)
-        .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+    const scoreboards: EspnScoreboardResponse[] = [];
 
-      return {
-        success: true,
-        competition: {
-          id: competitionConfig.id,
-          name: competitionConfig.name,
-          logo: this.resolveLeagueLogo(league),
-          games,
-        },
-      };
-    } catch (error) {
-      this.logger.warn(
-        `Falha ao consultar jogos diarios da competicao ${competitionConfig.id}: ${
-          error instanceof Error ? error.message : 'erro desconhecido'
-        }`,
-      );
+    for (const date of dates) {
+      try {
+        scoreboards.push(
+          await this.espnClient.getScoreboard(competitionConfig.id, date),
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Falha ao consultar jogos diarios da competicao ${competitionConfig.id} em ${date}: ${
+            error instanceof Error ? error.message : 'erro desconhecido'
+          }`,
+        );
+      }
+    }
 
+    if (scoreboards.length === 0) {
       return {
         success: false,
         competition: {
@@ -190,6 +179,36 @@ export class DailyGamesService {
         },
       };
     }
+
+    const league = scoreboards
+      .map((scoreboard) => scoreboard.leagues?.[0])
+      .find((item): item is EspnScoreboardLeague => Boolean(item));
+    const eventsById = new Map<string, EspnScoreboardEvent>();
+
+    for (const event of scoreboards.flatMap(
+      (scoreboard) => scoreboard.events ?? [],
+    )) {
+      if (event.id) {
+        eventsById.set(event.id, event);
+      }
+    }
+
+    const games = [...eventsById.values()]
+      .map((event) =>
+        this.toDailyGame(event, competitionConfig.id, requestedDate),
+      )
+      .filter((game): game is DailyGame => game !== null)
+      .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+
+    return {
+      success: true,
+      competition: {
+        id: competitionConfig.id,
+        name: competitionConfig.name,
+        logo: this.resolveLeagueLogo(league),
+        games,
+      },
+    };
   }
 
   private toDailyGame(
@@ -378,10 +397,10 @@ export class DailyGamesService {
     );
   }
 
-  private buildEspnDateRange(date: string): string {
-    return `${this.formatEspnDate(this.addDays(date, -1))}-${this.formatEspnDate(
-      this.addDays(date, 1),
-    )}`;
+  private buildEspnDates(date: string): string[] {
+    return [-1, 0, 1].map((days) =>
+      this.formatEspnDate(this.addDays(date, days)),
+    );
   }
 
   private addDays(date: string, days: number): Date {

@@ -34,10 +34,29 @@ describe('DailyGamesService', () => {
     },
   );
 
-  it('consulta a ESPN com range D-1 a D+1 e filtra pelo dia local de Sao Paulo', async () => {
-    getScoreboard.mockImplementation((league: string) => {
-      if (league !== 'bra.2') {
-        return Promise.resolve(emptyScoreboard());
+  it('consulta D-1, D e D+1 separadamente, consolida, deduplica e filtra pelo dia local', async () => {
+    getScoreboard.mockImplementation((_league: string, date: string) => {
+      if (date === '20260831') {
+        return Promise.resolve(
+          scoreboard([
+            createEvent({
+              date: '2026-09-01T03:30Z',
+              id: '401860307',
+            }),
+          ]),
+        );
+      }
+
+      if (date === '20260901') {
+        return Promise.resolve(
+          scoreboard([
+            createEvent({
+              date: '2026-09-01T22:30Z',
+              id: '401860308',
+              statusName: 'STATUS_HALFTIME',
+            }),
+          ]),
+        );
       }
 
       return Promise.resolve(
@@ -50,15 +69,21 @@ describe('DailyGamesService', () => {
           createEvent({
             date: '2026-09-02T03:30Z',
             id: '401860309',
-            statusName: 'STATUS_SCHEDULED',
           }),
         ]),
       );
     });
 
-    const response = await service.findDailyGames('2026-09-01');
+    const response = await service.findDailyGames('2026-09-01', 'bra.2');
 
-    expect(getScoreboard).toHaveBeenCalledWith('bra.2', '20260831-20260902');
+    expect(getScoreboard.mock.calls).toEqual([
+      ['bra.2', '20260831'],
+      ['bra.2', '20260901'],
+      ['bra.2', '20260902'],
+    ]);
+    expect(
+      getScoreboard.mock.calls.some(([, date]) => /^\d{8}-\d{8}$/.test(date)),
+    ).toBe(false);
     expect(response.date).toBe('2026-09-01');
     expect(response.timezone).toBe('America/Sao_Paulo');
     expect(response.competitions).toHaveLength(1);
@@ -67,6 +92,12 @@ describe('DailyGamesService', () => {
       name: 'Brasileirão Série B',
       logo: 'https://example.com/league.png',
       games: [
+        {
+          id: 'espn:bra.2:401860307',
+          kickoff: '2026-09-01T03:30:00.000Z',
+          localDate: '2026-09-01',
+          localTime: '00:30',
+        },
         {
           id: 'espn:bra.2:401860308',
           kickoff: '2026-09-01T22:30:00.000Z',
@@ -460,6 +491,35 @@ describe('DailyGamesService', () => {
     ]);
   });
 
+  it('preserva os eventos validos quando uma das tres datas falha', async () => {
+    getScoreboard.mockImplementation((_league: string, date: string) => {
+      if (date === '20260901') {
+        return Promise.reject(new Error('503'));
+      }
+
+      return Promise.resolve(
+        scoreboard([
+          createEvent({
+            date:
+              date === '20260831' ? '2026-09-01T03:30Z' : '2026-09-01T22:30Z',
+            id: date,
+          }),
+        ]),
+      );
+    });
+
+    const response = await service.findDailyGames('2026-09-01', 'bra.2');
+
+    expect(response.meta).toMatchObject({
+      requestedCompetitions: 1,
+      successfulCompetitions: 1,
+      failedCompetitions: 0,
+    });
+    expect(
+      response.competitions[0].games.map((game) => game.sourceEventId),
+    ).toEqual(['20260831', '20260902']);
+  });
+
   it('mantem resposta parcial quando uma competicao falha', async () => {
     getScoreboard.mockImplementation((league: string) => {
       if (league === 'eng.1') {
@@ -489,8 +549,12 @@ describe('DailyGamesService', () => {
 
     const response = await service.findDailyGames('2026-09-01', 'eng.1');
 
-    expect(getScoreboard).toHaveBeenCalledTimes(1);
-    expect(getScoreboard).toHaveBeenCalledWith('eng.1', '20260831-20260902');
+    expect(getScoreboard).toHaveBeenCalledTimes(3);
+    expect(getScoreboard.mock.calls).toEqual([
+      ['eng.1', '20260831'],
+      ['eng.1', '20260901'],
+      ['eng.1', '20260902'],
+    ]);
     expect(response.meta).toMatchObject({
       requestedCompetitions: 1,
       successfulCompetitions: 1,
@@ -507,18 +571,15 @@ describe('DailyGamesService', () => {
     });
   });
 
-  it('usa cache basico por data', async () => {
-    getScoreboard.mockImplementation((league: string) =>
-      Promise.resolve(
-        league === 'bra.2' ? scoreboard([createEvent()]) : emptyScoreboard(),
-      ),
-    );
+  it('usa cache por data e competicao', async () => {
+    const firstResponse = await service.findDailyGames('2026-09-01', 'eng.1');
+    const secondResponse = await service.findDailyGames('2026-09-01', 'eng.1');
 
-    const firstResponse = await service.findDailyGames('2026-09-01');
-    const secondResponse = await service.findDailyGames('2026-09-01');
+    await service.findDailyGames('2026-09-01', 'bra.2');
+    await service.findDailyGames('2026-09-02', 'eng.1');
 
     expect(secondResponse).toBe(firstResponse);
-    expect(getScoreboard).toHaveBeenCalledTimes(12);
+    expect(getScoreboard).toHaveBeenCalledTimes(9);
     expect(firstResponse.meta.cacheTtlSeconds).toBe(60);
   });
 });

@@ -217,14 +217,20 @@ export class CompetitionsService {
       };
     }
 
-    const dates = this.toEspnSeasonDateRange(bundle.season);
-    const [tournamentResult, scoreboardResult] = await Promise.allSettled([
+    const years = this.toEspnSeasonYears(bundle.season);
+    const results = await Promise.allSettled([
       this.espnClient.getRef<EspnTournament>(tournamentRef),
-      this.espnClient.getScoreboard<EspnScoreboardResponse>(
-        competition.id,
-        dates,
+      ...years.map((year) =>
+        this.espnClient.getScoreboard<EspnScoreboardResponse>(
+          competition.id,
+          year,
+        ),
       ),
     ]);
+    const tournamentResult = results[0] as PromiseSettledResult<EspnTournament>;
+    const scoreboardResults = results.slice(1) as Array<
+      PromiseSettledResult<EspnScoreboardResponse>
+    >;
 
     if (tournamentResult.status === 'rejected') {
       warnings.push(
@@ -232,7 +238,7 @@ export class CompetitionsService {
       );
     }
 
-    if (scoreboardResult.status === 'rejected') {
+    if (scoreboardResults.some((result) => result.status === 'rejected')) {
       warnings.push(
         'Os detalhes dos confrontos estão temporariamente indisponíveis.',
       );
@@ -240,12 +246,22 @@ export class CompetitionsService {
 
     const tournament =
       tournamentResult.status === 'fulfilled' ? tournamentResult.value : null;
-    const scoreboard =
-      scoreboardResult.status === 'fulfilled' ? scoreboardResult.value : null;
-    const eventMap = new Map(
-      (scoreboard?.events ?? [])
-        .filter((event) => event.season?.year === season && event.id)
-        .map((event) => [event.id as string, event]),
+    const eventMap = new Map<string, EspnScoreboardEvent>();
+
+    for (const result of scoreboardResults) {
+      if (result.status !== 'fulfilled') {
+        continue;
+      }
+
+      for (const event of result.value.events ?? []) {
+        if (event.season?.year === season && event.id) {
+          eventMap.set(event.id, event);
+        }
+      }
+    }
+
+    const hasScoreboard = scoreboardResults.some(
+      (result) => result.status === 'fulfilled',
     );
     const tournamentGroups = Array.isArray(tournament?.groups)
       ? tournament.groups
@@ -258,14 +274,14 @@ export class CompetitionsService {
               index,
               bundle.types,
               eventMap,
-              Boolean(scoreboard),
+              hasScoreboard,
             ),
           )
         : bundle.types.map((type) => this.toUnpublishedPhase(type));
     const partial =
       bundle.partial ||
       tournamentResult.status === 'rejected' ||
-      scoreboardResult.status === 'rejected' ||
+      scoreboardResults.some((result) => result.status === 'rejected') ||
       phases.some((phase) => phase.state === 'UNAVAILABLE');
     const hasPendingPhase = phases.some(
       (phase) => phase.state === 'NOT_PUBLISHED' || phase.state === 'TBD',
@@ -822,25 +838,32 @@ export class CompetitionsService {
     return null;
   }
 
-  private toEspnSeasonDateRange(season: EspnSeason) {
-    const start = this.formatEspnDate(season.startDate);
-    const end = this.formatEspnDate(season.endDate);
+  private toEspnSeasonYears(season: EspnSeason) {
+    const start = season.startDate ? new Date(season.startDate) : null;
+    const end = season.endDate ? new Date(season.endDate) : null;
 
-    return `${start}-${end}`;
-  }
-
-  private formatEspnDate(value: string | undefined) {
-    const date = value ? new Date(value) : null;
-
-    if (!date || Number.isNaN(date.getTime())) {
+    if (
+      !start ||
+      !end ||
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      end.getTime() <= start.getTime()
+    ) {
       throw new BadGatewayException('Período da temporada da ESPN inválido.');
     }
 
-    return [
-      date.getUTCFullYear(),
-      String(date.getUTCMonth() + 1).padStart(2, '0'),
-      String(date.getUTCDate()).padStart(2, '0'),
-    ].join('');
+    const lastSeasonDay = new Date(end.getTime() - 86_400_000);
+    const years: string[] = [];
+
+    for (
+      let year = start.getUTCFullYear();
+      year <= lastSeasonDay.getUTCFullYear();
+      year++
+    ) {
+      years.push(String(year));
+    }
+
+    return years;
   }
 
   private extractEventId(ref: string | undefined) {
