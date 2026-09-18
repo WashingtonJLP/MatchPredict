@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, CircleHelp, GitBranch, ShieldQuestion } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { CompetitionLogo } from "@/features/competitions/components/competition-logo";
@@ -9,10 +9,11 @@ import {
   formatTournamentOutcome,
   formatTournamentScore,
   formatTournamentStatus,
-  getKnockoutPhases,
   getRelevantKnockoutPhase,
   getTeamScore,
   normalizeTournamentLabel,
+  resolveTournamentPhaseSelection,
+  getTournamentPresentationPhases,
 } from "@/features/competitions/competition-view";
 import { cn } from "@/lib/utils";
 import type {
@@ -28,88 +29,21 @@ type TournamentViewProps = {
 };
 
 const phaseStateCopy: Record<TournamentPhase["state"], string> = {
-  NOT_PUBLISHED: "Fase ainda não publicada pela ESPN.",
-  TBD: "Confrontos publicados; participantes ainda serão definidos.",
+  NOT_PUBLISHED: "Fase ainda não publicada.",
+  TBD: "Participantes ainda serão definidos.",
   AVAILABLE: "Confrontos disponíveis.",
   UNAVAILABLE: "Detalhes temporariamente indisponíveis.",
 };
 
 export function TournamentView({ phases, reason }: TournamentViewProps) {
-  const knockoutPhases = getKnockoutPhases(phases);
+  const knockoutPhases = getTournamentPresentationPhases(phases);
   const relevantPhase = getRelevantKnockoutPhase(knockoutPhases);
-  const phaseContainerRef = useRef<HTMLDivElement>(null);
-  const autoFocusedRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const container = phaseContainerRef.current;
-
-    if (
-      !container ||
-      !relevantPhase ||
-      autoFocusedRef.current === relevantPhase.id
-    ) {
-      return;
-    }
-
-    const frame = window.requestAnimationFrame(() => {
-      const target = container.querySelector<HTMLElement>(
-        `[data-phase-id="${CSS.escape(relevantPhase.id)}"]`,
-      );
-
-      if (!target) {
-        return;
-      }
-
-      const reducedMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
-      const behavior = reducedMotion ? "auto" : "smooth";
-
-      if (window.matchMedia("(min-width: 1024px)").matches) {
-        const centeredPosition =
-          target.offsetLeft - (container.clientWidth - target.clientWidth) / 2;
-        const maximumScroll = container.scrollWidth - container.clientWidth;
-
-        container.scrollTo({
-          left: Math.max(0, Math.min(centeredPosition, maximumScroll)),
-          behavior,
-        });
-      } else {
-        const topInset = [...document.querySelectorAll<HTMLElement>("header")]
-          .filter((element) => {
-            const position = window.getComputedStyle(element).position;
-            const bounds = element.getBoundingClientRect();
-
-            return (
-              (position === "fixed" || position === "sticky") &&
-              bounds.top <= 0 &&
-              bounds.bottom > 0
-            );
-          })
-          .reduce(
-            (maximum, element) =>
-              Math.max(maximum, element.getBoundingClientRect().bottom),
-            0,
-          );
-        const breathingRoom = Number.parseFloat(
-          window.getComputedStyle(document.documentElement).fontSize,
-        );
-
-        window.scrollTo({
-          top:
-            window.scrollY +
-            target.getBoundingClientRect().top -
-            topInset -
-            breathingRoom,
-          behavior,
-        });
-      }
-
-      autoFocusedRef.current = relevantPhase.id;
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [relevantPhase]);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
+  const selectedPhase = resolveTournamentPhaseSelection(
+    selectedPhaseId,
+    knockoutPhases,
+    relevantPhase?.id,
+  );
 
   if (knockoutPhases.length === 0) {
     return (
@@ -118,7 +52,7 @@ export function TournamentView({ phases, reason }: TournamentViewProps) {
         title="Mata-mata ainda não publicado"
         description={
           reason ??
-          "As fases eliminatórias aparecerão aqui assim que forem publicadas pela ESPN."
+          "As fases eliminatórias aparecerão aqui quando forem publicadas."
         }
       />
     );
@@ -126,78 +60,132 @@ export function TournamentView({ phases, reason }: TournamentViewProps) {
 
   return (
     <div>
-      <div className="mb-4 flex items-start gap-2 rounded-xl border border-border bg-muted/45 px-4 py-3 text-sm font-semibold leading-6 text-muted-foreground">
+      <div className="mb-5 flex items-start gap-2 rounded-xl bg-muted/55 px-4 py-3 text-sm font-semibold leading-6 text-muted-foreground">
         <CircleHelp
           className="mt-0.5 size-4 shrink-0 text-accent"
           aria-hidden
         />
-        Mata-mata apresentado por fases. Não são exibidas conexões entre
-        confrontos porque a fonte não publica esse vínculo.
+        Mata-mata por fases, sem conexões que a fonte não publica.
       </div>
+
+      <div className="lg:hidden">
+        <div
+          className="mb-5 flex flex-wrap gap-2"
+          role="tablist"
+          aria-label="Selecionar fase do mata-mata"
+        >
+          {knockoutPhases.map((phase) => {
+            const isSelected = phase.id === selectedPhase?.id;
+
+            return (
+              <button
+                key={phase.id}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                aria-controls={`mobile-phase-${phase.id}`}
+                className={cn(
+                  "min-h-11 rounded-xl border px-3 py-2 text-sm font-extrabold transition focus-visible:ring-3 focus-visible:ring-ring/50",
+                  isSelected
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-card-foreground",
+                )}
+                onClick={() => setSelectedPhaseId(phase.id)}
+              >
+                {shortPhaseName(phase.name)}
+              </button>
+            );
+          })}
+        </div>
+
+        {selectedPhase ? (
+          <PhaseColumn
+            phase={selectedPhase}
+            current={selectedPhase.id === relevantPhase?.id}
+            idPrefix="mobile"
+          />
+        ) : null}
+      </div>
+
       <div
-        ref={phaseContainerRef}
+        className="hidden items-start gap-4 overflow-x-auto pb-2 lg:flex"
         data-tournament-phases
-        className="grid scroll-mt-4 gap-5 lg:flex lg:items-start lg:gap-4 lg:overflow-x-auto lg:pb-3"
       >
         {knockoutPhases.map((phase) => (
-          <section
+          <PhaseColumn
             key={phase.id}
-            data-phase-id={phase.id}
-            className={cn(
-              "min-w-0 scroll-mt-4 rounded-2xl border bg-secondary/35 p-3 lg:w-60 lg:min-w-60",
-              phase.id === relevantPhase?.id
-                ? "border-accent/70 ring-2 ring-accent/15"
-                : "border-border",
-            )}
-            aria-labelledby={`phase-${phase.id}`}
-            aria-current={phase.id === relevantPhase?.id ? "step" : undefined}
-          >
-            <header className="px-1 pb-3">
-              <div className="flex items-start justify-between gap-2">
-                <h3
-                  id={`phase-${phase.id}`}
-                  className="text-base font-extrabold text-card-foreground"
-                >
-                  {phase.name}
-                </h3>
-                {phase.id === relevantPhase?.id ? (
-                  <span className="shrink-0 rounded-full bg-accent/15 px-2 py-1 text-xs font-extrabold uppercase tracking-wide text-accent-foreground dark:text-accent">
-                    Em foco
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
-                {phaseStateCopy[phase.state]}
-              </p>
-            </header>
-
-            {phase.ties.length > 0 ? (
-              <div className="space-y-3">
-                {phase.ties.map((tie) => (
-                  <TournamentTieCard
-                    key={tie.id}
-                    tie={tie}
-                    phaseName={phase.name}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-border bg-card px-4 py-6 text-center">
-                <ShieldQuestion
-                  className="mx-auto size-6 text-muted-foreground"
-                  aria-hidden
-                />
-                <p className="mt-2 text-sm font-bold text-card-foreground">
-                  {phase.state === "NOT_PUBLISHED"
-                    ? "Ainda não publicado"
-                    : "Sem confrontos disponíveis"}
-                </p>
-              </div>
-            )}
-          </section>
+            phase={phase}
+            current={phase.id === relevantPhase?.id}
+            idPrefix="desktop"
+          />
         ))}
       </div>
     </div>
+  );
+}
+
+function PhaseColumn({
+  phase,
+  current,
+  idPrefix,
+}: {
+  phase: TournamentPhase;
+  current: boolean;
+  idPrefix: "mobile" | "desktop";
+}) {
+  const headingId = `${idPrefix}-phase-heading-${phase.id}`;
+
+  return (
+    <section
+      id={`${idPrefix}-phase-${phase.id}`}
+      data-phase-id={phase.id}
+      role={idPrefix === "mobile" ? "tabpanel" : undefined}
+      className={cn(
+        "min-w-0 border-t-2 pt-3 lg:min-w-60 lg:flex-1",
+        current ? "border-accent" : "border-border",
+      )}
+      aria-labelledby={headingId}
+      aria-current={current ? "step" : undefined}
+    >
+      <header className="mb-3 min-h-16 px-1">
+        <div className="flex items-start justify-between gap-2">
+          <h3
+            id={headingId}
+            className="text-base font-extrabold text-card-foreground"
+          >
+            {phase.name}
+          </h3>
+          {current ? (
+            <span className="shrink-0 rounded-full bg-accent/15 px-2 py-1 text-xs font-extrabold uppercase tracking-wide text-accent-foreground dark:text-accent">
+              Em foco
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+          {phaseStateCopy[phase.state]}
+        </p>
+      </header>
+
+      {phase.ties.length > 0 ? (
+        <div className="space-y-3">
+          {phase.ties.map((tie) => (
+            <TournamentTieCard key={tie.id} tie={tie} phaseName={phase.name} />
+          ))}
+        </div>
+      ) : (
+        <div className="border-t border-dashed border-border px-4 py-6 text-center">
+          <ShieldQuestion
+            className="mx-auto size-6 text-muted-foreground"
+            aria-hidden
+          />
+          <p className="mt-2 text-sm font-bold text-muted-foreground">
+            {phase.state === "NOT_PUBLISHED"
+              ? "Ainda não publicado"
+              : "Sem confrontos disponíveis"}
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -220,7 +208,7 @@ function TournamentTieCard({
   const outcome = formatTournamentOutcome(tie);
 
   return (
-    <article className="overflow-hidden rounded-xl border border-border bg-card shadow-sm shadow-primary/5">
+    <article className="overflow-hidden rounded-xl bg-card shadow-sm shadow-primary/10 ring-1 ring-border">
       {title ? (
         <p className="border-b border-border bg-muted/50 px-3 py-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
           {title}
@@ -228,14 +216,14 @@ function TournamentTieCard({
       ) : null}
       <div className="divide-y divide-border/70 px-3">
         {teams.slice(0, 2).map((team) => {
-          const aggregate = getTeamScore(tie.aggregate, team.id);
+          const primaryScore = getPrimaryTeamScore(tie, team.id);
           const penalties = getTeamScore(tie.penalties, team.id);
           const isWinner = tie.winnerTeamId === team.id;
 
           return (
             <div
               key={team.id}
-              className="flex min-h-11 items-center gap-2 py-2"
+              className="flex min-h-12 items-center gap-2 py-2"
             >
               <CompetitionLogo
                 src={team.logo}
@@ -256,12 +244,12 @@ function TournamentTieCard({
                   aria-label="Classificado"
                 />
               ) : null}
-              {aggregate !== null ? (
+              {primaryScore !== null ? (
                 <span
-                  className="min-w-5 text-right text-base font-extrabold tabular-nums text-primary"
-                  title="Placar agregado"
+                  className="min-w-6 text-right text-lg font-extrabold tabular-nums text-primary"
+                  title={tie.aggregate ? "Placar agregado" : "Placar"}
                 >
-                  {aggregate}
+                  {primaryScore}
                 </span>
               ) : null}
               {penalties !== null ? (
@@ -305,6 +293,9 @@ function LegSummary({ leg }: { leg: TournamentLeg }) {
       </span>
       {score ? (
         <span className="shrink-0 font-extrabold tabular-nums text-card-foreground">
+          <span className="mr-2 text-muted-foreground" aria-hidden>
+            ·
+          </span>
           {score}
         </span>
       ) : (
@@ -314,10 +305,28 @@ function LegSummary({ leg }: { leg: TournamentLeg }) {
   );
 }
 
+function getPrimaryTeamScore(tie: TournamentTie, teamId: string) {
+  const aggregate = getTeamScore(tie.aggregate, teamId);
+
+  if (aggregate !== null) return aggregate;
+  if (tie.legs.length !== 1) return null;
+
+  const leg = tie.legs[0];
+
+  if (leg.homeTeam?.id === teamId) return leg.score.home;
+  if (leg.awayTeam?.id === teamId) return leg.score.away;
+
+  return null;
+}
+
+function shortPhaseName(name: string) {
+  return name
+    .replace(/ de final$/i, "")
+    .replace(/^Playoffs do mata-mata$/i, "Playoffs");
+}
+
 function formatLegDate(value: string | null) {
-  if (!value) {
-    return "Data a definir";
-  }
+  if (!value) return "Data a definir";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",

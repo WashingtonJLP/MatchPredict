@@ -47,6 +47,7 @@ export type DailyGame = {
   homeTeam: DailyGameTeam;
   awayTeam: DailyGameTeam;
   score: DailyGameScore;
+  shootoutScore?: DailyGameScore | null;
   stage: DailyGameStage | null;
 };
 

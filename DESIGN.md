@@ -46,6 +46,12 @@ typography:
     fontWeight: 700
     lineHeight: 1.4
     letterSpacing: "0.025em"
+  navigation:
+    fontFamily: "Barlow, Arial, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: "normal"
 rounded:
   sm: "4.8px"
   md: "6.4px"
@@ -144,8 +150,11 @@ The palette is a light, product-led football system: deep slate provides authori
 **Display Font:** Geist with Arial and sans-serif fallback.
 **Body Font:** Geist with Arial and sans-serif fallback.
 **Label/Mono Font:** Geist with sans-serif fallback.
+**Navigation Font:** Barlow with Arial and sans-serif fallback.
 
 **Character:** Geist gives MatchPredict a compact, technical, and modern product voice. The system relies on weight contrast rather than ornate type: very bold scores and headings, medium labels, and relaxed body text.
+
+Barlow gives public and authenticated navigation a firmer matchday character while remaining compact and readable. It is limited to navigation chrome so content and data retain Geist's established product voice.
 
 ### Hierarchy
 - **Display** (800, 48px to 60px, 1.1): Hero product name and major page titles.
@@ -236,5 +245,5 @@ Borders are visible but quiet, usually a single 1px Quiet Line stroke. Accent bo
 - **Don't** add betting, prize, commercial, testimonial, or press claims that the product context does not confirm.
 - **Don't** turn Field Green into a decorative background pattern or secondary brand world.
 - **Don't** replace the functional dashboard density with oversized hero treatments.
-- **Don't** introduce a second typeface unless the product identity is intentionally redesigned.
+- **Don't** use Barlow outside navigation chrome or introduce another typeface without an intentional identity change.
 - **Don't** hide lock timing, prediction status, or ranking consequences behind vague labels.

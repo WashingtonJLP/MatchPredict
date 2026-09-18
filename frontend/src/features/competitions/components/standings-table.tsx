@@ -4,7 +4,9 @@ import { CompetitionLogo } from "@/features/competitions/components/competition-
 import {
   formatStandingValue,
   getStandingZoneVisual,
-  type StandingZoneKind,
+  standingZoneColorClasses,
+  standingZoneIndicatorClass,
+  standingZoneLegendDotClass,
 } from "@/features/competitions/competition-view";
 import { cn } from "@/lib/utils";
 import type { StandingSection } from "@/types/competition";
@@ -61,7 +63,7 @@ export function StandingsTable({ section, showTitle }: StandingsTableProps) {
           <tbody className="divide-y divide-border/70">
             {section.entries.map((entry) => {
               const zone = entry.zone
-                ? getStandingZoneVisual(entry.zone.description)
+                ? getStandingZoneVisual(entry.zone)
                 : null;
 
               return (
@@ -70,8 +72,8 @@ export function StandingsTable({ section, showTitle }: StandingsTableProps) {
                     {zone ? (
                       <span
                         className={cn(
-                          "absolute inset-y-2 left-0 w-1 rounded-r-full",
-                          zoneStyles[zone.kind],
+                          standingZoneIndicatorClass,
+                          standingZoneColorClasses[zone.kind],
                         )}
                         title={zone.label}
                         aria-label={zone.label}
@@ -121,16 +123,18 @@ export function StandingsTable({ section, showTitle }: StandingsTableProps) {
       {zones.length > 0 ? (
         <footer className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border bg-muted/30 px-4 py-3 text-xs font-semibold text-muted-foreground">
           <span className="inline-flex basis-full items-center gap-1.5 sm:basis-auto">
-            <Info className="size-3.5" aria-hidden /> Zonas informadas pela
-            ESPN:
+            <Info className="size-3.5" aria-hidden /> Zonas da classificação:
           </span>
           {zones.map((zone) => (
             <span
-              key={zone.source}
+              key={`${zone.kind}-${zone.origin}-${zone.source}`}
               className="inline-flex items-center gap-1.5"
             >
               <span
-                className={cn("size-2 rounded-full", zoneStyles[zone.kind])}
+                className={cn(
+                  standingZoneLegendDotClass,
+                  standingZoneColorClasses[zone.kind],
+                )}
                 aria-hidden
               />
               {zone.label}
@@ -183,27 +187,19 @@ function uniqueZones(section: StandingSection) {
           return [];
         }
 
-        const visual = getStandingZoneVisual(entry.zone.description);
+        const visual = getStandingZoneVisual(entry.zone);
 
         return [
           [
             entry.zone.description,
-            { ...visual, source: entry.zone.description },
+            {
+              ...visual,
+              source: entry.zone.description,
+              origin: entry.zone.origin,
+            },
           ] as const,
         ];
       }),
     ).values(),
   ];
 }
-
-const zoneStyles: Record<StandingZoneKind, string> = {
-  champions: "bg-accent",
-  "champions-qualifying": "bg-emerald-400",
-  europa: "bg-sky-500",
-  conference: "bg-cyan-600",
-  playoff: "bg-indigo-400",
-  "relegation-playoff": "bg-amber-500",
-  relegation: "bg-destructive",
-  eliminated: "bg-rose-600",
-  other: "bg-slate-400",
-};

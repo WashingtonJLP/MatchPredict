@@ -2,6 +2,7 @@ import { Clock3 } from "lucide-react";
 
 import { DailyGameStatus } from "@/features/daily-games/components/daily-game-status";
 import { isWithinPregameWindow } from "@/features/daily-games/components/daily-game-timing";
+import { getDailyGameShootoutScore } from "@/features/daily-games/daily-game-presentation";
 import { cn } from "@/lib/utils";
 import type { DailyGame, DailyGameTeam } from "@/types/daily-game";
 
@@ -19,7 +20,7 @@ export function DailyGameRow({ game }: DailyGameRowProps) {
   return (
     <article
       className={cn(
-        "group grid min-h-[4.75rem] grid-cols-[minmax(0,1fr)_4.5rem_minmax(0,1fr)] items-center gap-1.5 px-2.5 py-2.5 transition duration-200 sm:min-h-[4.25rem] sm:grid-cols-[minmax(0,1fr)_7.25rem_minmax(0,1fr)] sm:gap-4 sm:px-4",
+        "group grid min-h-[4.75rem] grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] items-center gap-1.5 px-2.5 py-2.5 transition duration-200 sm:min-h-[4.25rem] sm:grid-cols-[minmax(0,1fr)_7.25rem_minmax(0,1fr)] sm:gap-4 sm:px-4",
         "hover:bg-muted/70 focus-within:bg-muted/70 motion-safe:hover:-translate-y-px",
         isLive && "bg-accent/10 hover:bg-accent/15",
         isFinished && "bg-muted/30",
@@ -50,8 +51,10 @@ function MatchCenter({
   isLive: boolean;
   shouldShowStatus: boolean;
 }) {
+  const shootoutScore = getDailyGameShootoutScore(game);
+
   return (
-    <div className="flex min-w-0 flex-col items-center justify-center gap-1 text-center">
+    <div className="flex w-full min-w-0 max-w-[4.75rem] flex-col items-center justify-center gap-1 text-center sm:max-w-[7.25rem]">
       {hasScore ? (
         <div
           className={cn(
@@ -80,12 +83,35 @@ function MatchCenter({
       )}
 
       {shouldShowStatus ? (
-        <DailyGameStatus
-          compact
-          label={game.statusLabel}
-          minute={game.minute}
-          status={game.status}
-        />
+        game.status === "FINAL_PENALTIES" ? (
+          <div className="flex max-w-full flex-col items-center gap-0.5">
+            {shootoutScore ? (
+              <span
+                className="text-sm font-extrabold leading-none tabular-nums text-primary"
+                aria-label={`Pênaltis: ${shootoutScore.home} a ${shootoutScore.away}`}
+              >
+                {shootoutScore.home}
+                <span className="px-1 text-xs text-muted-foreground" aria-hidden>
+                  ×
+                </span>
+                {shootoutScore.away}
+              </span>
+            ) : null}
+            <DailyGameStatus
+              compact
+              label={game.statusLabel}
+              minute={game.minute}
+              status={game.status}
+            />
+          </div>
+        ) : (
+          <DailyGameStatus
+            compact
+            label={game.statusLabel}
+            minute={game.minute}
+            status={game.status}
+          />
+        )
       ) : null}
     </div>
   );
@@ -121,7 +147,7 @@ function TeamCell({
       <div className="min-w-0">
         <p
           className={cn(
-            "line-clamp-2 text-sm font-extrabold leading-4 text-foreground sm:truncate sm:text-base sm:leading-5",
+            "line-clamp-2 text-sm font-extrabold leading-4 text-foreground [overflow-wrap:normal] [word-break:normal] sm:text-base sm:leading-5",
             align === "right" && "sm:text-right",
           )}
         >

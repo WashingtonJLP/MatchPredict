@@ -22,7 +22,12 @@ import {
   EspnStandingEntry,
   EspnStandingsResponse,
   EspnTournament,
+  TournamentTeamScore,
 } from './competitions.types';
+import {
+  getDerivedStandingZone,
+  normalizeExplicitStandingZone,
+} from './standings-rules';
 
 const catalogCacheTtlSeconds = 86_400;
 const seasonCacheTtlSeconds = 21_600;
@@ -40,6 +45,10 @@ type SeasonBundle = {
   season: EspnSeason;
   types: EspnSeasonType[];
 };
+
+type ScoreboardCompetition = NonNullable<
+  EspnScoreboardEvent['competitions']
+>[number];
 
 @Injectable()
 export class CompetitionsService {
@@ -109,7 +118,7 @@ export class CompetitionsService {
     }
 
     const response = await this.getCached(
-      `competitions:${competition.id}:${season}:standings:v1`,
+      `competitions:${competition.id}:${season}:standings:v2`,
       standingsCacheTtlSeconds,
       () =>
         this.espnClient.getStandings<EspnStandingsResponse>(
@@ -124,7 +133,9 @@ export class CompetitionsService {
         ? child.standings.entries
         : [];
       const entries = sourceEntries
-        .map((entry, index) => this.toStandingEntry(entry, index, competition))
+        .map((entry, index) =>
+          this.toStandingEntry(entry, index, competition, season),
+        )
         .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
       if (entries.length !== sourceEntries.length) {
@@ -188,7 +199,7 @@ export class CompetitionsService {
     }
 
     return this.getCached(
-      `competitions:${competition.id}:${season}:tournament:v1`,
+      `competitions:${competition.id}:${season}:tournament:v2`,
       pendingTournamentCacheTtlSeconds,
       () => this.loadTournament(competition, bundle),
       (response) => response.meta.cacheTtlSeconds,
@@ -275,6 +286,7 @@ export class CompetitionsService {
               bundle.types,
               eventMap,
               hasScoreboard,
+              warnings,
             ),
           )
         : bundle.types.map((type) => this.toUnpublishedPhase(type));
@@ -317,6 +329,7 @@ export class CompetitionsService {
     seasonTypes: EspnSeasonType[],
     eventMap: Map<string, EspnScoreboardEvent>,
     hasScoreboard: boolean,
+    warnings: string[],
   ) {
     const seasonType = seasonTypes.find(
       (type) =>
@@ -342,7 +355,9 @@ export class CompetitionsService {
       .map((eventId) => eventMap.get(eventId))
       .filter((event): event is EspnScoreboardEvent => Boolean(event));
     const ties =
-      kind === 'KNOCKOUT' ? this.groupEventsIntoTies(events, slug) : [];
+      kind === 'KNOCKOUT'
+        ? this.groupEventsIntoTies(events, slug, warnings)
+        : [];
     let state: 'NOT_PUBLISHED' | 'TBD' | 'AVAILABLE' | 'UNAVAILABLE';
 
     if (eventIds.length === 0) {
@@ -378,6 +393,7 @@ export class CompetitionsService {
   private groupEventsIntoTies(
     events: EspnScoreboardEvent[],
     phaseSlug: string,
+    warnings: string[],
   ) {
     const groups = new Map<string, EspnScoreboardEvent[]>();
 
@@ -400,11 +416,15 @@ export class CompetitionsService {
     }
 
     return [...groups.entries()].map(([key, groupedEvents]) =>
-      this.toTie(key, groupedEvents),
+      this.toTie(key, groupedEvents, warnings),
     );
   }
 
-  private toTie(key: string, events: EspnScoreboardEvent[]) {
+  private toTie(
+    key: string,
+    events: EspnScoreboardEvent[],
+    warnings: string[],
+  ) {
     const sortedEvents = [...events].sort((first, second) => {
       const firstLeg = first.competitions?.[0]?.leg?.value ?? 99;
       const secondLeg = second.competitions?.[0]?.leg?.value ?? 99;
@@ -420,16 +440,32 @@ export class CompetitionsService {
       .reverse()
       .map((event) => event.competitions?.[0]?.series)
       .find(Boolean);
-    const aggregate = (series?.competitors ?? [])
+    const teams = this.uniqueTeams(sortedEvents);
+    const aggregateFromSeries = (series?.competitors ?? [])
       .filter(
         (competitor) =>
           Boolean(competitor.id) &&
           this.toNumber(competitor.aggregateScore) !== null,
       )
       .map((competitor) => ({
-        teamId: competitor.id as string,
+        teamId: this.resolveTeamId(competitor.id, sortedEvents),
+        value: this.toNumber(competitor.aggregateScore) as number,
+      }))
+      .filter((score): score is TournamentTeamScore => score.teamId !== null);
+    const aggregateFromCompetitors = (lastCompetition?.competitors ?? [])
+      .filter(
+        (competitor) =>
+          Boolean(competitor.team?.id ?? competitor.id) &&
+          this.toNumber(competitor.aggregateScore) !== null,
+      )
+      .map((competitor) => ({
+        teamId: (competitor.team?.id ?? competitor.id) as string,
         value: this.toNumber(competitor.aggregateScore) as number,
       }));
+    const aggregate =
+      aggregateFromSeries.length > 0
+        ? aggregateFromSeries
+        : aggregateFromCompetitors;
     const penalties = (lastCompetition?.competitors ?? [])
       .filter(
         (competitor) =>
@@ -440,16 +476,19 @@ export class CompetitionsService {
         teamId: (competitor.team?.id ?? competitor.id) as string,
         value: this.toNumber(competitor.shootoutScore) as number,
       }));
-    const winnerTeamId =
-      series?.competitors?.find((competitor) => competitor.winner)?.id ??
-      lastCompetition?.competitors?.find((competitor) => competitor.advance)
-        ?.team?.id ??
-      (sortedEvents.length === 1 && this.isCompleted(lastEvent)
-        ? lastCompetition?.competitors?.find((competitor) => competitor.winner)
-            ?.team?.id
-        : undefined) ??
-      null;
-    const teams = this.uniqueTeams(sortedEvents);
+    const completed =
+      series?.completed ??
+      (sortedEvents.length === 1 && this.isCompleted(lastEvent));
+    const winnerTeamId = this.resolveWinnerTeamId({
+      aggregate,
+      completed,
+      events: sortedEvents,
+      key,
+      lastCompetition,
+      series,
+      teams,
+      warnings,
+    });
     const note = [...sortedEvents]
       .reverse()
       .flatMap((event) => event.competitions?.[0]?.notes ?? [])
@@ -470,12 +509,105 @@ export class CompetitionsService {
       aggregate: aggregate.length > 0 ? aggregate : null,
       penalties: penalties.length > 0 ? penalties : null,
       winnerTeamId,
-      completed:
-        series?.completed ??
-        (sortedEvents.length === 1 && this.isCompleted(lastEvent)),
+      completed,
       note: note ?? null,
       progression: null,
     };
+  }
+
+  private resolveWinnerTeamId({
+    aggregate,
+    completed,
+    events,
+    key,
+    lastCompetition,
+    series,
+    teams,
+    warnings,
+  }: {
+    aggregate: TournamentTeamScore[];
+    completed: boolean | undefined;
+    events: EspnScoreboardEvent[];
+    key: string;
+    lastCompetition: ScoreboardCompetition | undefined;
+    series: ScoreboardCompetition['series'];
+    teams: Array<CompetitionTeam & { isTbd: boolean }>;
+    warnings: string[];
+  }) {
+    const seriesWinnerId = this.resolveTeamId(
+      series?.competitors?.find((competitor) => competitor.winner)?.id,
+      events,
+    );
+    const advanceWinnerId = this.resolveTeamId(
+      lastCompetition?.competitors?.find((competitor) => competitor.advance)
+        ?.team?.id ??
+        lastCompetition?.competitors?.find((competitor) => competitor.advance)
+          ?.id,
+      events,
+    );
+    const singleLegWinnerId =
+      events.length === 1 && completed
+        ? this.resolveTeamId(
+            lastCompetition?.competitors?.find(
+              (competitor) => competitor.winner,
+            )?.team?.id ??
+              lastCompetition?.competitors?.find(
+                (competitor) => competitor.winner,
+              )?.id,
+            events,
+          )
+        : null;
+    const winnerIds = [
+      seriesWinnerId,
+      advanceWinnerId,
+      singleLegWinnerId,
+    ].filter((teamId): teamId is string => Boolean(teamId));
+    const uniqueWinnerIds = [...new Set(winnerIds)];
+    const candidate = uniqueWinnerIds[0] ?? null;
+    const candidateIsKnown =
+      candidate === null || teams.some((team) => team.id === candidate);
+    const aggregateWinner =
+      completed &&
+      aggregate.length === 2 &&
+      aggregate[0].value !== aggregate[1].value
+        ? aggregate.reduce((leader, score) =>
+            score.value > leader.value ? score : leader,
+          ).teamId
+        : null;
+    const sourceConflict = uniqueWinnerIds.length > 1;
+    const aggregateConflict = Boolean(
+      candidate && aggregateWinner && candidate !== aggregateWinner,
+    );
+
+    if (sourceConflict || aggregateConflict || !candidateIsKnown) {
+      const teamsLabel = teams.map((team) => team.name).join(' x ') || key;
+
+      warnings.push(
+        `A ESPN retornou dados incompatíveis sobre o vencedor de ${teamsLabel}. O classificado foi omitido por segurança.`,
+      );
+      return null;
+    }
+
+    return candidate;
+  }
+
+  private resolveTeamId(
+    sourceId: string | undefined,
+    events: EspnScoreboardEvent[],
+  ) {
+    if (!sourceId) return null;
+
+    for (const competitor of events.flatMap(
+      (event) => event.competitions?.[0]?.competitors ?? [],
+    )) {
+      const teamId = competitor.team?.id ?? competitor.id;
+
+      if (competitor.id === sourceId || teamId === sourceId) {
+        return teamId ?? null;
+      }
+    }
+
+    return null;
   }
 
   private toTournamentEvent(event: EspnScoreboardEvent) {
@@ -561,6 +693,7 @@ export class CompetitionsService {
     entry: EspnStandingEntry,
     index: number,
     competition: FootballCompetitionConfig,
+    season: number,
   ) {
     const teamId = entry.team?.id;
     const teamName = entry.team?.displayName ?? entry.team?.shortDisplayName;
@@ -595,7 +728,7 @@ export class CompetitionsService {
       goalDifference: stat('pointDifferential'),
       points: stat('points'),
       deductions: stat('deductions') ?? 0,
-      zone: this.toStandingZone(entry, competition, position),
+      zone: this.toStandingZone(entry, competition, season, position),
     };
   }
 
@@ -702,33 +835,20 @@ export class CompetitionsService {
   private toStandingZone(
     entry: EspnStandingEntry,
     competition: FootballCompetitionConfig,
+    season: number,
     position: number,
   ) {
     if (entry.note?.description) {
       return {
+        type: normalizeExplicitStandingZone(entry.note.description),
+        origin: 'SOURCE_EXPLICIT' as const,
         description: entry.note.description,
         rank: entry.note.rank ?? null,
         color: entry.note.color ?? null,
       };
     }
 
-    if (competition.format !== 'LEAGUE_PHASE') {
-      return null;
-    }
-
-    let description: string;
-
-    if (position <= 8) {
-      description = 'Classificação direta para as oitavas';
-    } else if (position <= 16) {
-      description = 'Playoff do mata-mata — cabeça de chave';
-    } else if (position <= 24) {
-      description = 'Playoff do mata-mata — não cabeça de chave';
-    } else {
-      description = 'Eliminado';
-    }
-
-    return { description, rank: position, color: null };
+    return getDerivedStandingZone(competition.id, season, position);
   }
 
   private normalizeSectionName(

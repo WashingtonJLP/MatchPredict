@@ -250,6 +250,8 @@ export class DailyGamesService {
     const rawStatus = event.status ?? competition.status;
     const status = this.mapStatus(rawStatus, competition);
     const shouldExposeScore = this.shouldExposeScore(status, rawStatus);
+    const homeTeam = this.toDailyGameTeam(homeCompetitor);
+    const awayTeam = this.toDailyGameTeam(awayCompetitor);
 
     return {
       id: `espn:${competitionId}:${sourceEventId}`,
@@ -261,12 +263,18 @@ export class DailyGamesService {
       statusLabel: statusLabels[status],
       minute: this.resolveMinute(event.status ?? competition.status),
       period: event.status?.period ?? competition.status?.period ?? null,
-      homeTeam: this.toDailyGameTeam(homeCompetitor),
-      awayTeam: this.toDailyGameTeam(awayCompetitor),
+      homeTeam,
+      awayTeam,
       score: {
         home: shouldExposeScore ? this.parseScore(homeCompetitor.score) : null,
         away: shouldExposeScore ? this.parseScore(awayCompetitor.score) : null,
       },
+      shootoutScore: this.resolveShootoutScore(
+        competition.competitors ?? [],
+        homeTeam.id,
+        awayTeam.id,
+        status,
+      ),
       stage: this.resolveStage(event.season?.slug),
     };
   }
@@ -293,6 +301,31 @@ export class DailyGamesService {
       abbreviation: team?.abbreviation ?? null,
       logo: team?.logo ?? null,
     };
+  }
+
+  private resolveShootoutScore(
+    competitors: EspnScoreboardCompetitor[],
+    homeTeamId: string,
+    awayTeamId: string,
+    status: DailyGameStatus,
+  ) {
+    if (status !== 'FINAL_PENALTIES' || !homeTeamId || !awayTeamId) {
+      return null;
+    }
+
+    const competitorByTeamId = (teamId: string) =>
+      competitors.find(
+        (competitor) =>
+          (competitor.team?.id ?? competitor.id ?? '') === teamId,
+      );
+    const home = this.parseScore(
+      competitorByTeamId(homeTeamId)?.shootoutScore,
+    );
+    const away = this.parseScore(
+      competitorByTeamId(awayTeamId)?.shootoutScore,
+    );
+
+    return home !== null && away !== null ? { home, away } : null;
   }
 
   private mapStatus(
@@ -379,7 +412,7 @@ export class DailyGamesService {
     return period > 0 || clock > 0 || minute > 0;
   }
 
-  private parseScore(score: string | undefined): number | null {
+  private parseScore(score: number | string | undefined): number | null {
     if (score === undefined || score === '') {
       return null;
     }

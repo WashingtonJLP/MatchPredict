@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Barlow, Geist } from "next/font/google";
 
 import { BaseLayout } from "@/components/layout/base-layout";
 import { AppProviders } from "@/providers/app-providers";
@@ -11,6 +11,12 @@ import "./globals.css";
 const geist = Geist({
   variable: "--font-geist",
   subsets: ["latin"],
+});
+
+const barlow = Barlow({
+  variable: "--font-barlow",
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
 });
 
 const siteUrl = "https://matchpredict.com.br";
@@ -70,7 +76,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${geist.variable} antialiased`}>
+      <body className={`${geist.variable} ${barlow.variable} antialiased`}>
         <AppProviders>
           <BaseLayout>{children}</BaseLayout>
         </AppProviders>

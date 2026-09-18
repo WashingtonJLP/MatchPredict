@@ -1,7 +1,10 @@
 import type {
   FootballCompetition,
+  FootballRegion,
   StandingEntry,
   StandingSection,
+  StandingZone,
+  StandingZoneType,
   TournamentPhase,
   TournamentScore,
   TournamentTeamScore,
@@ -15,23 +18,83 @@ export type CompetitionTab = {
   label: string;
 };
 
-export type StandingZoneKind =
-  | "champions"
-  | "champions-qualifying"
-  | "europa"
-  | "conference"
-  | "playoff"
-  | "relegation-playoff"
-  | "relegation"
-  | "eliminated"
-  | "other";
+export const COMPETITIONS_PAGE_IDS = [
+  "eng.1",
+  "bra.1",
+  "bra.2",
+  "uefa.champions",
+  "esp.1",
+  "ita.1",
+  "ger.1",
+  "fra.1",
+] as const;
 
-export type GlobeMarkerSpec = {
-  id: string;
-  location: [number, number];
-  size: number;
-  active: boolean;
+export const standingZoneIndicatorClass =
+  "absolute inset-y-2 left-0 w-1 rounded-r-full";
+export const standingZoneLegendDotClass = "size-2 rounded-full";
+export const standingZoneColorClasses: Record<StandingZoneType, string> = {
+  CONTINENTAL_PRIMARY: "bg-emerald-600",
+  CONTINENTAL_PRIMARY_QUALIFYING: "bg-lime-400",
+  CONTINENTAL_SECONDARY: "bg-sky-600",
+  CONTINENTAL_SECONDARY_QUALIFYING: "bg-sky-300",
+  CONTINENTAL_TERTIARY: "bg-violet-600",
+  CONTINENTAL_TERTIARY_QUALIFYING: "bg-violet-300",
+  PROMOTION: "bg-teal-600",
+  PROMOTION_PLAYOFF: "bg-amber-400",
+  KNOCKOUT_DIRECT: "bg-emerald-600",
+  KNOCKOUT_PLAYOFF_SEEDED: "bg-sky-600",
+  KNOCKOUT_PLAYOFF_UNSEEDED: "bg-amber-500",
+  ELIMINATED: "bg-slate-500",
+  RELEGATION_PLAYOFF: "bg-orange-500",
+  RELEGATION: "bg-destructive",
+  QUALIFIED: "bg-teal-600",
+  OTHER: "bg-slate-400",
 };
+
+export function getCompetitionsPageCatalog(
+  regions: FootballRegion[],
+  competitions: FootballCompetition[],
+) {
+  const visibleIds = new Set<string>(COMPETITIONS_PAGE_IDS);
+  const visibleCompetitions = competitions.filter((competition) =>
+    visibleIds.has(competition.id),
+  );
+  const visibleRegionIds = new Set(
+    visibleCompetitions.map((competition) => competition.regionId),
+  );
+
+  return {
+    competitions: visibleCompetitions,
+    regions: regions.filter((region) => visibleRegionIds.has(region.id)),
+  };
+}
+
+export function removeCompetitionProviderAttribution(message: string) {
+  const exactMessages: Record<string, string> = {
+    "A ESPN ainda não publicou a classificação desta competição.":
+      "A classificação desta competição ainda não foi publicada.",
+    "A ESPN ainda não publicou a estrutura do torneio.":
+      "A estrutura do torneio ainda não foi publicada.",
+    "A ESPN ainda não publicou as fases desta competição.":
+      "As fases desta competição ainda não foram publicadas.",
+    "Referência de torneio ausente na temporada da ESPN.":
+      "Referência de torneio ausente na temporada.",
+    "A estrutura de fases da ESPN está temporariamente indisponível.":
+      "A estrutura de fases está temporariamente indisponível.",
+    "Temporada da ESPN inválida.": "Temporada inválida.",
+    "Período da temporada da ESPN inválido.": "Período da temporada inválido.",
+  };
+
+  return (
+    exactMessages[message] ??
+    message
+      .replace(/^A ESPN retornou /i, "Foram recebidos ")
+      .replace(/\s+(?:da|pela) ESPN\b/gi, "")
+      .replace(/\bESPN\b/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
+}
 
 export function getCompetitionTabs(
   competition: FootballCompetition,
@@ -49,6 +112,16 @@ export function getCompetitionTabs(
   }
 
   return tabs;
+}
+
+export function getDefaultCompetitionTab(
+  competition: FootballCompetition,
+): CompetitionTabId {
+  if (competition.capabilities.groups) return "groups";
+  if (competition.capabilities.standings) return "standings";
+  if (competition.capabilities.games) return "games";
+
+  return "tournament";
 }
 
 export function resolveCompetitionSelection(
@@ -96,74 +169,41 @@ export function getStandingBoundary(entry: StandingEntry) {
   return entry.zone?.description ?? null;
 }
 
-export function getStandingZoneVisual(description: string): {
-  kind: StandingZoneKind;
+export function getStandingZoneVisual(zone: StandingZone): {
+  kind: StandingZoneType;
   label: string;
 } {
-  const normalized = normalizeLabel(description);
+  const normalized = normalizeLabel(zone.description);
+  const labels: Record<StandingZoneType, string> = {
+    CONTINENTAL_PRIMARY: normalized.includes("libertadores")
+      ? "Libertadores — fase de grupos"
+      : "Champions League",
+    CONTINENTAL_PRIMARY_QUALIFYING: normalized.includes("libertadores")
+      ? "Libertadores — fase preliminar"
+      : "Eliminatórias da Champions League",
+    CONTINENTAL_SECONDARY:
+      normalized.includes("sul-americana") ||
+      normalized.includes("sudamericana")
+        ? "Sul-Americana"
+        : "Europa League",
+    CONTINENTAL_SECONDARY_QUALIFYING: "Eliminatórias da Europa League",
+    CONTINENTAL_TERTIARY: "Conference League",
+    CONTINENTAL_TERTIARY_QUALIFYING: "Eliminatórias da Conference League",
+    PROMOTION: zone.description,
+    PROMOTION_PLAYOFF: zone.description,
+    KNOCKOUT_DIRECT: "Classificação direta às oitavas",
+    KNOCKOUT_PLAYOFF_SEEDED: "Playoff — cabeça de chave",
+    KNOCKOUT_PLAYOFF_UNSEEDED: "Playoff — não cabeça de chave",
+    ELIMINATED: "Eliminado",
+    RELEGATION_PLAYOFF: "Playoff contra o rebaixamento",
+    RELEGATION: zone.description.startsWith("Rebaixamento")
+      ? zone.description
+      : "Rebaixamento",
+    QUALIFIED: "Classificado",
+    OTHER: zone.description,
+  };
 
-  if (normalized.includes("relegation playoff")) {
-    return {
-      kind: "relegation-playoff",
-      label: "Playoff contra o rebaixamento",
-    };
-  }
-
-  if (normalized.includes("relegation")) {
-    return { kind: "relegation", label: "Rebaixamento" };
-  }
-
-  if (normalized.includes("eliminated")) {
-    return { kind: "eliminated", label: "Eliminado" };
-  }
-
-  if (normalized.includes("champions league qualifying")) {
-    return {
-      kind: "champions-qualifying",
-      label: "Eliminatórias da Champions League",
-    };
-  }
-
-  if (normalized.includes("champions league")) {
-    return { kind: "champions", label: "Champions League" };
-  }
-
-  if (normalized.includes("europa league")) {
-    return { kind: "europa", label: "Europa League" };
-  }
-
-  if (
-    normalized.includes("conference league") ||
-    normalized.includes("sudamericana")
-  ) {
-    return {
-      kind: "conference",
-      label: normalized.includes("sudamericana")
-        ? "Playoffs da Sul-Americana"
-        : normalized.includes("qualifying")
-          ? "Eliminatórias da Conference League"
-          : "Conference League",
-    };
-  }
-
-  if (normalized.includes("qualifies for round of 16")) {
-    return { kind: "champions", label: "Classificação para as oitavas" };
-  }
-
-  if (normalized.includes("knockout phase playoffs")) {
-    return {
-      kind: "playoff",
-      label: normalized.includes("unseeded")
-        ? "Playoff do mata-mata — não cabeça de chave"
-        : "Playoff do mata-mata — cabeça de chave",
-    };
-  }
-
-  if (normalized.includes("qualifying") || normalized.includes("playoff")) {
-    return { kind: "playoff", label: description };
-  }
-
-  return { kind: "other", label: description };
+  return { kind: zone.type, label: labels[zone.type] };
 }
 
 export function getCompetitionDataState(
@@ -183,6 +223,22 @@ export function getGroupSections(sections: StandingSection[]) {
 
 export function getKnockoutPhases(phases: TournamentPhase[]) {
   return phases.filter((phase) => phase.kind === "KNOCKOUT");
+}
+
+export function getTournamentPresentationPhases(phases: TournamentPhase[]) {
+  const knockoutPhases = getKnockoutPhases(phases);
+  const mainStageSlugs = new Set([
+    "round-of-16",
+    "quarterfinals",
+    "semifinals",
+    "final",
+    "finals",
+  ]);
+  const mainStages = knockoutPhases.filter((phase) =>
+    mainStageSlugs.has(phase.slug),
+  );
+
+  return mainStages.length > 0 ? mainStages : knockoutPhases;
 }
 
 export function getRelevantKnockoutPhase(
@@ -273,6 +329,19 @@ export function getRelevantKnockoutPhase(
   );
 }
 
+export function resolveTournamentPhaseSelection(
+  requestedId: string | null,
+  phases: TournamentPhase[],
+  relevantId?: string | null,
+) {
+  return (
+    phases.find((phase) => phase.id === requestedId) ??
+    phases.find((phase) => phase.id === relevantId) ??
+    phases[0] ??
+    null
+  );
+}
+
 export function normalizeTournamentLabel(value: string | null) {
   if (!value) {
     return null;
@@ -306,7 +375,7 @@ export function formatTournamentOutcome(tie: TournamentTie) {
     const opponentScore = getTeamScore(tie.penalties, opponent.id);
 
     if (winnerScore !== null && opponentScore !== null) {
-      return `${winner.name} vence nos pênaltis por ${winnerScore} x ${opponentScore}`;
+      return `${winner.name} avança nos pênaltis por ${winnerScore} x ${opponentScore}`;
     }
   }
 
@@ -342,33 +411,6 @@ export function formatTournamentStatus(status: string) {
   };
 
   return labels[status] ?? "Status indisponível";
-}
-
-export function locationToGlobeAngles(latitude: number, longitude: number) {
-  return {
-    phi: Math.PI - (longitude * Math.PI) / 180 + Math.PI / 2,
-    theta: (latitude * Math.PI) / 180,
-  };
-}
-
-export function shortestAngleDelta(current: number, target: number) {
-  return Math.atan2(Math.sin(target - current), Math.cos(target - current));
-}
-
-export function getGlobeMarkerSpecs(
-  regions: Array<{
-    id: string;
-    latitude: number;
-    longitude: number;
-  }>,
-  selectedRegionId: string,
-): GlobeMarkerSpec[] {
-  return regions.map((region) => ({
-    id: region.id,
-    location: [region.latitude, region.longitude],
-    size: region.id === selectedRegionId ? 0.1 : 0.035,
-    active: region.id === selectedRegionId,
-  }));
 }
 
 export function formatTournamentScore(score: TournamentScore) {

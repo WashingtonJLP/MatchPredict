@@ -51,7 +51,7 @@ export const DAILY_GAMES_COMPETITIONS = [
   },
 ] as const;
 
-export const DAILY_GAMES_COMPETITIONS_VERSION = 'v2';
+export const DAILY_GAMES_COMPETITIONS_VERSION = 'v3';
 
 export type DailyGamesCompetitionId =
   (typeof DAILY_GAMES_COMPETITIONS)[number]['id'];
@@ -102,6 +102,7 @@ export type DailyGame = {
   minute: number | null;
   period: number | null;
   score: DailyGameScore;
+  shootoutScore: DailyGameScore | null;
   sourceEventId: string;
   stage: DailyGameStage | null;
   status: DailyGameStatus;

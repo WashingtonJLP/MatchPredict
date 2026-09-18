@@ -212,7 +212,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-primary/80 bg-primary px-5 py-6 shadow-xl shadow-primary/20 lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-primary/80 bg-primary px-5 py-6 font-navigation shadow-xl shadow-primary/20 lg:block">
         <Link
           href="/dashboard"
           className="flex items-center gap-3 text-xl font-extrabold tracking-tight text-primary-foreground focus-visible:ring-3 focus-visible:ring-accent/50"
@@ -248,7 +248,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
       </aside>
 
       <div className="lg:pl-72">
-        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
+        <header className="sticky top-0 z-40 border-b border-border bg-card/95 font-navigation backdrop-blur">
           <div className="flex h-[72px] items-center justify-between gap-3 px-4 sm:h-20 sm:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <button
@@ -294,7 +294,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         </header>
 
         <nav
-          className="flex gap-1 overflow-x-auto border-b border-border bg-card p-2 lg:hidden"
+          className="flex gap-1 overflow-x-auto border-b border-border bg-card p-2 font-navigation lg:hidden"
           aria-label="Navegação principal"
         >
           {mobileLinks.map((item) => {
@@ -334,7 +334,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       <aside
         className={cn(
-          "fixed bottom-0 left-0 top-0 z-50 flex w-[min(86vw,22rem)] flex-col border-r border-primary/80 bg-primary p-5 shadow-2xl transition-transform duration-200 lg:hidden",
+          "fixed bottom-0 left-0 top-0 z-50 flex w-[min(86vw,22rem)] flex-col border-r border-primary/80 bg-primary p-5 font-navigation shadow-2xl transition-transform duration-200 lg:hidden",
           isDrawerOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >

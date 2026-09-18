@@ -42,7 +42,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-card">
+    <header className="sticky top-0 z-50 border-b border-border bg-card font-navigation">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:h-[84px] sm:px-6 lg:px-8">
         <BrandMark />
 

@@ -34,8 +34,20 @@ export type FootballCompetitionConfig = {
 
 export const FOOTBALL_COMPETITIONS: readonly FootballCompetitionConfig[] = [
   league('eng.1', 'Premier League', 'Premier League', 'england', '700'),
-  league('bra.1', 'Brasileirão Série A', 'Série A', 'brazil', '630'),
-  league('bra.2', 'Brasileirão Série B', 'Série B', 'brazil', '4007'),
+  league(
+    'bra.1',
+    'Brasileirão Série A',
+    'Brasileirão Série A',
+    'brazil',
+    '630',
+  ),
+  league(
+    'bra.2',
+    'Brasileirão Série B',
+    'Brasileirão Série B',
+    'brazil',
+    '4007',
+  ),
   {
     id: 'bra.copa_do_brazil',
     name: 'Copa do Brasil',

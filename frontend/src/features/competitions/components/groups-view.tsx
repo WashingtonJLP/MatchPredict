@@ -15,7 +15,10 @@ export function GroupsView({ groups, reason }: GroupsViewProps) {
       <EmptyState
         icon={Layers3}
         title="Grupos ainda não publicados"
-        description={reason ?? "A ESPN ainda não disponibilizou os participantes e as tabelas desta fase."}
+        description={
+          reason ??
+          "Os participantes e as tabelas desta fase ainda não estão disponíveis."
+        }
       />
     );
   }

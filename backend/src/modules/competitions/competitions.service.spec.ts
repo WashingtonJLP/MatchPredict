@@ -25,6 +25,27 @@ describe('CompetitionsService', () => {
 
     expect(result.competitions).toHaveLength(12);
     expect(
+      result.competitions.map(({ id, name, shortName }) => ({
+        id,
+        name,
+        shortName,
+      })),
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          id: 'bra.1',
+          name: 'Brasileirão Série A',
+          shortName: 'Brasileirão Série A',
+        },
+        {
+          id: 'bra.2',
+          name: 'Brasileirão Série B',
+          shortName: 'Brasileirão Série B',
+        },
+        { id: 'ita.1', name: 'Serie A', shortName: 'Serie A' },
+      ]),
+    );
+    expect(
       result.competitions.find((item) => item.id === 'bra.copa_do_brazil'),
     ).toMatchObject({
       format: 'CUP',
@@ -116,7 +137,11 @@ describe('CompetitionsService', () => {
       goalDifference: 5,
       points: 9,
       deductions: 0,
-      zone: { description: 'Champions League' },
+      zone: {
+        type: 'CONTINENTAL_PRIMARY',
+        origin: 'SOURCE_EXPLICIT',
+        description: 'Champions League',
+      },
     });
   });
 
@@ -171,6 +196,94 @@ describe('CompetitionsService', () => {
       'Playoff do mata-mata — não cabeça de chave',
       'Eliminado',
     ]);
+    expect(
+      result.sections[0].entries.map((entry) => ({
+        type: entry.zone?.type,
+        origin: entry.zone?.origin,
+      })),
+    ).toEqual([
+      { type: 'KNOCKOUT_DIRECT', origin: 'RULE_DERIVED' },
+      { type: 'KNOCKOUT_PLAYOFF_SEEDED', origin: 'RULE_DERIVED' },
+      { type: 'KNOCKOUT_PLAYOFF_UNSEEDED', origin: 'RULE_DERIVED' },
+      { type: 'ELIMINATED', origin: 'RULE_DERIVED' },
+    ]);
+  });
+
+  it('deriva as zonas do Brasileirão Série A 2026 pelo regulamento configurado', async () => {
+    mockSeason('bra.1', []);
+    const positions = [1, 4, 5, 6, 11, 12, 17, 20];
+    espnClient.getStandings.mockResolvedValue({
+      season: { year: 2026, displayName: '2026 Futebol Brasileiro' },
+      children: [
+        {
+          name: '2026',
+          standings: {
+            entries: positions.map((position) =>
+              standingEntry(String(position), `Time ${position}`, position, 0),
+            ),
+          },
+        },
+      ],
+    });
+
+    const result = await service.findStandings('bra.1');
+
+    expect(
+      result.sections[0].entries.map((entry) => [
+        entry.position,
+        entry.zone?.type ?? null,
+        entry.zone?.origin ?? null,
+      ]),
+    ).toEqual([
+      [1, 'CONTINENTAL_PRIMARY', 'RULE_DERIVED'],
+      [4, 'CONTINENTAL_PRIMARY', 'RULE_DERIVED'],
+      [5, 'CONTINENTAL_PRIMARY_QUALIFYING', 'RULE_DERIVED'],
+      [6, 'CONTINENTAL_SECONDARY', 'RULE_DERIVED'],
+      [11, 'CONTINENTAL_SECONDARY', 'RULE_DERIVED'],
+      [12, null, null],
+      [17, 'RELEGATION', 'RULE_DERIVED'],
+      [20, 'RELEGATION', 'RULE_DERIVED'],
+    ]);
+  });
+
+  it('deriva acesso, playoff de acesso e rebaixamento da Série B 2026', async () => {
+    mockSeason('bra.2', []);
+    const positions = [1, 2, 3, 6, 7, 17, 20];
+    espnClient.getStandings.mockResolvedValue({
+      season: { year: 2026, displayName: '2026 Brasileiro Serie B' },
+      children: [
+        {
+          name: '2026 Serie B',
+          standings: {
+            entries: positions.map((position) =>
+              standingEntry(String(position), `Time ${position}`, position, 0),
+            ),
+          },
+        },
+      ],
+    });
+
+    const result = await service.findStandings('bra.2');
+
+    expect(
+      result.sections[0].entries.map((entry) => [
+        entry.position,
+        entry.zone?.type ?? null,
+      ]),
+    ).toEqual([
+      [1, 'PROMOTION'],
+      [2, 'PROMOTION'],
+      [3, 'PROMOTION_PLAYOFF'],
+      [6, 'PROMOTION_PLAYOFF'],
+      [7, null],
+      [17, 'RELEGATION'],
+      [20, 'RELEGATION'],
+    ]);
+    expect(
+      result.sections[0].entries
+        .filter((entry) => entry.zone)
+        .every((entry) => entry.zone?.origin === 'RULE_DERIVED'),
+    ).toBe(true);
   });
 
   it('informa que standings não se aplica à Copa do Brasil', async () => {
@@ -217,6 +330,31 @@ describe('CompetitionsService', () => {
     ]);
     expect(tie.winnerTeamId).toBe('away');
     expect(tie.progression).toBeNull();
+  });
+
+  it('não inverte o vencedor quando a série da ESPN contradiz o agregado por ID', async () => {
+    mockTournamentSeason('conmebol.libertadores', {
+      eventIds: ['401912518', '401912517'],
+    });
+    espnClient.getScoreboard.mockResolvedValue({
+      events: [
+        fluminensePlatenseEvent('401912518', 1),
+        fluminensePlatenseEvent('401912517', 2),
+      ],
+    });
+
+    const result = await service.findTournament('conmebol.libertadores');
+    const tie = result.phases[0].ties[0];
+
+    expect(tie.aggregate).toEqual([
+      { teamId: '7764', value: 2 },
+      { teamId: '3445', value: 3 },
+    ]);
+    expect(tie.winnerTeamId).toBeNull();
+    expect(tie.note).toBe('2nd Leg - Fluminense win 3-2 on aggregate');
+    expect(result.warnings).toContain(
+      'A ESPN retornou dados incompatíveis sobre o vencedor de Fluminense x Platense. O classificado foi omitido por segurança.',
+    );
   });
 
   it('consulta os anos civis de temporada europeia, consolida e deduplica eventos', async () => {
@@ -493,6 +631,83 @@ function knockoutEvent(
             },
           },
         ],
+      },
+    ],
+  };
+}
+
+function fluminensePlatenseEvent(id: string, leg: 1 | 2) {
+  const isSecondLeg = leg === 2;
+
+  return {
+    id,
+    date: isSecondLeg ? '2026-09-15T22:00Z' : '2026-09-08T22:00Z',
+    season: { year: 2026, type: 13923, slug: 'quarterfinals' },
+    status: {
+      type: { completed: true, state: 'post', name: 'STATUS_FULL_TIME' },
+    },
+    competitions: [
+      {
+        leg: { value: leg, displayValue: `${leg} leg` },
+        status: {
+          type: { completed: true, state: 'post', name: 'STATUS_FULL_TIME' },
+        },
+        series: {
+          title: 'Quarterfinals',
+          completed: isSecondLeg,
+          totalCompetitions: 2,
+          competitors: isSecondLeg
+            ? [
+                { id: '7764', aggregateScore: 2, winner: true },
+                { id: '3445', aggregateScore: 3, winner: false },
+              ]
+            : [
+                { id: '3445', winner: false },
+                { id: '7764', winner: false },
+              ],
+        },
+        notes: isSecondLeg
+          ? [
+              {
+                headline: '2nd Leg - Fluminense win 3-2 on aggregate',
+              },
+            ]
+          : [{ headline: '1st Leg' }],
+        competitors: isSecondLeg
+          ? [
+              {
+                id: '7764',
+                homeAway: 'home',
+                score: '2',
+                winner: true,
+                aggregateScore: 2,
+                team: { id: '7764', displayName: 'Platense' },
+              },
+              {
+                id: '3445',
+                homeAway: 'away',
+                score: '1',
+                winner: false,
+                aggregateScore: 3,
+                team: { id: '3445', displayName: 'Fluminense' },
+              },
+            ]
+          : [
+              {
+                id: '3445',
+                homeAway: 'home',
+                score: '2',
+                winner: true,
+                team: { id: '3445', displayName: 'Fluminense' },
+              },
+              {
+                id: '7764',
+                homeAway: 'away',
+                score: '0',
+                winner: false,
+                team: { id: '7764', displayName: 'Platense' },
+              },
+            ],
       },
     ],
   };

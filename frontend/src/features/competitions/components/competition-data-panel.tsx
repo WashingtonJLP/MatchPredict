@@ -9,7 +9,10 @@ import { CompetitionGames } from "@/features/competitions/components/competition
 import { GroupsView } from "@/features/competitions/components/groups-view";
 import { StandingsTable } from "@/features/competitions/components/standings-table";
 import { TournamentView } from "@/features/competitions/components/tournament-view";
-import type { CompetitionTabId } from "@/features/competitions/competition-view";
+import {
+  removeCompetitionProviderAttribution,
+  type CompetitionTabId,
+} from "@/features/competitions/competition-view";
 import {
   useCompetitionStandings,
   useCompetitionTournament,
@@ -46,13 +49,22 @@ export function CompetitionDataPanel({
 
   if (needsStandings) {
     if (standingsQuery.isLoading) {
-      return <CompetitionTableSkeleton />;
+      return activeTab === "groups" ? (
+        <GroupsSkeleton />
+      ) : (
+        <CompetitionTableSkeleton />
+      );
     }
 
     if (standingsQuery.isError) {
       return (
         <QueryError
-          description={getApiErrorMessage(standingsQuery.error, "A classificação não pôde ser atualizada.")}
+          description={removeCompetitionProviderAttribution(
+            getApiErrorMessage(
+              standingsQuery.error,
+              "A classificação não pôde ser atualizada.",
+            ),
+          )}
           onRetry={() => void standingsQuery.refetch()}
         />
       );
@@ -65,7 +77,11 @@ export function CompetitionDataPanel({
         <EmptyState
           icon={BarChart3}
           title="Competição sem classificação"
-          description={standings?.reason ?? "Este formato não utiliza tabela de classificação."}
+          description={
+            (standings?.reason
+              ? removeCompetitionProviderAttribution(standings.reason)
+              : null) ?? "Este formato não utiliza tabela de classificação."
+          }
         />
       );
     }
@@ -74,7 +90,14 @@ export function CompetitionDataPanel({
       <div className="space-y-4">
         {standings.partial ? <PartialDataBanner /> : null}
         {activeTab === "groups" ? (
-          <GroupsView groups={standings.sections} reason={standings.reason} />
+          <GroupsView
+            groups={standings.sections}
+            reason={
+              standings.reason
+                ? removeCompetitionProviderAttribution(standings.reason)
+                : null
+            }
+          />
         ) : standings.sections.length > 0 ? (
           <div className="space-y-4">
             {standings.sections.map((section) => (
@@ -89,7 +112,11 @@ export function CompetitionDataPanel({
           <EmptyState
             icon={BarChart3}
             title="Classificação ainda não publicada"
-            description={standings.reason ?? "A tabela aparecerá aqui quando for publicada pela ESPN."}
+            description={
+              (standings.reason
+                ? removeCompetitionProviderAttribution(standings.reason)
+                : null) ?? "A tabela aparecerá aqui quando for publicada."
+            }
           />
         )}
       </div>
@@ -103,7 +130,12 @@ export function CompetitionDataPanel({
   if (tournamentQuery.isError) {
     return (
       <QueryError
-        description={getApiErrorMessage(tournamentQuery.error, "As fases não puderam ser atualizadas.")}
+        description={removeCompetitionProviderAttribution(
+          getApiErrorMessage(
+            tournamentQuery.error,
+            "As fases não puderam ser atualizadas.",
+          ),
+        )}
         onRetry={() => void tournamentQuery.refetch()}
       />
     );
@@ -113,13 +145,20 @@ export function CompetitionDataPanel({
     <div className="space-y-4">
       {tournamentQuery.data?.partial ? <PartialDataBanner /> : null}
       {tournamentQuery.data?.warnings.map((warning) => (
-        <div key={warning} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-          {warning}
+        <div
+          key={warning}
+          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
+        >
+          {removeCompetitionProviderAttribution(warning)}
         </div>
       ))}
       <TournamentView
         phases={tournamentQuery.data?.phases ?? []}
-        reason={tournamentQuery.data?.reason ?? null}
+        reason={
+          tournamentQuery.data?.reason
+            ? removeCompetitionProviderAttribution(tournamentQuery.data.reason)
+            : null
+        }
       />
     </div>
   );
@@ -127,17 +166,29 @@ export function CompetitionDataPanel({
 
 function PartialDataBanner() {
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900" role="status">
+    <div
+      className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
+      role="status"
+    >
       <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
-      A ESPN retornou dados parciais. O conteúdo disponível foi preservado.
+      Foram recebidos dados parciais. O conteúdo disponível foi preservado.
     </div>
   );
 }
 
-function QueryError({ description, onRetry }: { description: string; onRetry: () => void }) {
+function QueryError({
+  description,
+  onRetry,
+}: {
+  description: string;
+  onRetry: () => void;
+}) {
   return (
     <div className="space-y-4">
-      <ErrorState title="Não foi possível carregar os dados" description={description} />
+      <ErrorState
+        title="Não foi possível carregar os dados"
+        description={description}
+      />
       <div className="flex justify-center">
         <Button type="button" className="h-11 rounded-xl" onClick={onRetry}>
           <RefreshCw className="size-4" aria-hidden /> Tentar novamente
@@ -149,10 +200,18 @@ function QueryError({ description, onRetry }: { description: string; onRetry: ()
 
 function CompetitionTableSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card" aria-label="Carregando classificação">
+    <div
+      className="overflow-hidden rounded-2xl border border-border bg-card"
+      role="status"
+      aria-busy="true"
+      aria-label="Carregando classificação"
+    >
       <div className="h-11 bg-muted/70 motion-safe:animate-pulse" />
       {Array.from({ length: 10 }, (_, index) => (
-        <div key={index} className="flex h-14 items-center gap-3 border-t border-border px-3">
+        <div
+          key={index}
+          className="flex h-14 items-center gap-3 border-t border-border px-3"
+        >
           <div className="h-4 w-6 rounded bg-muted motion-safe:animate-pulse" />
           <div className="size-7 rounded-full bg-muted motion-safe:animate-pulse" />
           <div className="h-4 flex-1 rounded bg-muted motion-safe:animate-pulse" />
@@ -163,11 +222,50 @@ function CompetitionTableSkeleton() {
   );
 }
 
+function GroupsSkeleton() {
+  return (
+    <div
+      className="grid items-start gap-4 xl:grid-cols-2"
+      role="status"
+      aria-busy="true"
+      aria-label="Carregando grupos"
+    >
+      {Array.from({ length: 4 }, (_, groupIndex) => (
+        <div
+          key={groupIndex}
+          className="overflow-hidden rounded-2xl border border-border bg-card"
+        >
+          <div className="h-12 border-b border-border bg-muted/70 motion-safe:animate-pulse" />
+          {Array.from({ length: 4 }, (_, rowIndex) => (
+            <div
+              key={rowIndex}
+              className="flex h-14 items-center gap-3 border-b border-border/70 px-3 last:border-b-0"
+            >
+              <div className="h-4 w-6 rounded bg-muted motion-safe:animate-pulse" />
+              <div className="size-7 rounded-full bg-muted motion-safe:animate-pulse" />
+              <div className="h-4 flex-1 rounded bg-muted motion-safe:animate-pulse" />
+              <div className="h-4 w-12 rounded bg-muted motion-safe:animate-pulse" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TournamentSkeleton() {
   return (
-    <div className="grid gap-4 lg:grid-cols-3" aria-label="Carregando mata-mata">
-      {Array.from({ length: 3 }, (_, index) => (
-        <div key={index} className="h-64 rounded-2xl border border-border bg-muted/60 motion-safe:animate-pulse" />
+    <div
+      className="grid gap-4 lg:grid-cols-4"
+      role="status"
+      aria-busy="true"
+      aria-label="Carregando mata-mata"
+    >
+      {Array.from({ length: 4 }, (_, index) => (
+        <div
+          key={index}
+          className="h-64 rounded-2xl border border-border bg-muted/60 motion-safe:animate-pulse"
+        />
       ))}
     </div>
   );

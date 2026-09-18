@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   getCompetitionCatalog,
@@ -33,7 +33,6 @@ export function useCompetitionStandings(
     queryKey: ["football-competition-standings", competitionId, season],
     queryFn: () => getCompetitionStandings(competitionId, season),
     enabled: Boolean(competitionId) && enabled,
-    placeholderData: keepPreviousData,
     staleTime: 10 * 60 * 1000,
   });
 }
@@ -47,7 +46,6 @@ export function useCompetitionTournament(
     queryKey: ["football-competition-tournament", competitionId, season],
     queryFn: () => getCompetitionTournament(competitionId, season),
     enabled: Boolean(competitionId) && enabled,
-    placeholderData: keepPreviousData,
     staleTime: 15 * 60 * 1000,
   });
 }

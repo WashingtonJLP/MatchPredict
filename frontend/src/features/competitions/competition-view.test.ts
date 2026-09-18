@@ -3,6 +3,7 @@ import test from "node:test";
 
 import type {
   FootballCompetition,
+  StandingZone,
   TournamentPhase,
   TournamentTie,
 } from "../../types/competition.ts";
@@ -11,19 +12,24 @@ import {
   formatTournamentScore,
   formatTournamentStatus,
   formatStandingValue,
+  getCompetitionsPageCatalog,
+  getDefaultCompetitionTab,
   getCompetitionDataState,
   getCompetitionTabs,
-  getGlobeMarkerSpecs,
   getGroupSections,
   getKnockoutPhases,
   getRelevantKnockoutPhase,
   getStandingZoneVisual,
   getTeamScore,
-  locationToGlobeAngles,
+  getTournamentPresentationPhases,
   normalizeTournamentLabel,
+  removeCompetitionProviderAttribution,
   resolveCompetitionForRegion,
   resolveCompetitionSelection,
-  shortestAngleDelta,
+  resolveTournamentPhaseSelection,
+  standingZoneColorClasses,
+  standingZoneIndicatorClass,
+  standingZoneLegendDotClass,
 } from "./competition-view.ts";
 
 function competition(
@@ -64,6 +70,38 @@ test("cria somente as abas suportadas pela competição", () => {
     getCompetitionTabs(groupedCup).map((tab) => tab.id),
     ["games", "groups", "tournament"],
   );
+});
+
+test("seleciona a view estrutural padrão ao trocar de competição", () => {
+  const league = competition("eng.1", {
+    games: true,
+    standings: true,
+    groups: false,
+    tournament: false,
+  });
+  const groupedCup = competition("conmebol.libertadores", {
+    games: true,
+    standings: true,
+    groups: true,
+    tournament: true,
+  });
+  const cup = competition("bra.copa_do_brazil", {
+    games: true,
+    standings: false,
+    groups: false,
+    tournament: true,
+  });
+  const leaguePhase = {
+    ...league,
+    id: "uefa.champions",
+    format: "LEAGUE_PHASE" as const,
+    capabilities: { ...league.capabilities, tournament: true },
+  };
+
+  assert.equal(getDefaultCompetitionTab(league), "standings");
+  assert.equal(getDefaultCompetitionTab(groupedCup), "groups");
+  assert.equal(getDefaultCompetitionTab(leaguePhase), "standings");
+  assert.equal(getDefaultCompetitionTab(cup), "games");
 });
 
 test("seleciona o id solicitado ou usa a primeira competição", () => {
@@ -115,6 +153,102 @@ test("mantém competição e região sincronizadas por uma única seleção", ()
   );
 });
 
+test("limita a página às oito competições e remove a Copa do Brasil", () => {
+  const capabilities = {
+    games: true,
+    standings: true,
+    groups: false,
+    tournament: false,
+  };
+  const ids = [
+    "eng.1",
+    "bra.1",
+    "bra.2",
+    "bra.copa_do_brazil",
+    "uefa.champions",
+    "uefa.europa",
+    "esp.1",
+    "ita.1",
+    "ger.1",
+    "fra.1",
+    "conmebol.libertadores",
+    "conmebol.sudamericana",
+  ];
+  const regionByCompetition: Record<string, string> = {
+    "eng.1": "england",
+    "bra.1": "brazil",
+    "bra.2": "brazil",
+    "bra.copa_do_brazil": "brazil",
+    "uefa.champions": "europe",
+    "uefa.europa": "europe",
+    "esp.1": "spain",
+    "ita.1": "italy",
+    "ger.1": "germany",
+    "fra.1": "france",
+    "conmebol.libertadores": "south-america",
+    "conmebol.sudamericana": "south-america",
+  };
+  const competitions = ids.map((id) =>
+    competition(id, capabilities, regionByCompetition[id]),
+  );
+  const regions = [
+    "england",
+    "brazil",
+    "europe",
+    "spain",
+    "italy",
+    "germany",
+    "france",
+    "south-america",
+  ].map((id) => ({ id, name: id, latitude: 0, longitude: 0 }));
+
+  const pageCatalog = getCompetitionsPageCatalog(regions, competitions);
+
+  assert.deepEqual(
+    pageCatalog.competitions.map((item) => item.id),
+    [
+      "eng.1",
+      "bra.1",
+      "bra.2",
+      "uefa.champions",
+      "esp.1",
+      "ita.1",
+      "ger.1",
+      "fra.1",
+    ],
+  );
+  assert.equal(
+    pageCatalog.regions.some((region) => region.id === "south-america"),
+    false,
+  );
+  assert.equal(
+    pageCatalog.regions.some((region) => region.id === "europe"),
+    true,
+  );
+  assert.equal(pageCatalog.competitions.length, 8);
+  assert.equal(
+    pageCatalog.competitions.some(
+      (competition) => competition.id === "bra.copa_do_brazil",
+    ),
+    false,
+  );
+});
+
+test("remove atribuição visual ao provedor das mensagens", () => {
+  assert.equal(
+    removeCompetitionProviderAttribution(
+      "A ESPN ainda não publicou a classificação desta competição.",
+    ),
+    "A classificação desta competição ainda não foi publicada.",
+  );
+  assert.equal(
+    removeCompetitionProviderAttribution(
+      "A ESPN retornou dados incompatíveis sobre o confronto.",
+    ),
+    "Foram recebidos dados incompatíveis sobre o confronto.",
+  );
+});
+
 test("formata ausências sem convertê-las em zero", () => {
   assert.equal(formatStandingValue(null), "—");
   assert.equal(formatStandingValue(0), "0");
@@ -150,24 +284,65 @@ test("preserva grupos densos com entradas e seleciona somente fases eliminatóri
   );
 });
 
-test("mapeia zonas europeias e de rebaixamento sem inferir pela posição", () => {
-  assert.deepEqual(getStandingZoneVisual("Champions League"), {
-    kind: "champions",
-    label: "Champions League",
-  });
-  assert.equal(getStandingZoneVisual("Europa League").kind, "europa");
-  assert.equal(
-    getStandingZoneVisual("Conference League qualifying").kind,
-    "conference",
+test("prioriza as quatro fases finais na apresentação do mata-mata", () => {
+  const phases = [
+    { id: "first", slug: "first-stage", kind: "KNOCKOUT" },
+    { id: "round", slug: "round-of-16", kind: "KNOCKOUT" },
+    { id: "quarters", slug: "quarterfinals", kind: "KNOCKOUT" },
+    { id: "semis", slug: "semifinals", kind: "KNOCKOUT" },
+    { id: "final", slug: "final", kind: "KNOCKOUT" },
+  ];
+
+  assert.deepEqual(
+    getTournamentPresentationPhases(phases as TournamentPhase[]).map(
+      (phase) => phase.id,
+    ),
+    ["round", "quarters", "semis", "final"],
   );
-  assert.deepEqual(getStandingZoneVisual("Relegation playoff"), {
-    kind: "relegation-playoff",
-    label: "Playoff contra o rebaixamento",
-  });
-  assert.deepEqual(getStandingZoneVisual("Relegation"), {
-    kind: "relegation",
+});
+
+test("mapeia zonas europeias e de rebaixamento sem inferir pela posição", () => {
+  assert.deepEqual(
+    getStandingZoneVisual(zone("CONTINENTAL_PRIMARY", "Champions League")),
+    {
+      kind: "CONTINENTAL_PRIMARY",
+      label: "Champions League",
+    },
+  );
+  assert.equal(
+    getStandingZoneVisual(zone("CONTINENTAL_SECONDARY", "Europa League")).kind,
+    "CONTINENTAL_SECONDARY",
+  );
+  assert.equal(
+    getStandingZoneVisual(
+      zone("CONTINENTAL_TERTIARY_QUALIFYING", "Conference League qualifying"),
+    ).kind,
+    "CONTINENTAL_TERTIARY_QUALIFYING",
+  );
+  assert.deepEqual(
+    getStandingZoneVisual(zone("RELEGATION_PLAYOFF", "Relegation playoff")),
+    {
+      kind: "RELEGATION_PLAYOFF",
+      label: "Playoff contra o rebaixamento",
+    },
+  );
+  assert.deepEqual(getStandingZoneVisual(zone("RELEGATION", "Relegation")), {
+    kind: "RELEGATION",
     label: "Rebaixamento",
   });
+});
+
+test("usa indicadores e círculos sólidos consistentes para todas as zonas", () => {
+  assert.equal(
+    standingZoneIndicatorClass,
+    "absolute inset-y-2 left-0 w-1 rounded-r-full",
+  );
+  assert.equal(standingZoneLegendDotClass, "size-2 rounded-full");
+
+  for (const colorClass of Object.values(standingZoneColorClasses)) {
+    assert.match(colorClass, /^bg-/);
+    assert.doesNotMatch(colorClass, /border|outline|ring/);
+  }
 });
 
 test("escolhe a fase em andamento antes de uma próxima fase apenas TBD", () => {
@@ -225,6 +400,34 @@ test("escolhe a próxima fase publicada e mantém fallback seguro", () => {
   assert.equal(getRelevantKnockoutPhase([unpublished])?.id, "round-of-16");
 });
 
+test("mantém uma única fase selecionada na navegação mobile", () => {
+  const roundOf16 = phase("round-of-16", "Oitavas de final", {
+    completed: true,
+    kickoff: "2026-08-01T20:00:00Z",
+  });
+  const quarterfinals = phase("quarterfinals", "Quartas de final", {
+    completed: false,
+    kickoff: "2026-09-20T20:00:00Z",
+  });
+
+  assert.equal(
+    resolveTournamentPhaseSelection(
+      null,
+      [roundOf16, quarterfinals],
+      "quarterfinals",
+    )?.id,
+    "quarterfinals",
+  );
+  assert.equal(
+    resolveTournamentPhaseSelection(
+      "round-of-16",
+      [roundOf16, quarterfinals],
+      "quarterfinals",
+    )?.id,
+    "round-of-16",
+  );
+});
+
 test("normaliza labels conhecidos e monta desfecho com dados estruturados", () => {
   assert.equal(normalizeTournamentLabel("ROUND OF 16"), "Oitavas de final");
   assert.equal(normalizeTournamentLabel("QUARTERFINALS"), "Quartas de final");
@@ -266,25 +469,47 @@ test("normaliza labels conhecidos e monta desfecho com dados estruturados", () =
         { teamId: "gremio", value: 4 },
       ],
     }),
-    "Palmeiras vence nos pênaltis por 5 x 4",
+    "Palmeiras avança nos pênaltis por 5 x 4",
   );
 });
 
-test("calcula alvos e markers do globo a partir da região ativa", () => {
-  const regions = [
-    { id: "brazil", latitude: -14.2, longitude: -51.9 },
-    { id: "england", latitude: 52.4, longitude: -1.5 },
-  ];
-  const markers = getGlobeMarkerSpecs(regions, "england");
-  const englandAngles = locationToGlobeAngles(52.4, -1.5);
+test("mantém agregado e vencedor associados por team ID no caso Fluminense x Platense", () => {
+  const tie: TournamentTie = {
+    ...tournamentTie(),
+    teams: [
+      {
+        id: "3445",
+        name: "Fluminense",
+        abbreviation: "FLU",
+        logo: null,
+      },
+      {
+        id: "7764",
+        name: "Platense",
+        abbreviation: "PLA",
+        logo: null,
+      },
+    ],
+    aggregate: [
+      { teamId: "7764", value: 2 },
+      { teamId: "3445", value: 3 },
+    ],
+    winnerTeamId: null,
+    penalties: null,
+  };
 
-  assert.equal(markers.find((marker) => marker.id === "england")?.active, true);
-  assert.equal(markers.find((marker) => marker.id === "brazil")?.active, false);
-  assert.ok(englandAngles.theta > 0);
-  assert.ok(
-    Math.abs(shortestAngleDelta(2 * Math.PI - 0.1, 0.1) - 0.2) < 0.0001,
-  );
+  assert.equal(getTeamScore(tie.aggregate, "3445"), 3);
+  assert.equal(getTeamScore(tie.aggregate, "7764"), 2);
+  assert.equal(formatTournamentOutcome(tie), null);
 });
+
+function zone(
+  type: StandingZone["type"],
+  description: string,
+  origin: StandingZone["origin"] = "SOURCE_EXPLICIT",
+): StandingZone {
+  return { type, description, origin, rank: null, color: null };
+}
 
 function phase(
   id: string,

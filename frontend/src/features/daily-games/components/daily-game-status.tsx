@@ -42,12 +42,15 @@ export function DailyGameStatus({
   status,
 }: DailyGameStatusProps) {
   const isLive = status === "LIVE";
-  const displayLabel = label || fallbackStatusLabels[status];
+  const displayLabel =
+    compact && status === "FINAL_PENALTIES"
+      ? fallbackStatusLabels.FINAL_PENALTIES
+      : label || fallbackStatusLabels[status];
 
   return (
     <span
       className={cn(
-        "inline-flex min-h-6 w-max shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide",
+        "inline-flex min-h-6 w-max max-w-full shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide",
         statusClasses[status],
         compact &&
           "px-1 tracking-normal sm:px-1.5 sm:tracking-wide",

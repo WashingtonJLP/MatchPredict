@@ -1,21 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { Check, Globe2, MapPin } from "lucide-react";
 
 import { CompetitionLogo } from "@/features/competitions/components/competition-logo";
 import { cn } from "@/lib/utils";
 import type { FootballCompetition, FootballRegion } from "@/types/competition";
-
-const CobeGlobe = dynamic(
-  () => import("@/components/ui/cobe-globe").then((module) => module.CobeGlobe),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="aspect-square w-full rounded-full bg-primary-foreground/5 motion-safe:animate-pulse" />
-    ),
-  },
-);
 
 type CompetitionExplorerProps = {
   regions: FootballRegion[];
@@ -34,16 +23,12 @@ export function CompetitionExplorer({
   onRegionChange,
   onCompetitionChange,
 }: CompetitionExplorerProps) {
-  const selectedRegion = regions.find(
-    (region) => region.id === selectedRegionId,
-  );
-
   return (
     <section
       className="overflow-hidden bg-primary text-primary-foreground"
       aria-labelledby="competitions-heading"
     >
-      <div className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-6 sm:gap-6 sm:px-6 sm:py-9 lg:grid-cols-[minmax(0,1.15fr)_minmax(21rem,0.85fr)] lg:items-center lg:px-8">
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground shadow-lg shadow-accent/20">
@@ -61,70 +46,55 @@ export function CompetitionExplorer({
             campeonatos.
           </p>
 
-          <div className="mt-6">
-            <p className="text-xs font-extrabold uppercase tracking-wide text-primary-foreground/60">
-              Explore por região
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2" role="list">
-              {regions.map((region) => {
-                const isSelected = region.id === selectedRegionId;
+          <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.7fr)] lg:items-end">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-wide text-primary-foreground/60">
+                Explore por região
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2" role="list">
+                {regions.map((region) => {
+                  const isSelected = region.id === selectedRegionId;
 
-                return (
-                  <button
-                    key={region.id}
-                    type="button"
-                    className={cn(
-                      "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-bold transition focus-visible:ring-3 focus-visible:ring-accent/60 sm:min-h-11 sm:gap-2 sm:px-3 sm:text-sm",
-                      isSelected
-                        ? "border-accent bg-accent text-accent-foreground shadow-lg shadow-accent/20"
-                        : "border-primary-foreground/15 bg-primary-foreground/5 text-primary-foreground/80 hover:border-primary-foreground/30 hover:bg-primary-foreground/10",
-                    )}
-                    aria-pressed={isSelected}
-                    onClick={() => onRegionChange(region.id)}
-                  >
-                    <MapPin className="size-4" aria-hidden />
-                    {region.name}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={region.id}
+                      type="button"
+                      className={cn(
+                        "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-bold transition focus-visible:ring-3 focus-visible:ring-accent/60 sm:min-h-11 sm:gap-2 sm:px-3 sm:text-sm",
+                        isSelected
+                          ? "border-accent bg-accent text-accent-foreground shadow-lg shadow-accent/20"
+                          : "border-primary-foreground/15 bg-primary-foreground/5 text-primary-foreground/80 hover:border-primary-foreground/30 hover:bg-primary-foreground/10",
+                      )}
+                      aria-pressed={isSelected}
+                      onClick={() => onRegionChange(region.id)}
+                    >
+                      <MapPin className="size-4" aria-hidden />
+                      {region.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-
-          <label className="mt-4 block max-w-xl">
-            <span className="text-xs font-extrabold uppercase tracking-wide text-primary-foreground/60">
-              Escolha uma competição
-            </span>
-            <select
-              value={selectedCompetition.id}
-              className="mt-2 h-12 w-full rounded-xl border border-primary-foreground/20 bg-primary px-4 text-base font-bold text-primary-foreground shadow-sm outline-none transition hover:border-primary-foreground/40 focus:border-accent focus:ring-4 focus:ring-accent/20"
-              onChange={(event) => onCompetitionChange(event.target.value)}
-            >
-              {competitions.map((competition) => (
-                <option
-                  key={competition.id}
-                  value={competition.id}
-                  className="bg-primary"
-                >
-                  {competition.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="relative mx-auto w-full max-w-56 sm:max-w-72 lg:max-w-none">
-          <div className="pointer-events-none absolute inset-[16%] rounded-full bg-accent/10 blur-3xl" />
-          <CobeGlobe regions={regions} selectedRegionId={selectedRegionId} />
-          <div className="pointer-events-none absolute bottom-2 left-1/2 flex max-w-[90%] -translate-x-1/2 items-center gap-2 rounded-full border border-primary-foreground/15 bg-primary/90 px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-lg backdrop-blur">
-            <span className="relative flex size-2.5 shrink-0" aria-hidden>
-              <span className="absolute inline-flex size-full rounded-full bg-accent/60 motion-safe:animate-ping" />
-              <span className="relative inline-flex size-2.5 rounded-full bg-accent" />
-            </span>
-            <span className="truncate">
-              {selectedRegion?.name ?? "Região selecionada"}
-              <span className="text-primary-foreground/55"> · </span>
-              {selectedCompetition.shortName}
-            </span>
+            <label className="block">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-primary-foreground/60">
+                Escolha uma competição
+              </span>
+              <select
+                value={selectedCompetition.id}
+                className="mt-2 h-12 w-full rounded-xl border border-primary-foreground/20 bg-primary px-4 text-base font-bold text-primary-foreground shadow-sm outline-none transition hover:border-primary-foreground/40 focus:border-accent focus:ring-4 focus:ring-accent/20"
+                onChange={(event) => onCompetitionChange(event.target.value)}
+              >
+                {competitions.map((competition) => (
+                  <option
+                    key={competition.id}
+                    value={competition.id}
+                    className="bg-primary"
+                  >
+                    {competition.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
       </div>
@@ -143,6 +113,7 @@ export function CompetitionExplorer({
                   key={competition.id}
                   type="button"
                   aria-pressed={isSelected}
+                  aria-label={`Selecionar ${competition.name}`}
                   className={cn(
                     "relative flex min-h-16 min-w-36 items-center gap-2 overflow-hidden rounded-xl border px-2.5 py-2 text-left transition focus-visible:ring-3 focus-visible:ring-accent/60 sm:min-w-0",
                     isSelected

@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 
 import { DailyGamesEspnClient } from './daily-games-espn.client';
 import { DailyGamesService } from './daily-games.service';
+import { DAILY_GAMES_COMPETITIONS } from './types/daily-game.types';
 import {
   EspnScoreboardCompetitor,
   EspnScoreboardEvent,
@@ -22,6 +23,15 @@ describe('DailyGamesService', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it('mantém as 12 competições, incluindo Copa do Brasil', () => {
+    expect(DAILY_GAMES_COMPETITIONS).toHaveLength(12);
+    expect(
+      DAILY_GAMES_COMPETITIONS.some(
+        (competition) => competition.id === 'bra.copa_do_brazil',
+      ),
+    ).toBe(true);
   });
 
   it.each(['abc', '2026-99-99', '01-09-2026'])(
@@ -313,6 +323,64 @@ describe('DailyGamesService', () => {
       });
     },
   );
+
+  it('preserva o placar de pênaltis associado por team ID', async () => {
+    getScoreboard.mockImplementation((league: string) =>
+      Promise.resolve(
+        league === 'bra.2'
+          ? scoreboard([
+              createEvent({
+                completed: true,
+                state: 'post',
+                statusName: 'STATUS_FINAL_PEN',
+                competitors: [
+                  createCompetitor('away', {
+                    id: 'away-team',
+                    name: 'Visitante',
+                    score: '2',
+                    shootoutScore: 5,
+                  }),
+                  createCompetitor('home', {
+                    id: 'home-team',
+                    name: 'Mandante',
+                    score: '3',
+                    shootoutScore: 4,
+                  }),
+                ],
+              }),
+            ])
+          : emptyScoreboard(),
+      ),
+    );
+
+    const [game] = (await service.findDailyGames('2026-09-01'))
+      .competitions[0].games;
+
+    expect(game.homeTeam.id).toBe('home-team');
+    expect(game.awayTeam.id).toBe('away-team');
+    expect(game.shootoutScore).toEqual({ home: 4, away: 5 });
+  });
+
+  it('não inventa placar quando FINAL_PENALTIES não traz shootoutScore', async () => {
+    getScoreboard.mockImplementation((league: string) =>
+      Promise.resolve(
+        league === 'bra.2'
+          ? scoreboard([
+              createEvent({
+                completed: true,
+                state: 'post',
+                statusName: 'STATUS_FINAL_PEN',
+              }),
+            ])
+          : emptyScoreboard(),
+      ),
+    );
+
+    const [game] = (await service.findDailyGames('2026-09-01'))
+      .competitions[0].games;
+
+    expect(game.shootoutScore).toBeNull();
+  });
 
   it.each([
     ['STATUS_SCHEDULED', 'pre', false, 'SCHEDULED', 'Pré-jogo'],
@@ -678,6 +746,7 @@ function createCompetitor(
     id?: string;
     name?: string;
     score?: string;
+    shootoutScore?: number | string;
   } = {},
 ) {
   const id = overrides.id ?? (homeAway === 'home' ? '17333' : '6270');
@@ -688,6 +757,7 @@ function createCompetitor(
     homeAway,
     id,
     score: overrides.score,
+    shootoutScore: overrides.shootoutScore,
     team: {
       abbreviation: overrides.abbreviation ?? name.slice(0, 3).toUpperCase(),
       displayName: name,

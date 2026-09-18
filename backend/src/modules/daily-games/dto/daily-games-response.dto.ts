@@ -92,6 +92,9 @@ export class DailyGameResponseDto {
   @ApiProperty({ type: DailyGameScoreResponseDto })
   score!: DailyGameScoreResponseDto;
 
+  @ApiProperty({ type: DailyGameScoreResponseDto, nullable: true })
+  shootoutScore!: DailyGameScoreResponseDto | null;
+
   @ApiProperty({
     type: DailyGameStageResponseDto,
     nullable: true,

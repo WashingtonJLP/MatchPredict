@@ -11,6 +11,8 @@ import { CompetitionExplorer } from "@/features/competitions/components/competit
 import { CompetitionLogo } from "@/features/competitions/components/competition-logo";
 import {
   type CompetitionTabId,
+  getCompetitionsPageCatalog,
+  getDefaultCompetitionTab,
   getCompetitionTabs,
   resolveCompetitionForRegion,
   resolveCompetitionSelection,
@@ -26,32 +28,66 @@ export function CompetitionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const catalogQuery = useCompetitionCatalog();
+  const pageCatalog = useMemo(
+    () =>
+      getCompetitionsPageCatalog(
+        catalogQuery.data?.regions ?? [],
+        catalogQuery.data?.competitions ?? [],
+      ),
+    [catalogQuery.data?.competitions, catalogQuery.data?.regions],
+  );
+  const routeCompetitionId = searchParams.get("competition");
+  const [optimisticCompetitionId, setOptimisticCompetitionId] = useState<
+    string | null
+  >(null);
   const selectedCompetition = useMemo(
     () =>
       resolveCompetitionSelection(
-        searchParams.get("competition"),
-        catalogQuery.data?.competitions ?? [],
+        optimisticCompetitionId ?? routeCompetitionId,
+        pageCatalog.competitions,
       ),
-    [catalogQuery.data?.competitions, searchParams],
+    [pageCatalog.competitions, optimisticCompetitionId, routeCompetitionId],
   );
-  const [activeTab, setActiveTab] = useState<CompetitionTabId>("games");
+  const [viewState, setViewState] = useState<{
+    competitionId: string | null;
+    tab: CompetitionTabId;
+  }>({ competitionId: null, tab: "games" });
   const tabs = useMemo(
     () => (selectedCompetition ? getCompetitionTabs(selectedCompetition) : []),
     [selectedCompetition],
   );
+  const defaultTab = selectedCompetition
+    ? getDefaultCompetitionTab(selectedCompetition)
+    : "games";
+  const activeTab =
+    selectedCompetition &&
+    viewState.competitionId === selectedCompetition.id &&
+    tabs.some((tab) => tab.id === viewState.tab)
+      ? viewState.tab
+      : defaultTab;
   const seasonQuery = useCurrentCompetitionSeason(
     selectedCompetition?.id ?? "",
   );
 
   useEffect(() => {
-    if (!tabs.some((tab) => tab.id === activeTab)) {
-      setActiveTab("games");
+    if (optimisticCompetitionId === routeCompetitionId) {
+      setOptimisticCompetitionId(null);
     }
-  }, [activeTab, tabs]);
+  }, [optimisticCompetitionId, routeCompetitionId]);
 
   function selectCompetition(competitionId: string) {
+    const competition = pageCatalog.competitions.find(
+      (candidate) => candidate.id === competitionId,
+    );
     const params = new URLSearchParams(searchParams.toString());
 
+    setOptimisticCompetitionId(competitionId);
+    if (competition) {
+      setViewState({
+        competitionId,
+        tab: getDefaultCompetitionTab(competition),
+      });
+    }
     params.set("competition", competitionId);
     router.replace(`/competitions?${params.toString()}`, { scroll: false });
   }
@@ -59,7 +95,7 @@ export function CompetitionsPageContent() {
   function selectRegion(regionId: string) {
     const competition = resolveCompetitionForRegion(
       regionId,
-      catalogQuery.data?.competitions ?? [],
+      pageCatalog.competitions,
       selectedCompetition?.id,
     );
 
@@ -99,8 +135,8 @@ export function CompetitionsPageContent() {
   return (
     <div className="bg-background font-sans">
       <CompetitionExplorer
-        regions={catalogQuery.data.regions}
-        competitions={catalogQuery.data.competitions}
+        regions={pageCatalog.regions}
+        competitions={pageCatalog.competitions}
         selectedCompetition={selectedCompetition}
         selectedRegionId={selectedCompetition.regionId}
         onRegionChange={selectRegion}
@@ -108,7 +144,10 @@ export function CompetitionsPageContent() {
       />
 
       <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm shadow-primary/5">
+        <section
+          key={selectedCompetition.id}
+          className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm shadow-primary/5"
+        >
           <header className="flex min-w-0 items-center gap-3 border-b border-border bg-secondary/45 px-4 py-4 sm:gap-4 sm:px-5">
             <CompetitionLogo
               src={selectedCompetition.logo}
@@ -118,7 +157,7 @@ export function CompetitionsPageContent() {
             <div className="min-w-0 flex-1">
               <p className="text-xs font-extrabold uppercase tracking-wide text-accent-foreground dark:text-accent">
                 {
-                  catalogQuery.data.regions.find(
+                  pageCatalog.regions.find(
                     (region) => region.id === selectedCompetition.regionId,
                   )?.name
                 }
@@ -141,7 +180,7 @@ export function CompetitionsPageContent() {
               role="status"
             >
               <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
-              Algumas fases da temporada ainda não foram publicadas pela ESPN.
+              Algumas fases da temporada ainda não foram publicadas.
             </div>
           ) : null}
 
@@ -160,15 +199,21 @@ export function CompetitionsPageContent() {
                     ? "text-card-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-1 after:rounded-t-full after:bg-accent"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-card-foreground",
                 )}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() =>
+                  setViewState({
+                    competitionId: selectedCompetition.id,
+                    tab: tab.id,
+                  })
+                }
               >
                 {tab.label}
               </button>
             ))}
           </nav>
 
-          <div className="p-3 sm:p-5" data-competition-panel>
+          <div className="p-3 sm:p-5" data-competition-panel aria-live="polite">
             <CompetitionDataPanel
+              key={`${selectedCompetition.id}-${activeTab}`}
               competition={selectedCompetition}
               activeTab={activeTab}
               season={seasonQuery.data?.year}
@@ -184,13 +229,16 @@ export function CompetitionsPageSkeleton() {
   return (
     <div className="bg-background">
       <section className="bg-primary px-4 py-8 sm:px-6">
-        <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-2">
+        <div className="mx-auto w-full max-w-6xl space-y-5">
           <div className="space-y-4">
             <div className="h-12 w-72 max-w-full rounded-xl bg-primary-foreground/15 motion-safe:animate-pulse" />
             <div className="h-5 w-full max-w-xl rounded bg-primary-foreground/10 motion-safe:animate-pulse" />
             <div className="h-12 w-full max-w-xl rounded-xl bg-primary-foreground/10 motion-safe:animate-pulse" />
           </div>
-          <div className="mx-auto aspect-square w-64 rounded-full bg-primary-foreground/10 motion-safe:animate-pulse" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="h-11 rounded-xl bg-primary-foreground/10 motion-safe:animate-pulse" />
+            <div className="h-11 rounded-xl bg-primary-foreground/10 motion-safe:animate-pulse" />
+          </div>
         </div>
       </section>
       <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">

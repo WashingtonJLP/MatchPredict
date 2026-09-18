@@ -60,7 +60,29 @@ export type CompetitionTeam = {
   isTbd?: boolean;
 };
 
+export type StandingZoneOrigin = "SOURCE_EXPLICIT" | "RULE_DERIVED";
+
+export type StandingZoneType =
+  | "CONTINENTAL_PRIMARY"
+  | "CONTINENTAL_PRIMARY_QUALIFYING"
+  | "CONTINENTAL_SECONDARY"
+  | "CONTINENTAL_SECONDARY_QUALIFYING"
+  | "CONTINENTAL_TERTIARY"
+  | "CONTINENTAL_TERTIARY_QUALIFYING"
+  | "PROMOTION"
+  | "PROMOTION_PLAYOFF"
+  | "KNOCKOUT_DIRECT"
+  | "KNOCKOUT_PLAYOFF_SEEDED"
+  | "KNOCKOUT_PLAYOFF_UNSEEDED"
+  | "ELIMINATED"
+  | "RELEGATION_PLAYOFF"
+  | "RELEGATION"
+  | "QUALIFIED"
+  | "OTHER";
+
 export type StandingZone = {
+  type: StandingZoneType;
+  origin: StandingZoneOrigin;
   description: string;
   rank: number | null;
   color: string | null;

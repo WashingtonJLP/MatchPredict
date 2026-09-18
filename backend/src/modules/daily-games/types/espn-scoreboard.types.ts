@@ -43,6 +43,7 @@ export type EspnScoreboardCompetitor = {
   homeAway?: 'home' | 'away';
   id?: string;
   score?: string;
+  shootoutScore?: number | string;
   team?: EspnScoreboardTeam;
 };
 
