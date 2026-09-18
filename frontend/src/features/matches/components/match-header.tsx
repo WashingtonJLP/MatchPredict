@@ -17,7 +17,7 @@ export function MatchHeader({ fixture }: MatchHeaderProps) {
           <Trophy className="size-4" aria-hidden />
           {competition}
         </p>
-        <p className="text-base font-semibold text-foreground">
+        <p className="font-navigation text-base font-semibold text-foreground">
           Rodada {fixture.round}
         </p>
       </div>

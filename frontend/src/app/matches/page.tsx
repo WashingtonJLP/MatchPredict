@@ -383,7 +383,7 @@ export default function MatchesPage() {
                 <section key={group.round} className="space-y-4">
                   <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-4 shadow-sm shadow-primary/5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <div>
-                      <h2 className="text-xl font-extrabold leading-tight text-foreground sm:text-2xl">
+                      <h2 className="font-navigation text-xl font-extrabold leading-tight text-foreground sm:text-2xl">
                         Rodada {group.round}
                       </h2>
                       <p className="mt-1 text-sm font-medium text-muted-foreground">

@@ -33,20 +33,20 @@ export type FootballCompetitionConfig = {
 };
 
 export const FOOTBALL_COMPETITIONS: readonly FootballCompetitionConfig[] = [
-  league('eng.1', 'Premier League', 'Premier League', 'england', '700'),
+  league('eng.1', 'Premier League', 'Premier League', 'england', '23'),
   league(
     'bra.1',
     'Brasileirão Série A',
     'Brasileirão Série A',
     'brazil',
-    '630',
+    '85',
   ),
   league(
     'bra.2',
     'Brasileirão Série B',
     'Brasileirão Série B',
     'brazil',
-    '4007',
+    '2299',
   ),
   {
     id: 'bra.copa_do_brazil',
@@ -54,7 +54,7 @@ export const FOOTBALL_COMPETITIONS: readonly FootballCompetitionConfig[] = [
     shortName: 'Copa do Brasil',
     regionId: 'brazil',
     format: 'CUP',
-    logoId: '8306',
+    logoId: '528',
     capabilities: {
       games: true,
       standings: false,
@@ -62,14 +62,14 @@ export const FOOTBALL_COMPETITIONS: readonly FootballCompetitionConfig[] = [
       tournament: true,
     },
   },
-  leaguePhase('uefa.champions', 'Champions League', 'Champions', '775'),
-  leaguePhase('uefa.europa', 'Europa League', 'Europa League', '776'),
-  league('esp.1', 'La Liga', 'La Liga', 'spain', '740'),
-  league('ita.1', 'Serie A', 'Serie A', 'italy', '730'),
-  league('ger.1', 'Bundesliga', 'Bundesliga', 'germany', '720'),
-  league('fra.1', 'Ligue 1', 'Ligue 1', 'france', '710'),
-  groupedCup('conmebol.libertadores', 'Libertadores', 'Libertadores', '783'),
-  groupedCup('conmebol.sudamericana', 'Sul-Americana', 'Sul-Americana', '5454'),
+  leaguePhase('uefa.champions', 'Champions League', 'Champions', '2'),
+  leaguePhase('uefa.europa', 'Europa League', 'Europa League', '2310'),
+  league('esp.1', 'La Liga', 'La Liga', 'spain', '15'),
+  league('ita.1', 'Serie A', 'Serie A', 'italy', '12'),
+  league('ger.1', 'Bundesliga', 'Bundesliga', 'germany', '10'),
+  league('fra.1', 'Ligue 1', 'Ligue 1', 'france', '9'),
+  groupedCup('conmebol.libertadores', 'Libertadores', 'Libertadores', '58'),
+  groupedCup('conmebol.sudamericana', 'Sul-Americana', 'Sul-Americana', '1208'),
 ];
 
 function league(

@@ -399,7 +399,7 @@ function RoundEvolutionChart({ rounds }: { rounds: RoundPerformance[] }) {
           <div className="grid gap-3 rounded-2xl bg-muted px-4 py-3 sm:min-w-72 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <label
               htmlFor="round-selector"
-              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
+              className="font-navigation text-xs font-bold uppercase tracking-wide text-muted-foreground"
             >
               Rodada
             </label>
@@ -407,7 +407,7 @@ function RoundEvolutionChart({ rounds }: { rounds: RoundPerformance[] }) {
               id="round-selector"
               value={selectedRound.round}
               onChange={(event) => selectRound(Number(event.target.value))}
-              className="min-h-11 rounded-xl border border-border bg-background px-3 text-base font-extrabold text-foreground shadow-sm outline-none transition focus:border-accent focus:ring-3 focus:ring-ring/50"
+              className="min-h-11 rounded-xl border border-border bg-background px-3 font-navigation text-base font-extrabold text-foreground shadow-sm outline-none transition focus:border-accent focus:ring-3 focus:ring-ring/50"
             >
               {rounds.map((round) => (
                 <option key={round.round} value={round.round}>
@@ -830,6 +830,7 @@ function SeasonHighlights({
               ? formatPoints(bestRound.points)
               : "Nenhuma rodada avaliada ainda"
           }
+          valueClassName={bestRound ? "font-navigation" : undefined}
           strong
         />
         <HighlightStrip
@@ -844,6 +845,7 @@ function SeasonHighlights({
             label="Rodada de atenção"
             value={`Rodada ${worstRound.round}`}
             detail={`${formatPoints(worstRound.points)} nos jogos avaliados`}
+            valueClassName="font-navigation"
           />
         ) : (
           <div className="rounded-2xl bg-muted/45 px-4 py-3 text-sm font-semibold leading-6 text-muted-foreground">
@@ -862,12 +864,14 @@ function HighlightStrip({
   label,
   strong = false,
   value,
+  valueClassName,
 }: {
   detail: string;
   icon: typeof Trophy;
   label: string;
   strong?: boolean;
   value: string;
+  valueClassName?: string;
 }) {
   return (
     <div
@@ -893,7 +897,9 @@ function HighlightStrip({
           >
             {label}
           </p>
-          <p className="truncate text-lg font-black">{value}</p>
+          <p className={cn("truncate text-lg font-black", valueClassName)}>
+            {value}
+          </p>
         </div>
       </div>
       <p

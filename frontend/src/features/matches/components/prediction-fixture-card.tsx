@@ -54,7 +54,7 @@ export function PredictionFixtureCard({
             <Trophy className="size-4" aria-hidden />
             {competition}
           </p>
-          <p className="mt-1 text-base font-semibold text-foreground">
+          <p className="mt-1 font-navigation text-base font-semibold text-foreground">
             Rodada {fixture.round}
           </p>
         </div>

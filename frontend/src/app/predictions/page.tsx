@@ -145,7 +145,7 @@ export default function PredictionsPage() {
                       onChange={(event) =>
                         setSelectedHistoryRound(Number(event.target.value))
                       }
-                      className="h-12 w-full rounded-xl border border-input bg-background px-4 text-base font-bold text-foreground outline-none transition hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
+                      className="h-12 w-full rounded-xl border border-input bg-background px-4 font-navigation text-base font-bold text-foreground outline-none transition hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
                     >
                       {historyRounds.map((round) => (
                         <option key={round} value={round}>

@@ -148,7 +148,7 @@ export function LandingPage() {
 
           <div
             id="ranking"
-            className="min-w-0 scroll-mt-24 rounded-2xl border border-primary-foreground/10 bg-card p-4 text-card-foreground shadow-2xl sm:p-6"
+            className="min-w-0 scroll-mt-24 rounded-2xl border border-primary-foreground/10 bg-card p-4 text-card-foreground shadow-2xl [font-family:Arial,sans-serif] sm:p-6"
           >
             <div className="flex min-w-0 items-center justify-between gap-4 border-b border-border pb-5">
               <div>

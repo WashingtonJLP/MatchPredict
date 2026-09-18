@@ -121,7 +121,7 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
             <p className="mt-2 truncate text-base font-bold leading-6 text-popover-foreground">
               {fixture.homeTeam.name} x {fixture.awayTeam.name}
             </p>
-            <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 font-navigation text-xs font-bold uppercase tracking-wide text-muted-foreground">
               <CalendarDays className="size-4" aria-hidden />
               Rodada {fixture.round}
             </p>

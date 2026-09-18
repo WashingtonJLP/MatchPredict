@@ -37,7 +37,7 @@ export function TransparencyFixtureCard({
       onClick={onSelect}
     >
       <div className="min-w-0">
-        <p className="text-xs font-bold uppercase tracking-wide text-accent">
+        <p className="font-navigation text-xs font-bold uppercase tracking-wide text-accent">
           Rodada {fixture.round}
         </p>
         <p className="mt-1 text-sm font-semibold leading-5 text-muted-foreground">

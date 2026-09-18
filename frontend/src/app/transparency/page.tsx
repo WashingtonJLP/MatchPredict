@@ -213,7 +213,7 @@ function TransparencyPanel({
       <article className="rounded-2xl border border-border bg-card p-5 shadow-sm shadow-primary/5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-bold uppercase tracking-wide text-accent">
+            <p className="font-navigation text-sm font-bold uppercase tracking-wide text-accent">
               Rodada {fixture.round}
             </p>
             <p className="mt-2 text-base font-semibold text-muted-foreground">
