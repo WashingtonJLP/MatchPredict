@@ -10,5 +10,6 @@ import { DailyGamesService } from './daily-games.service';
   imports: [EspnModule],
   controllers: [DailyGamesController],
   providers: [DailyGamesEspnClient, DailyGamesService],
+  exports: [DailyGamesService],
 })
 export class DailyGamesModule {}

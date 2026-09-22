@@ -18,6 +18,7 @@ describe('FootballService', () => {
   let playerUpsert: jest.Mock;
   let fixtureFindFirst: jest.Mock;
   let fixtureFindMany: jest.Mock;
+  let fixtureUpdate: jest.Mock;
   let fixtureUpsert: jest.Mock;
   let fixtureCount: jest.Mock;
 
@@ -31,6 +32,7 @@ describe('FootballService', () => {
     playerUpsert = jest.fn();
     fixtureFindFirst = jest.fn();
     fixtureFindMany = jest.fn();
+    fixtureUpdate = jest.fn();
     fixtureUpsert = jest.fn();
     fixtureCount = jest.fn();
 
@@ -66,6 +68,7 @@ describe('FootballService', () => {
       fixture: {
         findFirst: fixtureFindFirst,
         findMany: fixtureFindMany,
+        update: fixtureUpdate,
         upsert: fixtureUpsert,
         count: fixtureCount,
       },
@@ -90,6 +93,92 @@ describe('FootballService', () => {
         ],
       }),
     ).toBe('https://sports.core.api.espn.com/event/competition');
+  });
+
+  describe('syncResults', () => {
+    const pendingFixtureSelect = {
+      apiFixtureId: true,
+      awayGoals: true,
+      homeGoals: true,
+      id: true,
+      kickoff: true,
+      status: true,
+      winnerType: true,
+    };
+
+    it('filtra a consulta por um apiFixtureId informado', async () => {
+      fixtureFindMany.mockResolvedValue([]);
+
+      await expect(service.syncResults([401860308])).resolves.toEqual({
+        checked: 0,
+        updated: 0,
+        finished: 0,
+        unchanged: 0,
+      });
+
+      expect(fixtureFindMany).toHaveBeenCalledWith({
+        where: {
+          status: { not: FixtureStatus.FT },
+          apiFixtureId: { in: [401860308] },
+        },
+        select: pendingFixtureSelect,
+      });
+      expect(httpGet).not.toHaveBeenCalled();
+      expect(fixtureUpdate).not.toHaveBeenCalled();
+    });
+
+    it('filtra a consulta por varios apiFixtureId informados', async () => {
+      fixtureFindMany.mockResolvedValue([]);
+
+      await service.syncResults([401860308, 401860309]);
+
+      expect(fixtureFindMany).toHaveBeenCalledWith({
+        where: {
+          status: { not: FixtureStatus.FT },
+          apiFixtureId: { in: [401860308, 401860309] },
+        },
+        select: pendingFixtureSelect,
+      });
+    });
+
+    it('mantem a consulta ampla quando apiFixtureIds e undefined', async () => {
+      fixtureFindMany.mockResolvedValue([]);
+
+      await service.syncResults(undefined);
+
+      expect(fixtureFindMany).toHaveBeenCalledWith({
+        where: {
+          status: { not: FixtureStatus.FT },
+        },
+        select: pendingFixtureSelect,
+      });
+    });
+
+    it('mantem compatibilidade com a chamada sem argumento', async () => {
+      fixtureFindMany.mockResolvedValue([]);
+
+      await service.syncResults();
+
+      expect(fixtureFindMany).toHaveBeenCalledWith({
+        where: {
+          status: { not: FixtureStatus.FT },
+        },
+        select: pendingFixtureSelect,
+      });
+    });
+
+    it('nao transforma array vazio em sincronizacao ampla', async () => {
+      await expect(service.syncResults([])).resolves.toEqual({
+        checked: 0,
+        updated: 0,
+        finished: 0,
+        unchanged: 0,
+      });
+
+      expect(fixtureFindMany).not.toHaveBeenCalled();
+      expect(httpGet).not.toHaveBeenCalled();
+      expect(fixtureUpdate).not.toHaveBeenCalled();
+    });
   });
 
   it('sincroniza times da temporada ativa usando refs da ESPN Core', async () => {

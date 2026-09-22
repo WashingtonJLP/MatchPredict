@@ -402,12 +402,28 @@ export class FootballService {
     };
   }
 
-  async syncResults() {
+  async syncResults(apiFixtureIds?: number[]) {
+    if (apiFixtureIds?.length === 0) {
+      return {
+        checked: 0,
+        updated: 0,
+        finished: 0,
+        unchanged: 0,
+      };
+    }
+
     const pendingFixtures = await this.prisma.fixture.findMany({
       where: {
         status: {
           not: FixtureStatus.FT,
         },
+        ...(apiFixtureIds
+          ? {
+              apiFixtureId: {
+                in: apiFixtureIds,
+              },
+            }
+          : {}),
       },
       select: {
         apiFixtureId: true,
