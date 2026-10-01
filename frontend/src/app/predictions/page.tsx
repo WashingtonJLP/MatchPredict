@@ -163,6 +163,7 @@ export default function PredictionsPage() {
                   liveGamesBySourceEventId={liveGamesBySourceEventId}
                   onPredict={setSelectedFixture}
                   showFinalResult
+                  showPoints
                 />
               ) : (
                 <div className="rounded-2xl border border-border bg-card p-5 text-base font-semibold leading-7 text-muted-foreground shadow-sm shadow-primary/5 sm:p-6">
@@ -187,6 +188,7 @@ type PredictionGridProps = {
   liveGamesBySourceEventId: Map<string, DailyGame>;
   onPredict: (fixture: MatchFixture) => void;
   showFinalResult?: boolean;
+  showPoints?: boolean;
 };
 
 function PredictionGrid({
@@ -194,6 +196,7 @@ function PredictionGrid({
   liveGamesBySourceEventId,
   onPredict,
   showFinalResult = false,
+  showPoints = false,
 }: PredictionGridProps) {
   return (
     <div className="grid gap-5 xl:grid-cols-2">
@@ -207,6 +210,7 @@ function PredictionGrid({
           fixture={fixture}
           onPredict={onPredict}
           showFinalResult={showFinalResult}
+          showPoints={showPoints}
         />
       ))}
     </div>

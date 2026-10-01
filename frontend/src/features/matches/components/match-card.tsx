@@ -2,8 +2,8 @@ import { CalendarDays, CheckCircle2, Clock3, Pencil } from "lucide-react";
 
 import { MatchHeader } from "@/features/matches/components/match-header";
 import { MatchLiveContextLabel } from "@/features/matches/components/match-live-context-label";
+import { MatchTeamsLayout } from "@/features/matches/components/match-teams-layout";
 import { PredictionButton } from "@/features/matches/components/prediction-button";
-import { TeamBadge } from "@/features/matches/components/team-badge";
 import { cn } from "@/lib/utils";
 import type { DailyGame } from "@/types/daily-game";
 import type { MatchFixture } from "@/types/fixture";
@@ -87,11 +87,13 @@ export function MatchCard({ dailyGame, fixture, onPredict }: MatchCardProps) {
     >
       <MatchHeader fixture={fixture} />
 
-      <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
-        <TeamBadge team={fixture.homeTeam} label="Casa" />
-        <MatchCenter dailyGame={dailyGame} fixture={fixture} time={time} />
-        <TeamBadge team={fixture.awayTeam} align="right" label="Fora" />
-      </div>
+      <MatchTeamsLayout
+        awayTeam={fixture.awayTeam}
+        center={
+          <MatchCenter dailyGame={dailyGame} fixture={fixture} time={time} />
+        }
+        homeTeam={fixture.homeTeam}
+      />
 
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4 text-sm font-semibold text-muted-foreground">
         <span className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-background px-3">

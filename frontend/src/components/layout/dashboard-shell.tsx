@@ -251,8 +251,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       <div className="lg:pl-72">
         <header className="sticky top-0 z-40 border-b border-border bg-card/95 font-navigation backdrop-blur">
-          <div className="flex h-[72px] items-center justify-between gap-3 px-4 sm:h-20 sm:px-6 lg:px-8">
-            <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-[72px] items-center justify-between gap-2 px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <button
                 type="button"
                 aria-label="Abrir menu"
@@ -262,8 +262,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
               >
                 <Menu className="size-5" aria-hidden />
               </button>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:text-sm">
+              <div className="min-w-0 flex-1">
+                <p className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:text-sm">
                   Área logada
                 </p>
                 <p className="truncate text-lg font-extrabold leading-tight text-card-foreground sm:text-xl">
@@ -272,7 +272,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <UserAvatar name={user?.name} />
               <div className="hidden text-right sm:block">
                 <p className="text-base font-bold leading-tight text-card-foreground">

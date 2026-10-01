@@ -2,8 +2,9 @@ import { CalendarDays, CheckCircle2, Clock3, Trophy } from "lucide-react";
 
 import { MatchStatusBadge } from "@/features/matches/components/match-status-badge";
 import { MatchLiveContextLabel } from "@/features/matches/components/match-live-context-label";
+import { MatchTeamsLayout } from "@/features/matches/components/match-teams-layout";
 import { PredictionButton } from "@/features/matches/components/prediction-button";
-import { TeamBadge } from "@/features/matches/components/team-badge";
+import { getPredictionPointsState } from "@/features/matches/prediction-points-state";
 import { cn } from "@/lib/utils";
 import type { DailyGame } from "@/types/daily-game";
 import type { MatchFixture } from "@/types/fixture";
@@ -38,6 +39,12 @@ export function PredictionFixtureCard({
     fixture.status !== "FT";
   const canCreate = !prediction && fixture.canPredict;
   const competition = fixture.league ?? fixture.competition ?? "Premier League";
+  const pointsState = getPredictionPointsState({
+    hasPrediction: Boolean(prediction),
+    processedAt: fixture.processedAt,
+    status: fixture.status,
+    totalPoints: prediction?.totalPoints,
+  });
 
   return (
     <article
@@ -61,11 +68,13 @@ export function PredictionFixtureCard({
         <MatchStatusBadge status={fixture.status} />
       </div>
 
-      <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
-        <TeamBadge team={fixture.homeTeam} label="Casa" />
-        <ScoreCenter dailyGame={dailyGame} fixture={fixture} time={time} />
-        <TeamBadge team={fixture.awayTeam} align="right" label="Fora" />
-      </div>
+      <MatchTeamsLayout
+        awayTeam={fixture.awayTeam}
+        center={
+          <ScoreCenter dailyGame={dailyGame} fixture={fixture} time={time} />
+        }
+        homeTeam={fixture.homeTeam}
+      />
 
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4 text-sm font-semibold text-muted-foreground">
         <span className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-background px-3">
@@ -98,7 +107,7 @@ export function PredictionFixtureCard({
         </div>
       )}
 
-      {showPoints && prediction ? (
+      {showPoints && pointsState.kind === "available" ? (
         <div className="mt-4 flex items-end justify-between gap-3">
           <p className="min-w-0 flex-1 text-sm font-semibold text-muted-foreground">
             Alteração encerrada
@@ -108,7 +117,21 @@ export function PredictionFixtureCard({
               Pontuação obtida
             </p>
             <p className="mt-1 text-xl font-black leading-none text-accent tabular-nums">
-              {formatPredictionPoints(prediction.totalPoints)}
+              {formatPredictionPoints(pointsState.points)}
+            </p>
+          </div>
+        </div>
+      ) : showPoints && pointsState.kind === "pending" ? (
+        <div className="mt-4 flex items-end justify-between gap-3">
+          <p className="min-w-0 flex-1 text-sm font-semibold text-muted-foreground">
+            Alteração encerrada
+          </p>
+          <div className="shrink-0 text-right">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Pontuação
+            </p>
+            <p className="mt-1 text-sm font-extrabold leading-none text-muted-foreground">
+              Em processamento
             </p>
           </div>
         </div>

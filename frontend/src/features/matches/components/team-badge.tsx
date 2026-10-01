@@ -21,7 +21,10 @@ export function TeamBadge({ team, align = "left", label }: TeamBadgeProps) {
             {label}
           </span>
         ) : null}
-        <span className="line-clamp-2 block min-h-10 break-words text-base font-extrabold leading-5 text-foreground sm:line-clamp-none sm:min-h-0 sm:truncate sm:text-lg sm:leading-6">
+        <span
+          className="block min-h-10 whitespace-normal break-normal text-balance text-base font-extrabold leading-5 text-foreground sm:min-h-12 sm:text-lg sm:leading-6"
+          title={team.name}
+        >
           {team.name}
         </span>
       </div>
