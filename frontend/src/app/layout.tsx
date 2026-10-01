@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Barlow, Geist } from "next/font/google";
 
 import { BaseLayout } from "@/components/layout/base-layout";
 import { AppProviders } from "@/providers/app-providers";
@@ -7,17 +6,6 @@ import { AppProviders } from "@/providers/app-providers";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore Next.js supports global CSS side-effect imports in app/layout.
 import "./globals.css";
-
-const geist = Geist({
-  variable: "--font-geist",
-  subsets: ["latin"],
-});
-
-const barlow = Barlow({
-  variable: "--font-barlow",
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-});
 
 const siteUrl = "https://matchpredict.com.br";
 const title = "MatchPredict";
@@ -76,7 +64,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${geist.variable} ${barlow.variable} antialiased`}>
+      <body className="antialiased">
         <AppProviders>
           <BaseLayout>{children}</BaseLayout>
         </AppProviders>

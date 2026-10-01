@@ -73,7 +73,7 @@ export function DailyGamesPageContent() {
   }
 
   return (
-    <div className="bg-background font-sans">
+    <div className="bg-background">
       <section className="overflow-hidden bg-primary text-primary-foreground">
         <div className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,26rem)] lg:items-center">

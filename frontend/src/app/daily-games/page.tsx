@@ -23,7 +23,7 @@ export default function DailyGamesPage() {
 
 function DailyGamesPageFallback() {
   return (
-    <div className="bg-background font-sans">
+    <div className="bg-background">
       <section className="bg-primary text-primary-foreground">
         <div className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
           <div className="h-12 w-72 max-w-full rounded bg-primary-foreground/15 motion-safe:animate-pulse" />

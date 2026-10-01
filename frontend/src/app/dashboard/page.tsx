@@ -211,7 +211,7 @@ export default function DashboardPage() {
 
         <section
           id="ranking"
-          className="scroll-mt-28 space-y-5 [font-family:Arial,sans-serif] sm:scroll-mt-32"
+          className="scroll-mt-28 space-y-5 sm:scroll-mt-32"
         >
           <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm shadow-primary/5">
             <div className="bg-primary px-5 py-6 text-primary-foreground sm:px-6 lg:px-7">

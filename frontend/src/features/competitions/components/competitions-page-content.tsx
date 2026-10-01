@@ -133,7 +133,7 @@ export function CompetitionsPageContent() {
   }
 
   return (
-    <div className="bg-background font-sans">
+    <div className="bg-background">
       <CompetitionExplorer
         regions={pageCatalog.regions}
         competitions={pageCatalog.competitions}

@@ -30,7 +30,7 @@ export function Footer() {
   return (
     <footer
       id="site-footer"
-      className="border-t border-slate-800 bg-slate-950 text-slate-100 [font-family:Arial,sans-serif]"
+      className="border-t border-slate-800 bg-slate-950 text-slate-100"
     >
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:py-8">

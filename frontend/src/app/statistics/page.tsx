@@ -385,7 +385,7 @@ function RoundEvolutionChart({ rounds }: { rounds: RoundPerformance[] }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 [font-family:Arial,sans-serif] sm:p-6">
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-accent">
@@ -662,7 +662,7 @@ function PredictionQualityPanel({
   ];
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 [font-family:Arial,sans-serif] sm:p-6">
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-accent">

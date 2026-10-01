@@ -17,37 +17,37 @@ colors:
   info-blue: "#0284c7"
 typography:
   display:
-    fontFamily: "Geist, Arial, sans-serif"
+    fontFamily: "Arial, sans-serif"
     fontSize: "3rem"
     fontWeight: 800
     lineHeight: 1.1
     letterSpacing: "normal"
   headline:
-    fontFamily: "Geist, Arial, sans-serif"
+    fontFamily: "Arial, sans-serif"
     fontSize: "2.25rem"
     fontWeight: 700
     lineHeight: 1.2
     letterSpacing: "normal"
   title:
-    fontFamily: "Geist, Arial, sans-serif"
+    fontFamily: "Arial, sans-serif"
     fontSize: "1.25rem"
     fontWeight: 600
     lineHeight: 1.3
     letterSpacing: "normal"
   body:
-    fontFamily: "Geist, Arial, sans-serif"
+    fontFamily: "Arial, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.75
     letterSpacing: "normal"
   label:
-    fontFamily: "Geist, Arial, sans-serif"
+    fontFamily: "Arial, sans-serif"
     fontSize: "0.75rem"
     fontWeight: 700
     lineHeight: 1.4
     letterSpacing: "0.025em"
   navigation:
-    fontFamily: "Barlow, Arial, sans-serif"
+    fontFamily: "Arial, sans-serif"
     fontSize: "1rem"
     fontWeight: 600
     lineHeight: 1.25
@@ -147,14 +147,12 @@ The palette is a light, product-led football system: deep slate provides authori
 
 ## Typography
 
-**Display Font:** Geist with Arial and sans-serif fallback.
-**Body Font:** Geist with Arial and sans-serif fallback.
-**Label/Mono Font:** Geist with sans-serif fallback.
-**Navigation Font:** Barlow with Arial and sans-serif fallback.
+**Display Font:** Arial with sans-serif fallback.
+**Body Font:** Arial with sans-serif fallback.
+**Label/Mono Font:** Arial with sans-serif fallback.
+**Navigation Font:** Arial with sans-serif fallback.
 
-**Character:** Geist gives MatchPredict a compact, technical, and modern product voice. The system relies on weight contrast rather than ornate type: very bold scores and headings, medium labels, and relaxed body text.
-
-Barlow gives public and authenticated navigation a firmer matchday character while remaining compact and readable. It is limited to navigation chrome so content and data retain Geist's established product voice.
+**Character:** Arial gives MatchPredict a clear, familiar, and consistent product voice across every surface. The system relies on weight contrast rather than multiple families: very bold scores and headings, medium labels, and relaxed body text.
 
 ### Hierarchy
 - **Display** (800, 48px to 60px, 1.1): Hero product name and major page titles.
@@ -166,6 +164,8 @@ Barlow gives public and authenticated navigation a firmer matchday character whi
 ### Named Rules
 
 **The Score Weight Rule.** Scores, points, positions, and stat values should use the boldest weights available because they are the product's fastest-scanned facts.
+
+**The One Typeface Rule.** Arial, with the generic sans-serif fallback, is the only type family for interface content, navigation, data, controls, charts, overlays, desktop, and mobile.
 
 ## Layout
 
@@ -245,5 +245,5 @@ Borders are visible but quiet, usually a single 1px Quiet Line stroke. Accent bo
 - **Don't** add betting, prize, commercial, testimonial, or press claims that the product context does not confirm.
 - **Don't** turn Field Green into a decorative background pattern or secondary brand world.
 - **Don't** replace the functional dashboard density with oversized hero treatments.
-- **Don't** use Barlow outside navigation chrome or introduce another typeface without an intentional identity change.
+- **Don't** introduce another typeface or load a webfont while Arial remains the official MatchPredict family.
 - **Don't** hide lock timing, prediction status, or ranking consequences behind vague labels.
