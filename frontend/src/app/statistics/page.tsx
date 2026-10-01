@@ -385,7 +385,7 @@ function RoundEvolutionChart({ rounds }: { rounds: RoundPerformance[] }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 sm:p-6">
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 [font-family:Arial,sans-serif] sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-accent">
@@ -399,7 +399,7 @@ function RoundEvolutionChart({ rounds }: { rounds: RoundPerformance[] }) {
           <div className="grid gap-3 rounded-2xl bg-muted px-4 py-3 sm:min-w-72 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <label
               htmlFor="round-selector"
-              className="font-navigation text-xs font-bold uppercase tracking-wide text-muted-foreground"
+              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
             >
               Rodada
             </label>
@@ -407,7 +407,7 @@ function RoundEvolutionChart({ rounds }: { rounds: RoundPerformance[] }) {
               id="round-selector"
               value={selectedRound.round}
               onChange={(event) => selectRound(Number(event.target.value))}
-              className="min-h-11 rounded-xl border border-border bg-background px-3 font-navigation text-base font-extrabold text-foreground shadow-sm outline-none transition focus:border-accent focus:ring-3 focus:ring-ring/50"
+              className="min-h-11 rounded-xl border border-border bg-background px-3 text-base font-extrabold text-foreground shadow-sm outline-none transition focus:border-accent focus:ring-3 focus:ring-ring/50"
             >
               {rounds.map((round) => (
                 <option key={round.round} value={round.round}>
@@ -662,7 +662,7 @@ function PredictionQualityPanel({
   ];
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 sm:p-6">
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-primary/5 [font-family:Arial,sans-serif] sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-accent">

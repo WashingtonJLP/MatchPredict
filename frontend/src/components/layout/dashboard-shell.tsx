@@ -212,7 +212,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-primary/80 bg-primary px-5 py-6 font-navigation shadow-xl shadow-primary/20 lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-primary/80 bg-primary px-5 py-6 font-navigation shadow-xl shadow-primary/20 lg:flex">
         <Link
           href="/dashboard"
           className="flex items-center gap-3 text-xl font-extrabold tracking-tight text-primary-foreground focus-visible:ring-3 focus-visible:ring-accent/50"
@@ -223,7 +223,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
           MatchPredict
         </Link>
 
-        <nav className="mt-8 space-y-7" aria-label="Navegação principal">
+        <nav
+          className="mt-8 min-h-0 flex-1 space-y-7 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          aria-label="Navegação principal"
+        >
           {sidebarSections.map((section) => (
             <div key={section.label} className="space-y-2">
               <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-primary-foreground">
@@ -236,15 +239,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
           ))}
         </nav>
 
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          className="mt-8 h-12 w-full justify-start gap-3 px-4 text-base font-semibold text-primary-foreground hover:bg-primary-foreground/10"
+          className="mt-8 flex min-h-12 w-full shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-primary-foreground transition hover:bg-primary-foreground/10 focus-visible:ring-3 focus-visible:ring-accent/50"
           onClick={handleLogout}
         >
-          <LogOut className="size-5" aria-hidden />
+          <LogOut className="size-[22px] shrink-0" aria-hidden />
           Sair
-        </Button>
+        </button>
       </aside>
 
       <div className="lg:pl-72">
@@ -359,7 +361,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </button>
         </div>
 
-        <nav className="mt-8 space-y-7" aria-label="Navegação principal">
+        <nav
+          className="mt-8 min-h-0 flex-1 space-y-7 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          aria-label="Navegação principal"
+        >
           {sidebarSections.map((section) => (
             <div key={section.label} className="space-y-2">
               <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-primary-foreground">
@@ -374,15 +379,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
           ))}
         </nav>
 
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          className="mt-auto h-12 w-full justify-start gap-3 px-4 text-base font-semibold text-primary-foreground hover:bg-primary-foreground/10"
+          className="mt-4 flex min-h-12 w-full shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-primary-foreground transition hover:bg-primary-foreground/10 focus-visible:ring-3 focus-visible:ring-accent/50"
           onClick={handleLogout}
         >
-          <LogOut className="size-5" aria-hidden />
+          <LogOut className="size-[22px] shrink-0" aria-hidden />
           Sair
-        </Button>
+        </button>
       </aside>
     </div>
   );
