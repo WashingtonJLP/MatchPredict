@@ -4,14 +4,24 @@ import type { Team } from "@/types/prediction";
 type TeamBadgeProps = {
   team: Pick<Team, "name" | "logo">;
   align?: "left" | "right";
+  compactOnMobile?: boolean;
   label?: string;
 };
 
-export function TeamBadge({ team, align = "left", label }: TeamBadgeProps) {
+export function TeamBadge({
+  team,
+  align = "left",
+  compactOnMobile = false,
+  label,
+}: TeamBadgeProps) {
   return (
     <div
       className={`flex min-w-0 flex-col items-center gap-2 text-center ${
-        align === "right" ? "text-right" : ""
+        align === "right"
+          ? compactOnMobile
+            ? "sm:text-right"
+            : "text-right"
+          : ""
       }`}
     >
       <TeamLogo team={team} />
@@ -22,7 +32,9 @@ export function TeamBadge({ team, align = "left", label }: TeamBadgeProps) {
           </span>
         ) : null}
         <span
-          className="block min-h-10 whitespace-normal break-normal text-balance text-base font-extrabold leading-5 text-foreground sm:min-h-12 sm:text-lg sm:leading-6"
+          className={`block min-h-10 whitespace-normal break-normal text-balance font-extrabold leading-5 text-foreground sm:min-h-12 sm:text-lg sm:leading-6 sm:tracking-normal ${
+            compactOnMobile ? "text-sm tracking-tight" : "text-base"
+          }`}
           title={team.name}
         >
           {team.name}

@@ -12,6 +12,7 @@ import type { MatchFixture } from "@/types/fixture";
 type PredictionFixtureCardProps = {
   fixture: MatchFixture;
   dailyGame?: DailyGame;
+  inlineTeamsOnMobile?: boolean;
   onPredict: (fixture: MatchFixture) => void;
   showFinalResult?: boolean;
   showPoints?: boolean;
@@ -20,6 +21,7 @@ type PredictionFixtureCardProps = {
 export function PredictionFixtureCard({
   dailyGame,
   fixture,
+  inlineTeamsOnMobile = false,
   onPredict,
   showPoints = false,
 }: PredictionFixtureCardProps) {
@@ -71,9 +73,15 @@ export function PredictionFixtureCard({
       <MatchTeamsLayout
         awayTeam={fixture.awayTeam}
         center={
-          <ScoreCenter dailyGame={dailyGame} fixture={fixture} time={time} />
+          <ScoreCenter
+            compactOnMobile={inlineTeamsOnMobile}
+            dailyGame={dailyGame}
+            fixture={fixture}
+            time={time}
+          />
         }
         homeTeam={fixture.homeTeam}
+        mobileLayout={inlineTeamsOnMobile ? "inline" : "stacked"}
       />
 
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4 text-sm font-semibold text-muted-foreground">
@@ -162,11 +170,17 @@ function formatPredictionPoints(points: number) {
 
 type ScoreCenterProps = {
   fixture: MatchFixture;
+  compactOnMobile?: boolean;
   dailyGame?: DailyGame;
   time: string;
 };
 
-function ScoreCenter({ dailyGame, fixture, time }: ScoreCenterProps) {
+function ScoreCenter({
+  compactOnMobile = false,
+  dailyGame,
+  fixture,
+  time,
+}: ScoreCenterProps) {
   const hasScore = fixture.homeGoals !== null && fixture.awayGoals !== null;
   const isLive = fixture.status === "LIVE";
   const isFinished = fixture.status === "FT";
@@ -175,7 +189,8 @@ function ScoreCenter({ dailyGame, fixture, time }: ScoreCenterProps) {
     return (
       <div
         className={cn(
-          "flex w-[5.75rem] flex-col items-center rounded-2xl px-1.5 py-2.5 shadow-sm sm:w-28 sm:px-3",
+          "flex flex-col items-center rounded-2xl px-1.5 py-2.5 shadow-sm sm:w-28 sm:px-3",
+          compactOnMobile ? "w-auto min-w-16" : "w-[5.75rem]",
           isLive
             ? "bg-accent text-accent-foreground shadow-accent/20"
             : "bg-primary text-primary-foreground shadow-primary/15",
@@ -185,7 +200,7 @@ function ScoreCenter({ dailyGame, fixture, time }: ScoreCenterProps) {
           dailyGame={dailyGame}
           fallbackLabel={isLive ? "Ao vivo" : "Final"}
         />
-        <span className="mt-1 text-2xl font-extrabold leading-none tabular-nums sm:text-3xl">
+        <span className="mt-1 whitespace-nowrap text-2xl font-extrabold leading-none tabular-nums sm:text-3xl">
           {fixture.homeGoals} x {fixture.awayGoals}
         </span>
       </div>
@@ -193,7 +208,12 @@ function ScoreCenter({ dailyGame, fixture, time }: ScoreCenterProps) {
   }
 
   return (
-    <div className="flex min-w-[4.5rem] flex-col items-center rounded-2xl bg-muted px-3 py-2.5 text-center sm:min-w-20">
+    <div
+      className={cn(
+        "flex flex-col items-center rounded-2xl bg-muted py-2.5 text-center sm:min-w-20 sm:px-3",
+        compactOnMobile ? "min-w-16 px-1.5" : "min-w-[4.5rem] px-3",
+      )}
+    >
       <span className="text-sm font-extrabold uppercase tracking-wide text-foreground">
         VS
       </span>

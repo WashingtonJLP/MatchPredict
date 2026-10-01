@@ -208,6 +208,7 @@ function PredictionGrid({
             fixture,
           )}
           fixture={fixture}
+          inlineTeamsOnMobile
           onPredict={onPredict}
           showFinalResult={showFinalResult}
           showPoints={showPoints}

@@ -947,6 +947,7 @@ function RecentForm({ predictions }: { predictions: Prediction[] }) {
             <PredictionFixtureCard
               key={prediction.id}
               fixture={toRecentMatchFixture(prediction)}
+              inlineTeamsOnMobile
               onPredict={ignorePredictionSelection}
               showFinalResult
               showPoints
