@@ -1,6 +1,13 @@
 "use client";
 
-import { ClipboardList } from "lucide-react";
+import { Select } from "@base-ui/react/select";
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  ClipboardList,
+  History,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -138,22 +145,11 @@ export default function PredictionsPage() {
                 </div>
 
                 {historyRounds.length ? (
-                  <label className="min-w-0 sm:w-48">
-                    <span className="sr-only">Selecionar rodada</span>
-                    <select
-                      value={currentHistoryRound ?? ""}
-                      onChange={(event) =>
-                        setSelectedHistoryRound(Number(event.target.value))
-                      }
-                      className="h-12 w-full rounded-xl border border-input bg-background px-4 font-navigation text-base font-bold text-foreground outline-none transition hover:border-border focus:border-ring focus:ring-4 focus:ring-ring/15"
-                    >
-                      {historyRounds.map((round) => (
-                        <option key={round} value={round}>
-                          Rodada {round}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <HistoryRoundSelect
+                    rounds={historyRounds}
+                    value={currentHistoryRound ?? historyRounds[0]}
+                    onValueChange={setSelectedHistoryRound}
+                  />
                 ) : null}
               </div>
 
@@ -180,6 +176,98 @@ export default function PredictionsPage() {
         />
       </div>
     </DashboardShell>
+  );
+}
+
+type HistoryRoundSelectProps = {
+  rounds: number[];
+  value: number;
+  onValueChange: (round: number) => void;
+};
+
+function HistoryRoundSelect({
+  rounds,
+  value,
+  onValueChange,
+}: HistoryRoundSelectProps) {
+  return (
+    <div className="min-w-0 sm:w-72 sm:shrink-0">
+      <Select.Root
+        value={value}
+        onValueChange={(selectedRound) => {
+          if (selectedRound !== null) {
+            onValueChange(selectedRound);
+          }
+        }}
+      >
+        <Select.Label className="sr-only">Selecionar rodada</Select.Label>
+        <Select.Trigger className="grid min-h-16 w-full min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_2rem] items-center gap-3 rounded-2xl border border-input bg-card px-3 py-2.5 text-left text-foreground shadow-sm shadow-primary/5 transition-[border-color,background-color,box-shadow] hover:border-primary/25 hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/15 data-popup-open:border-ring data-popup-open:bg-muted/30">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/15">
+            <History className="size-5" aria-hidden />
+          </span>
+          <span className="min-w-0 overflow-hidden">
+            <span className="block whitespace-nowrap text-[0.6875rem] font-extrabold uppercase leading-4 tracking-[0.08em] text-muted-foreground">
+              Rodada do histórico
+            </span>
+            <Select.Value>
+              {(selectedRound: number) => (
+                <span className="mt-0.5 block truncate font-navigation text-base font-extrabold leading-5 tabular-nums">
+                  Rodada {selectedRound}
+                </span>
+              )}
+            </Select.Value>
+          </span>
+          <Select.Icon className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-transform duration-200 data-popup-open:rotate-180">
+            <ChevronDown className="size-4" aria-hidden />
+          </Select.Icon>
+        </Select.Trigger>
+
+        <Select.Portal>
+          <Select.Positioner
+            align="start"
+            alignItemWithTrigger={false}
+            collisionAvoidance={{
+              side: "none",
+              align: "shift",
+              fallbackAxisSide: "none",
+            }}
+            collisionPadding={12}
+            side="bottom"
+            sideOffset={8}
+            className="z-50 w-[var(--anchor-width)] max-w-[calc(100vw-1.5rem)] outline-none"
+          >
+            <Select.Popup className="max-h-[var(--available-height)] origin-[var(--transform-origin)] overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl shadow-primary/15 transition-[transform,opacity] duration-150 ease-out data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:opacity-0">
+              <Select.ScrollUpArrow className="flex h-7 items-center justify-center border-b border-border bg-popover text-muted-foreground">
+                <ChevronUp className="size-4" aria-hidden />
+              </Select.ScrollUpArrow>
+              <Select.List className="max-h-[calc(min(var(--available-height),20rem)-3.5rem)] overflow-y-auto overscroll-contain p-1.5 scroll-py-2">
+                {rounds.map((round) => (
+                  <Select.Item
+                    key={round}
+                    value={round}
+                    label={`Rodada ${round}`}
+                    className="grid min-h-12 cursor-default grid-cols-[2rem_minmax(0,1fr)_1.25rem] items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-semibold text-popover-foreground outline-none transition-colors data-highlighted:bg-muted data-selected:bg-accent/10 data-selected:font-extrabold"
+                  >
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-xs font-extrabold text-muted-foreground tabular-nums">
+                      {round}
+                    </span>
+                    <Select.ItemText className="min-w-0 truncate">
+                      Rodada {round}
+                    </Select.ItemText>
+                    <Select.ItemIndicator className="flex size-5 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                      <Check className="size-3.5" aria-hidden />
+                    </Select.ItemIndicator>
+                  </Select.Item>
+                ))}
+              </Select.List>
+              <Select.ScrollDownArrow className="flex h-7 items-center justify-center border-t border-border bg-popover text-muted-foreground">
+                <ChevronDown className="size-4" aria-hidden />
+              </Select.ScrollDownArrow>
+            </Select.Popup>
+          </Select.Positioner>
+        </Select.Portal>
+      </Select.Root>
+    </div>
   );
 }
 

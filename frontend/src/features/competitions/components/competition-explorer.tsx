@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, Globe2, MapPin } from "lucide-react";
+import { Select } from "@base-ui/react/select";
+import { Check, ChevronDown, ChevronUp, Globe2, MapPin } from "lucide-react";
 
 import { CompetitionLogo } from "@/features/competitions/components/competition-logo";
 import { cn } from "@/lib/utils";
@@ -75,26 +76,87 @@ export function CompetitionExplorer({
                 })}
               </div>
             </div>
-            <label className="block">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-primary-foreground/60">
-                Escolha uma competição
-              </span>
-              <select
+            <div className="min-w-0 lg:w-full lg:max-w-[26rem] lg:justify-self-end">
+              <Select.Root
                 value={selectedCompetition.id}
-                className="mt-2 h-12 w-full rounded-xl border border-primary-foreground/20 bg-primary px-4 text-base font-bold text-primary-foreground shadow-sm outline-none transition hover:border-primary-foreground/40 focus:border-accent focus:ring-4 focus:ring-accent/20"
-                onChange={(event) => onCompetitionChange(event.target.value)}
+                onValueChange={(competitionId) => {
+                  if (competitionId) {
+                    onCompetitionChange(competitionId);
+                  }
+                }}
               >
-                {competitions.map((competition) => (
-                  <option
-                    key={competition.id}
-                    value={competition.id}
-                    className="bg-primary"
+                <Select.Label className="sr-only">
+                  Escolha uma competição
+                </Select.Label>
+                <Select.Trigger className="group flex min-h-16 w-full min-w-0 items-center gap-3 rounded-2xl border border-primary-foreground/20 bg-primary-foreground/[0.06] px-3 py-2.5 text-left text-primary-foreground shadow-sm transition-[border-color,background-color,box-shadow] hover:border-primary-foreground/35 hover:bg-primary-foreground/[0.09] focus-visible:border-accent focus-visible:ring-4 focus-visible:ring-accent/20 data-popup-open:border-accent/70 data-popup-open:bg-primary-foreground/[0.09]">
+                  <span aria-hidden="true" className="shrink-0">
+                    <CompetitionLogo
+                      src={selectedCompetition.logo}
+                      name={selectedCompetition.name}
+                      className="size-10 rounded-xl p-1.5 shadow-sm ring-1 ring-primary-foreground/15"
+                    />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[0.6875rem] font-extrabold uppercase leading-4 tracking-[0.08em] text-primary-foreground/60">
+                      Competição
+                    </span>
+                    <Select.Value>
+                      {() => (
+                        <span className="mt-0.5 block truncate text-base font-extrabold leading-5">
+                          {selectedCompetition.name}
+                        </span>
+                      )}
+                    </Select.Value>
+                  </span>
+                  <Select.Icon className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/[0.07] text-primary-foreground/70 transition-transform duration-200 data-popup-open:rotate-180">
+                    <ChevronDown className="size-4" aria-hidden />
+                  </Select.Icon>
+                </Select.Trigger>
+
+                <Select.Portal>
+                  <Select.Positioner
+                    align="start"
+                    alignItemWithTrigger={false}
+                    collisionPadding={12}
+                    sideOffset={8}
+                    className="z-50 w-[var(--anchor-width)] max-w-[calc(100vw-1.5rem)] outline-none"
                   >
-                    {competition.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                    <Select.Popup className="origin-[var(--transform-origin)] overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl shadow-primary/15 transition-[transform,opacity] duration-150 ease-out data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:opacity-0">
+                      <Select.ScrollUpArrow className="flex h-7 items-center justify-center border-b border-border bg-popover text-muted-foreground">
+                        <ChevronUp className="size-4" aria-hidden />
+                      </Select.ScrollUpArrow>
+                      <Select.List className="max-h-[calc(min(var(--available-height),24rem)-3.5rem)] overflow-y-auto overscroll-contain p-1.5 scroll-py-2">
+                        {competitions.map((competition) => (
+                          <Select.Item
+                            key={competition.id}
+                            value={competition.id}
+                            label={competition.name}
+                            className="grid min-h-14 cursor-default grid-cols-[2.5rem_minmax(0,1fr)_1.25rem] items-center gap-3 rounded-xl px-2.5 py-2 text-sm text-popover-foreground outline-none transition-colors data-highlighted:bg-muted data-selected:bg-accent/10 data-selected:font-extrabold"
+                          >
+                            <span aria-hidden="true" className="shrink-0">
+                              <CompetitionLogo
+                                src={competition.logo}
+                                name={competition.name}
+                                className="size-10 rounded-lg border border-border p-1.5 shadow-sm"
+                              />
+                            </span>
+                            <Select.ItemText className="line-clamp-2 min-w-0 leading-5 [overflow-wrap:normal] [word-break:normal]">
+                              {competition.name}
+                            </Select.ItemText>
+                            <Select.ItemIndicator className="flex size-5 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                              <Check className="size-3.5" aria-hidden />
+                            </Select.ItemIndicator>
+                          </Select.Item>
+                        ))}
+                      </Select.List>
+                      <Select.ScrollDownArrow className="flex h-7 items-center justify-center border-t border-border bg-popover text-muted-foreground">
+                        <ChevronDown className="size-4" aria-hidden />
+                      </Select.ScrollDownArrow>
+                    </Select.Popup>
+                  </Select.Positioner>
+                </Select.Portal>
+              </Select.Root>
+            </div>
           </div>
         </div>
       </div>
