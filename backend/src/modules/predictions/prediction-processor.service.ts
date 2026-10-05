@@ -119,7 +119,7 @@ export class PredictionProcessorService {
         fixture: true,
       },
     });
-    const summary = predictions.reduce(
+    const naturalSummary = predictions.reduce(
       (acc, prediction) => {
         const score = this.scoreEngine.calculate(
           {
@@ -148,6 +148,22 @@ export class PredictionProcessorService {
         wrongPredictions: 0,
       },
     );
+    const standing = await tx.standing.findUnique({
+      where: {
+        seasonId_userId: {
+          seasonId,
+          userId,
+        },
+      },
+      select: {
+        adjustmentPoints: true,
+      },
+    });
+    const adjustmentPoints = standing?.adjustmentPoints ?? 0;
+    const summary = {
+      ...naturalSummary,
+      totalPoints: naturalSummary.totalPoints + adjustmentPoints,
+    };
 
     await tx.standing.upsert({
       where: {
@@ -160,6 +176,7 @@ export class PredictionProcessorService {
       create: {
         seasonId,
         userId,
+        adjustmentPoints,
         ...summary,
       },
     });

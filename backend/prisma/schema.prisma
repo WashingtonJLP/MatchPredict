@@ -199,9 +199,10 @@ model Standing {
   seasonId String @map("season_id") @db.Uuid
   userId   String @map("user_id") @db.Uuid
 
-  scorePoints Int @default(0) @map("score_points")
-  mvpPoints   Int @default(0) @map("mvp_points")
-  totalPoints Int @default(0) @map("total_points")
+  scorePoints      Int @default(0) @map("score_points")
+  mvpPoints        Int @default(0) @map("mvp_points")
+  adjustmentPoints Int @default(0) @map("adjustment_points")
+  totalPoints      Int @default(0) @map("total_points")
 
   exactScores    Int @default(0) @map("exact_scores")
   correctWinners Int @default(0) @map("correct_winners")

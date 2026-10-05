@@ -13,6 +13,7 @@ describe('PredictionProcessorService', () => {
   let txFixtureUpdateMany: jest.Mock;
   let txPredictionFindMany: jest.Mock;
   let txPredictionUpdate: jest.Mock;
+  let txStandingFindUnique: jest.Mock;
   let txStandingUpsert: jest.Mock;
 
   beforeEach(() => {
@@ -21,6 +22,7 @@ describe('PredictionProcessorService', () => {
     txFixtureUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
     txPredictionFindMany = jest.fn();
     txPredictionUpdate = jest.fn();
+    txStandingFindUnique = jest.fn().mockResolvedValue(null);
     txStandingUpsert = jest.fn();
 
     tx = {
@@ -32,6 +34,7 @@ describe('PredictionProcessorService', () => {
         update: txPredictionUpdate,
       },
       standing: {
+        findUnique: txStandingFindUnique,
         upsert: txStandingUpsert,
       },
     } as unknown as Prisma.TransactionClient;
@@ -120,6 +123,136 @@ describe('PredictionProcessorService', () => {
     expect(txStandingUpsert).toHaveBeenCalledTimes(2);
   });
 
+  it('mantem o total natural quando o ajuste e zero', async () => {
+    await processStandingRefresh({
+      naturalPredictions: createNaturalPredictions({ exact: 7, correct: 2 }),
+      adjustmentPoints: 0,
+    });
+
+    expectStandingUpsert({
+      scorePoints: 23,
+      adjustmentPoints: 0,
+      totalPoints: 23,
+      exactScores: 7,
+      correctWinners: 9,
+      wrongPredictions: 0,
+    });
+  });
+
+  it('aplica penalizacao ao total sem alterar os pontos naturais', async () => {
+    await processStandingRefresh({
+      naturalPredictions: createNaturalPredictions({ exact: 7, correct: 2 }),
+      adjustmentPoints: -5,
+    });
+
+    expectStandingUpsert({
+      scorePoints: 23,
+      adjustmentPoints: -5,
+      totalPoints: 18,
+      exactScores: 7,
+      correctWinners: 9,
+      wrongPredictions: 0,
+    });
+  });
+
+  it('preserva a penalizacao quando novos pontos naturais sao recompostos', async () => {
+    await processStandingRefresh({
+      naturalPredictions: createNaturalPredictions({ exact: 7, correct: 2 }),
+      adjustmentPoints: -5,
+    });
+    await processStandingRefresh({
+      naturalPredictions: createNaturalPredictions({ exact: 8, correct: 2 }),
+      adjustmentPoints: -5,
+    });
+
+    expect(txStandingUpsert).toHaveBeenCalledTimes(2);
+    expectStandingUpsert({
+      scorePoints: 26,
+      adjustmentPoints: -5,
+      totalPoints: 21,
+      exactScores: 8,
+      correctWinners: 10,
+      wrongPredictions: 0,
+    });
+  });
+
+  it('aplica ajuste administrativo positivo ao total', async () => {
+    await processStandingRefresh({
+      naturalPredictions: createNaturalPredictions({ exact: 6, correct: 2 }),
+      adjustmentPoints: 3,
+    });
+
+    expectStandingUpsert({
+      scorePoints: 20,
+      adjustmentPoints: 3,
+      totalPoints: 23,
+      exactScores: 6,
+      correctWinners: 8,
+      wrongPredictions: 0,
+    });
+  });
+
+  it('cria Standing novo com ajuste zero', async () => {
+    await processStandingRefresh({
+      naturalPredictions: createNaturalPredictions({ exact: 3, correct: 1 }),
+      adjustmentPoints: null,
+    });
+
+    expectStandingUpsert({
+      scorePoints: 10,
+      adjustmentPoints: 0,
+      totalPoints: 10,
+      exactScores: 3,
+      correctWinners: 4,
+      wrongPredictions: 0,
+    });
+  });
+
+  it('nao sobrescreve o ajuste no update durante nova recomposicao', async () => {
+    await processStandingRefresh({
+      naturalPredictions: createNaturalPredictions({ exact: 7, correct: 2 }),
+      adjustmentPoints: -5,
+    });
+    await processStandingRefresh({
+      naturalPredictions: createNaturalPredictions({ exact: 7, correct: 2 }),
+      adjustmentPoints: -5,
+    });
+
+    expect(txStandingFindUnique).toHaveBeenCalledTimes(2);
+    expect(txStandingUpsert).toHaveBeenCalledTimes(2);
+    for (const [upsert] of txStandingUpsert.mock.calls) {
+      expect(upsert.update).not.toHaveProperty('adjustmentPoints');
+    }
+    expectStandingUpsert({
+      scorePoints: 23,
+      adjustmentPoints: -5,
+      totalPoints: 18,
+      exactScores: 7,
+      correctWinners: 9,
+      wrongPredictions: 0,
+    });
+  });
+
+  it('mantem estatisticas naturais independentes da penalizacao', async () => {
+    await processStandingRefresh({
+      naturalPredictions: createNaturalPredictions({
+        exact: 3,
+        correct: 4,
+        wrong: 5,
+      }),
+      adjustmentPoints: -5,
+    });
+
+    expectStandingUpsert({
+      scorePoints: 13,
+      adjustmentPoints: -5,
+      totalPoints: 8,
+      exactScores: 3,
+      correctWinners: 7,
+      wrongPredictions: 5,
+    });
+  });
+
   it('retorna alreadyProcessed quando a partida já foi processada', async () => {
     const fixture = createFixture({
       processedAt: new Date('2026-08-12T12:00:00.000Z'),
@@ -200,6 +333,69 @@ describe('PredictionProcessorService', () => {
     expect(txPredictionUpdate).not.toHaveBeenCalled();
     expect(txStandingUpsert).not.toHaveBeenCalled();
   });
+
+  async function processStandingRefresh({
+    naturalPredictions,
+    adjustmentPoints,
+  }: {
+    naturalPredictions: Array<Prediction & { fixture: Fixture }>;
+    adjustmentPoints: number | null;
+  }) {
+    const fixture = createFixture({
+      homeGoals: 2,
+      awayGoals: 1,
+      status: FixtureStatus.FT,
+    });
+    const prediction = createPrediction();
+
+    fixtureFindUnique.mockResolvedValue(fixture);
+    predictionFindMany.mockResolvedValue([prediction]);
+    txPredictionFindMany.mockResolvedValue(naturalPredictions);
+    txStandingFindUnique.mockResolvedValue(
+      adjustmentPoints === null ? null : { adjustmentPoints },
+    );
+
+    await service.processFixture(fixture.id);
+
+    expect(txStandingFindUnique).toHaveBeenCalledWith({
+      where: {
+        seasonId_userId: {
+          seasonId: fixture.seasonId,
+          userId: prediction.userId,
+        },
+      },
+      select: {
+        adjustmentPoints: true,
+      },
+    });
+  }
+
+  function expectStandingUpsert(expected: {
+    scorePoints: number;
+    adjustmentPoints: number;
+    totalPoints: number;
+    exactScores: number;
+    correctWinners: number;
+    wrongPredictions: number;
+  }) {
+    const { adjustmentPoints, ...summary } = expected;
+
+    expect(txStandingUpsert).toHaveBeenCalledWith({
+      where: {
+        seasonId_userId: {
+          seasonId: '44444444-4444-4444-8444-444444444444',
+          userId: '88888888-8888-4888-8888-888888888888',
+        },
+      },
+      update: summary,
+      create: {
+        seasonId: '44444444-4444-4444-8444-444444444444',
+        userId: '88888888-8888-4888-8888-888888888888',
+        adjustmentPoints,
+        ...summary,
+      },
+    });
+  }
 });
 
 function createFixture(overrides: Partial<Fixture> = {}): Fixture {
@@ -240,4 +436,44 @@ function createPrediction(overrides: Partial<Prediction> = {}): Prediction {
     updatedAt: new Date('2026-08-01T00:00:00.000Z'),
     ...overrides,
   };
+}
+
+function createNaturalPredictions({
+  exact,
+  correct,
+  wrong = 0,
+}: {
+  exact: number;
+  correct: number;
+  wrong?: number;
+}): Array<Prediction & { fixture: Fixture }> {
+  const fixture = createFixture({
+    status: FixtureStatus.FT,
+    homeGoals: 2,
+    awayGoals: 1,
+  });
+  const predictions: Array<Prediction & { fixture: Fixture }> = [];
+
+  for (let index = 0; index < exact; index += 1) {
+    predictions.push({
+      ...createPrediction({ homeGoals: 2, awayGoals: 1 }),
+      fixture,
+    });
+  }
+
+  for (let index = 0; index < correct; index += 1) {
+    predictions.push({
+      ...createPrediction({ homeGoals: 1, awayGoals: 0 }),
+      fixture,
+    });
+  }
+
+  for (let index = 0; index < wrong; index += 1) {
+    predictions.push({
+      ...createPrediction({ homeGoals: 0, awayGoals: 1 }),
+      fixture,
+    });
+  }
+
+  return predictions;
 }
