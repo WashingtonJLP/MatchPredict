@@ -2,7 +2,7 @@
 
 import { CalendarDays, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,27 @@ type PredictionModalProps = {
   onClose: () => void;
 };
 
+const PARTICIPATION_REDIRECT_DELAY_MS = 1_250;
+
 export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
   const router = useRouter();
   const createPrediction = useCreatePrediction();
   const updatePrediction = useUpdatePrediction();
   const deletePrediction = useDeletePrediction();
+  const participationRedirectTimer = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const [isRedirectingToParticipation, setIsRedirectingToParticipation] =
+    useState(false);
+
+  useEffect(
+    () => () => {
+      if (participationRedirectTimer.current) {
+        clearTimeout(participationRedirectTimer.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!fixture) {
@@ -49,13 +65,24 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
   const isSubmitting =
     createPrediction.isPending ||
     updatePrediction.isPending ||
-    deletePrediction.isPending;
+    deletePrediction.isPending ||
+    isRedirectingToParticipation;
+
+  function goToParticipation() {
+    if (participationRedirectTimer.current) {
+      clearTimeout(participationRedirectTimer.current);
+      participationRedirectTimer.current = null;
+    }
+
+    onClose();
+    router.push("/participation");
+  }
 
   async function handleSubmit(values: {
     homeGoals: number;
     awayGoals: number;
   }) {
-    if (!fixture) {
+    if (!fixture || isRedirectingToParticipation) {
       return;
     }
 
@@ -77,14 +104,19 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
       onClose();
     } catch (err) {
       if (getApiErrorCode(err) === "PARTICIPATION_REQUIRED") {
+        setIsRedirectingToParticipation(true);
         toast.error(
-          "Você precisa de uma participação mensal ativa para palpitar neste período.",
+          "Você precisa de uma participação mensal ativa para palpitar neste período. Vamos levar você para Minha participação.",
           {
             action: {
               label: "Minha participação",
-              onClick: () => router.push("/participation"),
+              onClick: goToParticipation,
             },
           },
+        );
+        participationRedirectTimer.current = setTimeout(
+          goToParticipation,
+          PARTICIPATION_REDIRECT_DELAY_MS,
         );
         return;
       }
