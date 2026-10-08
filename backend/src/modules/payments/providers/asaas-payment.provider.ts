@@ -19,8 +19,12 @@ import {
 } from './pix-payment-provider.interface';
 
 const ASAAS_SANDBOX_BASE_URL = 'https://api-sandbox.asaas.com/v3';
+const ASAAS_PRODUCTION_BASE_URL = 'https://api.asaas.com/v3';
+const ASAAS_SANDBOX_API_KEY_PREFIX = '$aact_hmlg_';
+const ASAAS_PRODUCTION_API_KEY_PREFIX = '$aact_prod_';
 const ASAAS_REQUEST_TIMEOUT_MS = 15_000;
-const ASAAS_USER_AGENT = 'MatchPredict/1.0 (Node.js; sandbox)';
+
+type AsaasEnvironment = 'sandbox' | 'production';
 
 type AsaasStaticQrCodeResponse = {
   id?: unknown;
@@ -40,13 +44,12 @@ export class AsaasPaymentProvider implements PixPaymentProvider {
 
   isConfigured() {
     const apiKey = this.readConfig('ASAAS_API_KEY');
-    const baseUrl = this.normalizedBaseUrl();
+    const environment = this.configuredEnvironment(apiKey);
     const addressKey = this.readConfig('ASAAS_PIX_ADDRESS_KEY');
     const webhookToken = this.readConfig('ASAAS_WEBHOOK_TOKEN');
 
     return Boolean(
-      apiKey?.startsWith('$aact_hmlg_') &&
-      baseUrl === ASAAS_SANDBOX_BASE_URL &&
+      environment &&
       addressKey &&
       webhookToken &&
       webhookToken.length >= 32 &&
@@ -62,6 +65,7 @@ export class AsaasPaymentProvider implements PixPaymentProvider {
     const apiKey = this.readConfig('ASAAS_API_KEY') as string;
     const addressKey = this.readConfig('ASAAS_PIX_ADDRESS_KEY') as string;
     const baseUrl = this.normalizedBaseUrl();
+    const environment = this.configuredEnvironment(apiKey) as AsaasEnvironment;
 
     try {
       const response = await firstValueFrom(
@@ -80,7 +84,7 @@ export class AsaasPaymentProvider implements PixPaymentProvider {
             headers: {
               Accept: 'application/json',
               'Content-Type': 'application/json',
-              'User-Agent': ASAAS_USER_AGENT,
+              'User-Agent': `MatchPredict/1.0 (Node.js; ${environment})`,
               access_token: apiKey,
             },
             timeout: ASAAS_REQUEST_TIMEOUT_MS,
@@ -197,7 +201,7 @@ export class AsaasPaymentProvider implements PixPaymentProvider {
       throw new ServiceUnavailableException({
         code: 'PIX_PROVIDER_NOT_CONFIGURED',
         message:
-          'A integraÃ§Ã£o PIX Sandbox estÃ¡ incompleta. Nenhum QR Code foi criado.',
+          'A integraÃ§Ã£o PIX estÃ¡ incompleta. Nenhum QR Code foi criado.',
       });
     }
   }
@@ -207,7 +211,7 @@ export class AsaasPaymentProvider implements PixPaymentProvider {
     const webhookToken = this.readConfig('ASAAS_WEBHOOK_TOKEN');
 
     if (
-      this.normalizedBaseUrl() !== ASAAS_SANDBOX_BASE_URL ||
+      !this.configuredBaseUrlEnvironment() ||
       !webhookToken ||
       webhookToken.length < 32 ||
       webhookToken.length > 255 ||
@@ -258,10 +262,50 @@ export class AsaasPaymentProvider implements PixPaymentProvider {
     return this.readConfig('ASAAS_BASE_URL')?.replace(/\/+$/, '');
   }
 
+  private configuredBaseUrlEnvironment(): AsaasEnvironment | undefined {
+    const baseUrl = this.normalizedBaseUrl();
+
+    if (baseUrl === ASAAS_SANDBOX_BASE_URL) {
+      return 'sandbox';
+    }
+
+    if (baseUrl === ASAAS_PRODUCTION_BASE_URL) {
+      return 'production';
+    }
+
+    return undefined;
+  }
+
+  private configuredEnvironment(
+    apiKey: string | undefined,
+  ): AsaasEnvironment | undefined {
+    const environment = this.configuredBaseUrlEnvironment();
+
+    if (
+      environment === 'sandbox' &&
+      hasApiKeyPrefix(apiKey, ASAAS_SANDBOX_API_KEY_PREFIX)
+    ) {
+      return environment;
+    }
+
+    if (
+      environment === 'production' &&
+      hasApiKeyPrefix(apiKey, ASAAS_PRODUCTION_API_KEY_PREFIX)
+    ) {
+      return environment;
+    }
+
+    return undefined;
+  }
+
   private readConfig(name: string) {
     const value = this.config.get<string>(name);
     return value?.trim() || undefined;
   }
+}
+
+function hasApiKeyPrefix(apiKey: string | undefined, prefix: string) {
+  return Boolean(apiKey?.startsWith(prefix) && apiKey.length > prefix.length);
 }
 
 function readHeader(

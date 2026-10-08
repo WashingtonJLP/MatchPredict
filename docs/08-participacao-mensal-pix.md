@@ -41,12 +41,17 @@ da autorizaÃ§Ã£o mensal. A funcionalidade nÃ£o altera transparÃªncia, Sc
 
 ## CriaÃ§Ã£o do QR
 
-O adapter `AsaasPaymentProvider` usa exclusivamente o Sandbox:
+O adapter `AsaasPaymentProvider` aceita exclusivamente as combinaÃ§Ãµes oficiais:
 
-- endpoint: `POST https://api-sandbox.asaas.com/v3/pix/qrCodes/static`;
+- Sandbox: `https://api-sandbox.asaas.com/v3` com chave `$aact_hmlg_...`;
+- ProduÃ§Ã£o: `https://api.asaas.com/v3` com chave `$aact_prod_...`.
+
+CombinaÃ§Ãµes cruzadas, configuraÃ§Ã£o incompleta e hosts parecidos ou arbitrÃ¡rios sÃ£o
+rejeitados. Em ambos os ambientes, a criaÃ§Ã£o usa `POST /v3/pix/qrCodes/static`:
+
 - autenticaÃ§Ã£o: header `access_token`;
 - headers adicionais: `Content-Type: application/json`, `Accept: application/json`
-  e `User-Agent: MatchPredict/1.0 (Node.js; sandbox)`;
+  e `User-Agent` identificado como Sandbox ou ProduÃ§Ã£o conforme a configuraÃ§Ã£o;
 - `addressKey`: `ASAAS_PIX_ADDRESS_KEY`;
 - `value`: `25.00`;
 - `format`: `ALL`;
@@ -91,8 +96,11 @@ ambÃ­guos como 408, 409, 425 e 429) marcam a tentativa como `FAILED` e permite
 nova tentativa local.
 
 Essa escolha pode deixar uma tentativa inconclusiva bloqueada atÃ© conciliaÃ§Ã£o
-manual. Antes de produÃ§Ã£o, deve-se confirmar com o suporte Asaas uma forma oficial
-de recuperar/idempotentizar QR criado cuja resposta foi perdida.
+manual. A integraÃ§Ã£o assume esse risco operacional sem fazer retry cego. Deve-se
+confirmar com o suporte Asaas: "ApÃ³s timeout na criaÃ§Ã£o de um QR Code PIX estÃ¡tico
+individual via `POST /v3/pix/qrCodes/static`, existe mecanismo oficial de
+idempotÃªncia ou consulta segura pelo `externalReference` que permita descobrir se o
+QR foi criado antes de tentar novamente?".
 
 ## Webhook
 
@@ -117,17 +125,17 @@ A atualizaÃ§Ã£o de `Payment` e o `upsert` de `Participation ACTIVE` ocorrem 
 transaÃ§Ã£o. O ID do evento, o ID da cobranÃ§a e as constraints tornam o processamento
 idempotente. Reenvio idÃªntico retorna HTTP 200 sem duplicar participaÃ§Ã£o.
 
-| Evento/condiÃ§Ã£o Asaas | Resultado local |
-| --- | --- |
-| `PAYMENT_RECEIVED` + `RECEIVED` + `PIX` + validaÃ§Ãµes completas | `PAID` e `Participation ACTIVE` |
-| `PAYMENT_CREATED` | Sem efeito; permanece `PENDING` |
-| `PAYMENT_CONFIRMED` | Sem efeito; nÃ£o ativa |
-| `PAYMENT_OVERDUE` | Sem efeito |
-| `PAYMENT_DELETED` | Sem efeito nesta arquitetura; nÃ£o hÃ¡ regra segura de cancelamento do QR estÃ¡tico |
-| `PAYMENT_REFUNDED` e variaÃ§Ãµes | Sem efeito; regra de estorno Ã© pendÃªncia de negÃ³cio |
-| Evento desconhecido/nÃ£o relevante | HTTP 200, sem efeito |
-| QR local expirado antes do pagamento | `EXPIRED` em leitura/nova tentativa, sem cron |
-| Falha definitiva na criaÃ§Ã£o | `FAILED` |
+| Evento/condiÃ§Ã£o Asaas                                          | Resultado local                                                                     |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `PAYMENT_RECEIVED` + `RECEIVED` + `PIX` + validaÃ§Ãµes completas | `PAID` e `Participation ACTIVE`                                                     |
+| `PAYMENT_CREATED`                                                | Sem efeito; permanece `PENDING`                                                     |
+| `PAYMENT_CONFIRMED`                                              | Sem efeito; nÃ£o ativa                                                              |
+| `PAYMENT_OVERDUE`                                                | Sem efeito                                                                          |
+| `PAYMENT_DELETED`                                                | Sem efeito nesta arquitetura; nÃ£o hÃ¡ regra segura de cancelamento do QR estÃ¡tico |
+| `PAYMENT_REFUNDED` e variaÃ§Ãµes                                 | Sem efeito nesta versÃ£o; refund/estorno estÃ¡ fora do escopo funcional             |
+| Evento desconhecido/nÃ£o relevante                               | HTTP 200, sem efeito                                                                |
+| QR local expirado antes do pagamento                             | `EXPIRED` em leitura/nova tentativa, sem cron                                       |
+| Falha definitiva na criaÃ§Ã£o                                    | `FAILED`                                                                            |
 
 Eventos autenticados de outras operaÃ§Ãµes da conta, inclusive `pixQrCodeId`
 desconhecido, sÃ£o reconhecidos sem efeito para nÃ£o bloquear a fila geral do Asaas.
@@ -155,12 +163,14 @@ Somente o backend usa estas variÃ¡veis:
 
 ```dotenv
 ASAAS_API_KEY=
-ASAAS_BASE_URL=https://api-sandbox.asaas.com/v3
+ASAAS_BASE_URL=
 ASAAS_PIX_ADDRESS_KEY=
 ASAAS_WEBHOOK_TOKEN=
 ```
 
-`ASAAS_PIX_ADDRESS_KEY` deve ser uma chave PIX cadastrada na conta Sandbox.
+`ASAAS_BASE_URL` deve ser exatamente `https://api-sandbox.asaas.com/v3` ou
+`https://api.asaas.com/v3`, coerente com o prefixo da API Key.
+`ASAAS_PIX_ADDRESS_KEY` deve ser uma chave PIX cadastrada na mesma conta/ambiente.
 `ASAAS_WEBHOOK_TOKEN` Ã© definido pelo operador no cadastro do webhook e nunca deve
 ser igual Ã  API Key. Nenhuma dessas variÃ¡veis Ã© enviada ao frontend ou registrada
 em logs.
@@ -178,10 +188,11 @@ documentaÃ§Ã£o Asaas. Nenhum tÃºnel Ã© instalado ou iniciado pelo projet
 
 ## Migration
 
-A migration pendente `20261005120000_add_monthly_participations` inclui as tabelas
+A migration aplicada `20261005120000_add_monthly_participations` inclui as tabelas
 e constraints da fundaÃ§Ã£o, unicidade de `(provider, provider_reference)`, unicidade
 dos IDs de pagamento/evento Asaas, reserva de criaÃ§Ã£o e o Ã­ndice parcial de um
-`PENDING` por usuÃ¡rio/perÃ­odo. Ela permanece nÃ£o aplicada.
+`PENDING` por usuÃ¡rio/perÃ­odo. O Neon atual registra sete migrations aplicadas e
+nenhuma pendente na Ãºltima verificaÃ§Ã£o operacional.
 
 ## DocumentaÃ§Ã£o oficial reconfirmada
 

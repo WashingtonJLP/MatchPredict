@@ -581,7 +581,7 @@ export class PaymentsService {
       throw new ServiceUnavailableException({
         code: 'PIX_PROVIDER_NOT_CONFIGURED',
         message:
-          'A integraÃ§Ã£o PIX Sandbox estÃ¡ incompleta. Nenhum QR Code foi criado.',
+          'A integraÃ§Ã£o PIX estÃ¡ incompleta. Nenhum QR Code foi criado.',
       });
     }
   }

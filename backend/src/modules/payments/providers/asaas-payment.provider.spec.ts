@@ -21,7 +21,7 @@ describe('AsaasPaymentProvider', () => {
     provider = createProvider(validConfig, post);
   });
 
-  it('considera configurado somente o ambiente Sandbox completo', () => {
+  it('considera configurado o ambiente Sandbox completo', () => {
     expect(provider.isConfigured()).toBe(true);
     expect(
       createProvider(
@@ -45,6 +45,44 @@ describe('AsaasPaymentProvider', () => {
         post,
       ).isConfigured(),
     ).toBe(false);
+  });
+
+  it('considera configurado o ambiente de Produção completo', () => {
+    expect(createProvider(validProductionConfig, post).isConfigured()).toBe(
+      true,
+    );
+  });
+
+  it('rejeita combinações cruzadas, URLs falsas e configuração incompleta', () => {
+    const invalidConfigs = [
+      {
+        ...validConfig,
+        ASAAS_API_KEY: validProductionConfig.ASAAS_API_KEY,
+      },
+      {
+        ...validProductionConfig,
+        ASAAS_API_KEY: validConfig.ASAAS_API_KEY,
+      },
+      {
+        ...validConfig,
+        ASAAS_BASE_URL: 'https://forbidden-provider.example/v3',
+      },
+      {
+        ...validConfig,
+        ASAAS_BASE_URL: 'https://api-sandbox.asaas.com.evil.example/v3',
+      },
+      {
+        ...validProductionConfig,
+        ASAAS_BASE_URL: 'https://api.asaas.com.evil.example/v3',
+      },
+      { ...validConfig, ASAAS_API_KEY: '$aact_hmlg_' },
+      { ...validConfig, ASAAS_API_KEY: '' },
+      { ...validConfig, ASAAS_BASE_URL: '' },
+    ];
+
+    for (const config of invalidConfigs) {
+      expect(createProvider(config, post).isConfigured()).toBe(false);
+    }
   });
 
   it('falha com mensagem segura quando a configuraÃ§Ã£o estÃ¡ incompleta', async () => {
@@ -118,9 +156,43 @@ describe('AsaasPaymentProvider', () => {
     );
   });
 
-  it('rejeita webhook quando o backend nÃ£o estÃ¡ configurado para Sandbox', () => {
+  it('usa URL e User-Agent de ProduÃ§Ã£o quando configurado explicitamente', async () => {
+    provider = createProvider(validProductionConfig, post);
+    post.mockReturnValue(of({ data: staticQrResponse } as AxiosResponse));
+
+    await expect(provider.createPixCharge(createInput)).resolves.toBeDefined();
+
+    expect(post).toHaveBeenCalledWith(
+      'https://api.asaas.com/v3/pix/qrCodes/static',
+      expect.any(Object),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'User-Agent': 'MatchPredict/1.0 (Node.js; production)',
+          access_token: validProductionConfig.ASAAS_API_KEY,
+        }),
+      }),
+    );
+  });
+
+  it('autentica webhook nos ambientes Sandbox e ProduÃ§Ã£o', async () => {
+    for (const config of [validConfig, validProductionConfig]) {
+      provider = createProvider(config, post);
+
+      await expect(
+        provider.verifyWebhook(receivedWebhook()),
+      ).resolves.toMatchObject({
+        kind: 'payment-received',
+        providerReference: 'qr_123',
+      });
+    }
+  });
+
+  it('rejeita webhook quando a URL nÃ£o Ã© um ambiente oficial', () => {
     provider = createProvider(
-      { ...validConfig, ASAAS_BASE_URL: 'https://api.asaas.com/v3' },
+      {
+        ...validConfig,
+        ASAAS_BASE_URL: 'https://api.asaas.com.evil.example/v3',
+      },
       post,
     );
 
@@ -375,6 +447,12 @@ const validConfig = {
   ASAAS_API_KEY: '$aact_hmlg_test-only-not-a-real-key',
   ASAAS_BASE_URL: 'https://api-sandbox.asaas.com/v3',
   ASAAS_PIX_ADDRESS_KEY: 'sandbox-pix-key',
+  ASAAS_WEBHOOK_TOKEN: webhookToken,
+};
+const validProductionConfig = {
+  ASAAS_API_KEY: '$aact_prod_test-only-not-a-real-key',
+  ASAAS_BASE_URL: 'https://api.asaas.com/v3',
+  ASAAS_PIX_ADDRESS_KEY: 'production-pix-key',
   ASAAS_WEBHOOK_TOKEN: webhookToken,
 };
 const createInput = {
