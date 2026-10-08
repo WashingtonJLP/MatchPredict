@@ -11,6 +11,8 @@ import { PredictionsModule } from './modules/predictions/predictions.module';
 import { StandingsModule } from './modules/standings/standings.module';
 import { DailyGamesModule } from './modules/daily-games/daily-games.module';
 import { CompetitionsModule } from './modules/competitions/competitions.module';
+import { ParticipationsModule } from './modules/participations/participations.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -43,6 +45,10 @@ import { CompetitionsModule } from './modules/competitions/competitions.module';
     PredictionsModule,
 
     StandingsModule,
+
+    ParticipationsModule,
+
+    PaymentsModule,
   ],
 })
 export class AppModule {}

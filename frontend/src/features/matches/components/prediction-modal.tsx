@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -11,7 +12,7 @@ import {
   useDeletePrediction,
   useUpdatePrediction,
 } from "@/hooks/use-predictions";
-import { getApiErrorMessage } from "@/lib/api-error";
+import { getApiErrorCode, getApiErrorMessage } from "@/lib/api-error";
 import type { MatchFixture } from "@/types/fixture";
 
 type PredictionModalProps = {
@@ -20,6 +21,7 @@ type PredictionModalProps = {
 };
 
 export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
+  const router = useRouter();
   const createPrediction = useCreatePrediction();
   const updatePrediction = useUpdatePrediction();
   const deletePrediction = useDeletePrediction();
@@ -74,6 +76,18 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
 
       onClose();
     } catch (err) {
+      if (getApiErrorCode(err) === "PARTICIPATION_REQUIRED") {
+        toast.error(
+          "Você precisa de uma participação mensal ativa para palpitar neste período.",
+          {
+            action: {
+              label: "Minha participação",
+              onClick: () => router.push("/participation"),
+            },
+          },
+        );
+        return;
+      }
       toast.error(getApiErrorMessage(err, "Não foi possível salvar o palpite."));
     }
   }

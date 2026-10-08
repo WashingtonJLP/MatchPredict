@@ -2,6 +2,8 @@ import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { Fixture, FixtureStatus, Prediction } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ScoreEngineService } from '../../common/score-engine/score-engine.service';
+import { ParticipationRequiredException } from '../participations/participation-required.exception';
+import { ParticipationsService } from '../participations/participations.service';
 import { PredictionsService } from './predictions.service';
 
 describe('PredictionsService', () => {
@@ -11,6 +13,8 @@ describe('PredictionsService', () => {
   let predictionFindMany: jest.Mock;
   let predictionCreate: jest.Mock;
   let predictionUpdate: jest.Mock;
+  let predictionDelete: jest.Mock;
+  let assertActiveForFixture: jest.Mock;
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-08-20T15:00:00.000Z'));
@@ -20,6 +24,8 @@ describe('PredictionsService', () => {
     predictionFindMany = jest.fn();
     predictionCreate = jest.fn();
     predictionUpdate = jest.fn();
+    predictionDelete = jest.fn();
+    assertActiveForFixture = jest.fn().mockResolvedValue(undefined);
 
     const prisma = {
       fixture: {
@@ -30,10 +36,13 @@ describe('PredictionsService', () => {
         findMany: predictionFindMany,
         create: predictionCreate,
         update: predictionUpdate,
+        delete: predictionDelete,
       },
     } as unknown as PrismaService;
 
-    service = new PredictionsService(prisma, new ScoreEngineService());
+    service = new PredictionsService(prisma, new ScoreEngineService(), {
+      assertActiveForFixture,
+    } as unknown as ParticipationsService);
   });
 
   afterEach(() => {
@@ -67,6 +76,31 @@ describe('PredictionsService', () => {
         },
       }),
     );
+    expect(assertActiveForFixture).toHaveBeenCalledWith(
+      userId,
+      fixture.kickoff,
+    );
+  });
+
+  it('rejeita criação sem participação ativa para o mês do kickoff', async () => {
+    const fixture = createFixture({
+      kickoff: new Date('2026-08-20T16:00:00.000Z'),
+    });
+
+    fixtureFindUnique.mockResolvedValue(fixture);
+    assertActiveForFixture.mockRejectedValue(
+      new ParticipationRequiredException(fixture.kickoff),
+    );
+
+    await expect(
+      service.create(userId, {
+        fixtureId: fixture.id,
+        homeGoals: 2,
+        awayGoals: 1,
+      }),
+    ).rejects.toBeInstanceOf(ParticipationRequiredException);
+    expect(predictionFindUnique).not.toHaveBeenCalled();
+    expect(predictionCreate).not.toHaveBeenCalled();
   });
 
   it('rejeita criação exatamente no horário de início da partida', async () => {
@@ -83,6 +117,7 @@ describe('PredictionsService', () => {
         awayGoals: 1,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+    expect(assertActiveForFixture).not.toHaveBeenCalled();
     expect(predictionCreate).not.toHaveBeenCalled();
   });
 
@@ -100,6 +135,7 @@ describe('PredictionsService', () => {
         awayGoals: 1,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+    expect(assertActiveForFixture).not.toHaveBeenCalled();
     expect(predictionCreate).not.toHaveBeenCalled();
   });
 
@@ -156,6 +192,59 @@ describe('PredictionsService', () => {
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(predictionUpdate).not.toHaveBeenCalled();
+  });
+
+  it('bloqueia ediÃ§Ã£o sem Participation ACTIVE', async () => {
+    const fixture = createFixture({
+      kickoff: new Date('2026-08-20T16:00:00.000Z'),
+    });
+    predictionFindUnique.mockResolvedValue(createPrediction({ fixture }));
+    assertActiveForFixture.mockRejectedValue(
+      new ParticipationRequiredException(fixture.kickoff),
+    );
+
+    await expect(
+      service.update(userId, predictionId, { homeGoals: 3 }),
+    ).rejects.toBeInstanceOf(ParticipationRequiredException);
+    expect(predictionUpdate).not.toHaveBeenCalled();
+  });
+
+  it.each([FixtureStatus.LIVE, FixtureStatus.FT])(
+    'bloqueia ediÃ§Ã£o quando a fixture estÃ¡ %s mesmo com kickoff futuro',
+    async (status) => {
+      predictionFindUnique.mockResolvedValue(
+        createPrediction({
+          fixture: createFixture({
+            kickoff: new Date('2026-08-20T16:00:00.000Z'),
+            status,
+          }),
+        }),
+      );
+
+      await expect(
+        service.update(userId, predictionId, { homeGoals: 3 }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(assertActiveForFixture).not.toHaveBeenCalled();
+      expect(predictionUpdate).not.toHaveBeenCalled();
+    },
+  );
+
+  it('mantÃ©m delete independente de Participation sem afrouxar ownership/kickoff', async () => {
+    const prediction = createPrediction({
+      fixture: createFixture({
+        kickoff: new Date('2026-08-20T16:00:00.000Z'),
+      }),
+    });
+    predictionFindUnique.mockResolvedValue(prediction);
+    predictionDelete.mockResolvedValue(prediction);
+
+    await expect(service.remove(userId, predictionId)).resolves.toEqual({
+      message: expect.any(String),
+    });
+    expect(assertActiveForFixture).not.toHaveBeenCalled();
+    expect(predictionDelete).toHaveBeenCalledWith({
+      where: { id: predictionId },
+    });
   });
   it('expoe sourceEventId nos meus palpites para enriquecer partidas ao vivo', async () => {
     const fixture = createTransparencyFixture({ apiFixtureId: 401860308 });

@@ -4,6 +4,7 @@ const authCookieName = "matchpredict_token";
 const privateRoutes = [
   "/dashboard",
   "/matches",
+  "/participation",
   "/profile",
   "/predictions",
   "/statistics",
@@ -41,6 +42,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/matches/:path*",
+    "/participation/:path*",
     "/profile/:path*",
     "/predictions/:path*",
     "/statistics/:path*",

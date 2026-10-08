@@ -26,6 +26,28 @@ enum WinnerType {
   DRAW
 }
 
+enum ParticipationPeriodStatus {
+  OPEN
+  CLOSED
+}
+
+enum ParticipationStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  PIX
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELLED
+  FAILED
+}
+
 model User {
   id String @id @default(uuid()) @db.Uuid
 
@@ -40,13 +62,96 @@ model User {
   resetPasswordToken     String?   @unique @map("reset_password_token")
   resetPasswordExpiresAt DateTime? @map("reset_password_expires_at")
 
-  predictions Prediction[]
-  standings   Standing[]
+  predictions    Prediction[]
+  standings      Standing[]
+  participations Participation[]
+  payments       Payment[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("users")
+}
+
+model ParticipationPeriod {
+  id String @id @default(uuid()) @db.Uuid
+
+  referenceYear  Int @map("reference_year")
+  referenceMonth Int @map("reference_month")
+
+  startsAt DateTime @map("starts_at")
+  endsAt   DateTime @map("ends_at")
+
+  participationFeeCents Int @map("participation_fee_cents")
+
+  status ParticipationPeriodStatus @default(OPEN)
+
+  participations Participation[]
+  payments       Payment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([referenceYear, referenceMonth])
+  @@map("participation_periods")
+}
+
+model Participation {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId    String  @map("user_id") @db.Uuid
+  periodId  String  @map("period_id") @db.Uuid
+  paymentId String? @unique @map("payment_id") @db.Uuid
+
+  status      ParticipationStatus @default(ACTIVE)
+  activatedAt DateTime            @default(now()) @map("activated_at")
+
+  user    User                @relation(fields: [userId], references: [id])
+  period  ParticipationPeriod @relation(fields: [periodId], references: [id])
+  payment Payment?            @relation(fields: [paymentId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, periodId])
+  @@index([userId, status])
+  @@index([periodId])
+  @@map("participations")
+}
+
+model Payment {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId   String @map("user_id") @db.Uuid
+  periodId String @map("period_id") @db.Uuid
+
+  amountCents Int           @map("amount_cents")
+  currency    String        @default("BRL")
+  method      PaymentMethod @default(PIX)
+  status      PaymentStatus @default(PENDING)
+
+  provider                  String
+  providerPaymentId         String?   @unique @map("provider_payment_id")
+  providerReference         String?   @map("provider_reference")
+  providerEventId           String?   @unique @map("provider_event_id")
+  providerCreationStartedAt DateTime? @map("provider_creation_started_at")
+  pixCopyPaste              String?   @map("pix_copy_paste")
+  pixQrCode                 String?   @map("pix_qr_code")
+
+  expiresAt DateTime? @map("expires_at")
+  paidAt    DateTime? @map("paid_at")
+
+  user          User                @relation(fields: [userId], references: [id])
+  period        ParticipationPeriod @relation(fields: [periodId], references: [id])
+  participation Participation?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([provider, providerReference])
+  @@index([userId, createdAt])
+  @@index([periodId])
+  @@map("payments")
 }
 
 model League {

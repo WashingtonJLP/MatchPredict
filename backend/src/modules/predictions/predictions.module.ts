@@ -3,13 +3,19 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
 import { ScoreEngineService } from '../../common/score-engine/score-engine.service';
 import { DailyGamesModule } from '../daily-games/daily-games.module';
 import { FootballModule } from '../football/football.module';
+import { ParticipationsModule } from '../participations/participations.module';
 import { PredictionProcessorService } from './prediction-processor.service';
 import { PredictionResultsScheduler } from './prediction-results.scheduler';
 import { PredictionsController } from './predictions.controller';
 import { PredictionsService } from './predictions.service';
 
 @Module({
-  imports: [PrismaModule, FootballModule, DailyGamesModule],
+  imports: [
+    PrismaModule,
+    FootballModule,
+    DailyGamesModule,
+    ParticipationsModule,
+  ],
   controllers: [PredictionsController],
   providers: [
     PredictionsService,

@@ -8,6 +8,7 @@ import {
 import { FixtureStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ScoreEngineService } from '../../common/score-engine/score-engine.service';
+import { ParticipationsService } from '../participations/participations.service';
 import { CreatePredictionDto } from './dto/create-prediction.dto';
 import { UpdatePredictionDto } from './dto/update-prediction.dto';
 
@@ -43,12 +44,18 @@ export class PredictionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly scoreEngine: ScoreEngineService,
+    private readonly participationsService: ParticipationsService,
   ) {}
 
   async create(userId: string, createPredictionDto: CreatePredictionDto) {
     const fixture = await this.findFixtureOrFail(createPredictionDto.fixtureId);
 
     this.ensureFixtureIsOpenForPrediction(fixture);
+
+    await this.participationsService.assertActiveForFixture(
+      userId,
+      fixture.kickoff,
+    );
 
     const existingPrediction = await this.prisma.prediction.findUnique({
       where: {
@@ -65,15 +72,28 @@ export class PredictionsService {
       );
     }
 
-    return this.prisma.prediction.create({
-      data: {
-        userId,
-        fixtureId: createPredictionDto.fixtureId,
-        homeGoals: createPredictionDto.homeGoals,
-        awayGoals: createPredictionDto.awayGoals,
-      },
-      include: predictionWithFixtureTeams.include,
-    });
+    try {
+      return await this.prisma.prediction.create({
+        data: {
+          userId,
+          fixtureId: createPredictionDto.fixtureId,
+          homeGoals: createPredictionDto.homeGoals,
+          awayGoals: createPredictionDto.awayGoals,
+        },
+        include: predictionWithFixtureTeams.include,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Você já registrou um palpite para esta partida.',
+        );
+      }
+
+      throw error;
+    }
   }
 
   async findMy(userId: string) {
@@ -223,6 +243,11 @@ export class PredictionsService {
     );
 
     this.ensureFixtureIsOpenForPrediction(prediction.fixture);
+
+    await this.participationsService.assertActiveForFixture(
+      userId,
+      prediction.fixture.kickoff,
+    );
 
     return this.prisma.prediction.update({
       where: {

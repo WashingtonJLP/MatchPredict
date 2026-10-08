@@ -18,6 +18,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
   const isPrivateRoute = [
     "/dashboard",
     "/matches",
+    "/participation",
     "/profile",
     "/predictions",
     "/statistics",

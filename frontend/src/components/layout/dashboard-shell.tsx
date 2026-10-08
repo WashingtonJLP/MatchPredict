@@ -12,6 +12,7 @@ import {
   PieChart,
   Trophy,
   UserRound,
+  WalletCards,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -103,6 +104,11 @@ const sidebarSections: SidebarSection[] = [
         href: "/profile",
         label: "Perfil",
         icon: UserRound,
+      },
+      {
+        href: "/participation",
+        label: "Minha participação",
+        icon: WalletCards,
       },
     ],
   },
@@ -296,7 +302,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         </header>
 
         <nav
-          className="flex gap-1 overflow-x-auto border-b border-border bg-card p-2 font-navigation lg:hidden"
+          className="flex gap-1 overflow-x-auto border-b border-border bg-card p-2 font-navigation [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:hidden"
           aria-label="Navegação principal"
         >
           {mobileLinks.map((item) => {

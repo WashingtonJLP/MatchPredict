@@ -1,9 +1,18 @@
 import { AxiosError } from "axios";
 
 type ApiErrorResponse = {
+  code?: string;
   message?: string | string[];
   error?: string;
 };
+
+export function getApiErrorCode(error: unknown) {
+  if (!(error instanceof AxiosError)) {
+    return undefined;
+  }
+
+  return (error.response?.data as ApiErrorResponse | undefined)?.code;
+}
 
 export function getApiErrorMessage(error: unknown, fallback: string) {
   if (error instanceof AxiosError) {
