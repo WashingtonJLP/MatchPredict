@@ -13,6 +13,7 @@ import {
   CreatePixChargeInput,
   PixChargeResult,
   PixPaymentProvider,
+  PixProviderPayment,
   PixProviderRequestError,
   PixWebhookRequest,
   VerifiedPixWebhookEvent,
@@ -31,6 +32,10 @@ type AsaasStaticQrCodeResponse = {
   encodedImage?: unknown;
   payload?: unknown;
   expirationDate?: unknown;
+};
+
+type AsaasPaymentsResponse = {
+  data?: unknown;
 };
 
 @Injectable()
@@ -94,6 +99,41 @@ export class AsaasPaymentProvider implements PixPaymentProvider {
       );
 
       return this.parseStaticQrCode(response.data, input.expiresAt);
+    } catch (error) {
+      if (error instanceof PixProviderRequestError) {
+        throw error;
+      }
+
+      throw new PixProviderRequestError(
+        this.isDefinitiveFailure(error) ? 'definitive' : 'unknown',
+      );
+    }
+  }
+
+  async findPaymentsByPixQrCodeId(
+    providerReference: string,
+  ): Promise<PixProviderPayment[]> {
+    this.assertConfigured();
+
+    const apiKey = this.readConfig('ASAAS_API_KEY') as string;
+    const baseUrl = this.normalizedBaseUrl();
+    const environment = this.configuredEnvironment(apiKey) as AsaasEnvironment;
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get<AsaasPaymentsResponse>(`${baseUrl}/payments`, {
+          params: { pixQrCodeId: providerReference, limit: 2 },
+          headers: {
+            Accept: 'application/json',
+            'User-Agent': `MatchPredict/1.0 (Node.js; ${environment})`,
+            access_token: apiKey,
+          },
+          timeout: ASAAS_REQUEST_TIMEOUT_MS,
+          maxRedirects: 0,
+        }),
+      );
+
+      return this.parsePayments(response.data);
     } catch (error) {
       if (error instanceof PixProviderRequestError) {
         throw error;
@@ -172,6 +212,7 @@ export class AsaasPaymentProvider implements PixPaymentProvider {
       providerReference,
       amountCents: Math.round(value * 100),
       currency: 'BRL',
+      paidAt: parseDateTime(payment.paymentDate),
     });
   }
 
@@ -194,6 +235,50 @@ export class AsaasPaymentProvider implements PixPaymentProvider {
       pixCopyPaste,
       expiresAt: expiresAt ?? requestedExpiration,
     };
+  }
+
+  private parsePayments(response: AsaasPaymentsResponse): PixProviderPayment[] {
+    if (!Array.isArray(response.data)) {
+      throw new PixProviderRequestError('unknown');
+    }
+
+    return response.data.map((item) => {
+      if (!isRecord(item)) {
+        throw new PixProviderRequestError('unknown');
+      }
+
+      const providerPaymentId = readNonEmptyString(item.id);
+      const providerReference = readNonEmptyString(item.pixQrCodeId);
+      const externalReference = readNonEmptyString(item.externalReference);
+      const status = readNonEmptyString(item.status);
+      const billingType = readNonEmptyString(item.billingType);
+      const value = item.value;
+
+      if (
+        !providerPaymentId ||
+        !providerReference ||
+        !externalReference ||
+        !status ||
+        !billingType ||
+        typeof value !== 'number' ||
+        !Number.isFinite(value) ||
+        value <= 0 ||
+        Math.abs(value * 100 - Math.round(value * 100)) > 1e-6
+      ) {
+        throw new PixProviderRequestError('unknown');
+      }
+
+      return {
+        providerPaymentId,
+        providerReference,
+        externalReference,
+        status,
+        billingType,
+        amountCents: Math.round(value * 100),
+        currency: 'BRL',
+        paidAt: parseDateTime(item.paymentDate),
+      };
+    });
   }
 
   private assertConfigured() {
@@ -343,6 +428,9 @@ function parseDateTime(value: unknown) {
     return null;
   }
 
-  const parsed = new Date(value);
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value.trim())
+    ? `${value.trim()}T12:00:00.000Z`
+    : value;
+  const parsed = new Date(normalized);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }

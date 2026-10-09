@@ -14,11 +14,13 @@ const webhookToken = 'webhook-token-with-at-least-32-characters';
 
 describe('AsaasPaymentProvider', () => {
   let post: jest.Mock;
+  let get: jest.Mock;
   let provider: AsaasPaymentProvider;
 
   beforeEach(() => {
     post = jest.fn();
-    provider = createProvider(validConfig, post);
+    get = jest.fn();
+    provider = createProvider(validConfig, post, get);
   });
 
   it('considera configurado o ambiente Sandbox completo', () => {
@@ -174,6 +176,107 @@ describe('AsaasPaymentProvider', () => {
     );
   });
 
+  it('consulta pontualmente cobranças pelo pixQrCodeId e normaliza o resultado', async () => {
+    get.mockReturnValue(
+      of({ data: { data: [asaasReceivedPayment] } } as AxiosResponse),
+    );
+
+    await expect(provider.findPaymentsByPixQrCodeId('qr_123')).resolves.toEqual(
+      [
+        {
+          providerPaymentId: 'pay_123',
+          providerReference: 'qr_123',
+          externalReference: localPaymentId,
+          status: 'RECEIVED',
+          billingType: 'PIX',
+          amountCents: 2500,
+          currency: 'BRL',
+          paidAt: new Date('2026-10-07T12:00:00.000Z'),
+        },
+      ],
+    );
+    expect(get).toHaveBeenCalledWith(
+      'https://api-sandbox.asaas.com/v3/payments',
+      expect.objectContaining({
+        params: { pixQrCodeId: 'qr_123', limit: 2 },
+        headers: expect.objectContaining({
+          access_token: validConfig.ASAAS_API_KEY,
+        }),
+        maxRedirects: 0,
+      }),
+    );
+  });
+
+  it('rejeita resposta de consulta incompleta de forma segura', async () => {
+    get.mockReturnValue(
+      of({ data: { data: [{ id: 'pay_123' }] } } as AxiosResponse),
+    );
+
+    await expect(
+      provider.findPaymentsByPixQrCodeId('qr_123'),
+    ).rejects.toBeInstanceOf(PixProviderRequestError);
+  });
+
+  it('aceita lista vazia sem inventar pagamento', async () => {
+    get.mockReturnValue(of({ data: { data: [] } } as AxiosResponse));
+
+    await expect(provider.findPaymentsByPixQrCodeId('qr_123')).resolves.toEqual(
+      [],
+    );
+  });
+
+  it.each([400, 401, 403, 404, 429, 500, 502, 503])(
+    'falha fechada e sanitizada na consulta com HTTP %i',
+    async (status) => {
+      get.mockReturnValue(
+        throwError(
+          () =>
+            new AxiosError(
+              `secret ${validConfig.ASAAS_API_KEY}`,
+              undefined,
+              undefined,
+              undefined,
+              { status } as AxiosResponse,
+            ),
+        ),
+      );
+
+      let received: unknown;
+      try {
+        await provider.findPaymentsByPixQrCodeId('qr_123');
+      } catch (error) {
+        received = error;
+      }
+
+      expect(received).toBeInstanceOf(PixProviderRequestError);
+      expect(JSON.stringify(received)).not.toContain(validConfig.ASAAS_API_KEY);
+    },
+  );
+
+  it.each([
+    ['timeout', new AxiosError('timeout', 'ECONNABORTED')],
+    ['conexão interrompida', new AxiosError('socket hang up', 'ECONNRESET')],
+    ['JSON inválido', new AxiosError('Unexpected token in JSON')],
+  ])('falha fechada na consulta por %s', async (_label, error) => {
+    get.mockReturnValue(throwError(() => error));
+
+    await expect(
+      provider.findPaymentsByPixQrCodeId('qr_123'),
+    ).rejects.toBeInstanceOf(PixProviderRequestError);
+  });
+
+  it('mantém o fallback existente quando expirationDate é null', async () => {
+    post.mockReturnValue(
+      of({
+        data: { ...staticQrResponse, expirationDate: null },
+      } as AxiosResponse),
+    );
+
+    await expect(provider.createPixCharge(createInput)).resolves.toMatchObject({
+      expiresAt: createInput.expiresAt,
+    });
+  });
+
   it('autentica webhook nos ambientes Sandbox e ProduÃ§Ã£o', async () => {
     for (const config of [validConfig, validProductionConfig]) {
       provider = createProvider(config, post);
@@ -326,6 +429,7 @@ describe('AsaasPaymentProvider', () => {
       providerReference: 'qr_123',
       amountCents: 2500,
       currency: 'BRL',
+      paidAt: null,
     });
   });
 
@@ -469,9 +573,24 @@ const staticQrResponse = {
   expirationDate: createInput.expiresAt.toISOString(),
 };
 
-function createProvider(config: Record<string, string>, post: jest.Mock) {
+const asaasReceivedPayment = {
+  id: 'pay_123',
+  pixQrCodeId: 'qr_123',
+  externalReference: localPaymentId,
+  status: 'RECEIVED',
+  billingType: 'PIX',
+  value: 25,
+  paymentDate: '2026-10-07',
+};
+
+function createProvider(
+  config: Record<string, string>,
+  post: jest.Mock,
+  get: jest.Mock = jest.fn(),
+) {
   return new AsaasPaymentProvider(new ConfigService(config), {
     post,
+    get,
   } as unknown as HttpService);
 }
 

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -27,6 +28,7 @@ describe('PaymentsService', () => {
   let providerIsConfigured: jest.Mock;
   let providerCreatePixCharge: jest.Mock;
   let providerVerifyWebhook: jest.Mock;
+  let providerFindPayments: jest.Mock;
   let transaction: jest.Mock;
   let periodUpsert: jest.Mock;
   let paymentFindMany: jest.Mock;
@@ -39,7 +41,7 @@ describe('PaymentsService', () => {
   let txPaymentFindUniqueOrThrow: jest.Mock;
   let txPaymentUpdateMany: jest.Mock;
   let txParticipationFindUnique: jest.Mock;
-  let txParticipationUpsert: jest.Mock;
+  let txParticipationCreate: jest.Mock;
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(now);
@@ -55,7 +57,7 @@ describe('PaymentsService', () => {
     txPaymentFindUniqueOrThrow = jest.fn();
     txPaymentUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
     txParticipationFindUnique = jest.fn().mockResolvedValue(null);
-    txParticipationUpsert = jest.fn();
+    txParticipationCreate = jest.fn();
 
     const transactionClient = {
       payment: {
@@ -66,7 +68,7 @@ describe('PaymentsService', () => {
       },
       participation: {
         findUnique: txParticipationFindUnique,
-        upsert: txParticipationUpsert,
+        create: txParticipationCreate,
       },
     };
     transaction = jest.fn((callback: (tx: unknown) => unknown) =>
@@ -89,10 +91,12 @@ describe('PaymentsService', () => {
     providerIsConfigured = jest.fn().mockReturnValue(true);
     providerCreatePixCharge = jest.fn();
     providerVerifyWebhook = jest.fn();
+    providerFindPayments = jest.fn();
     provider = {
       name: 'asaas',
       isConfigured: providerIsConfigured,
       createPixCharge: providerCreatePixCharge,
+      findPaymentsByPixQrCodeId: providerFindPayments,
       verifyWebhook: providerVerifyWebhook,
     };
 
@@ -353,7 +357,7 @@ describe('PaymentsService', () => {
       },
       participation: {
         findUnique: txParticipationFindUnique,
-        upsert: txParticipationUpsert,
+        create: txParticipationCreate,
       },
     };
     transaction
@@ -388,14 +392,9 @@ describe('PaymentsService', () => {
         }),
       }),
     );
-    expect(txParticipationUpsert).toHaveBeenCalledWith(
+    expect(txParticipationCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId_periodId: { userId, periodId } },
-        update: expect.objectContaining({
-          status: ParticipationStatus.ACTIVE,
-          paymentId,
-        }),
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           status: ParticipationStatus.ACTIVE,
           paymentId,
         }),
@@ -412,7 +411,7 @@ describe('PaymentsService', () => {
     await expect(
       service.processWebhook('asaas', webhookRequest),
     ).resolves.toEqual({ received: true, alreadyProcessed: false });
-    expect(txParticipationUpsert).toHaveBeenCalledTimes(1);
+    expect(txParticipationCreate).toHaveBeenCalledTimes(1);
   });
 
   it('webhook duplicado Ã© idempotente e nÃ£o duplica Participation', async () => {
@@ -425,6 +424,10 @@ describe('PaymentsService', () => {
         status: PaymentStatus.PAID,
         providerPaymentId: 'pay_123',
         providerEventId: 'evt_123',
+        participation: {
+          status: ParticipationStatus.ACTIVE,
+          paymentId,
+        },
       });
 
     await service.processWebhook('asaas', webhookRequest);
@@ -432,7 +435,7 @@ describe('PaymentsService', () => {
       service.processWebhook('asaas', webhookRequest),
     ).resolves.toEqual({ received: true, alreadyProcessed: true });
 
-    expect(txParticipationUpsert).toHaveBeenCalledTimes(1);
+    expect(txParticipationCreate).toHaveBeenCalledTimes(1);
   });
 
   it('dez webhooks simultÃ¢neos ativam uma Ãºnica Participation', async () => {
@@ -444,6 +447,11 @@ describe('PaymentsService', () => {
       providerEventId: string | null;
       userId: string;
       periodId: string;
+      id: string;
+      participation: {
+        status: ParticipationStatus;
+        paymentId: string;
+      } | null;
     } = pendingWebhookPayment();
 
     txPaymentFindUniqueOrThrow.mockImplementation(() =>
@@ -461,6 +469,10 @@ describe('PaymentsService', () => {
         status: PaymentStatus.PAID,
         providerPaymentId: receivedEvent.providerPaymentId,
         providerEventId: receivedEvent.providerEventId,
+        participation: {
+          status: ParticipationStatus.ACTIVE,
+          paymentId,
+        },
       };
       return { count: 1 };
     });
@@ -481,7 +493,7 @@ describe('PaymentsService', () => {
           'alreadyProcessed' in result && result.alreadyProcessed === true,
       ),
     ).toHaveLength(9);
-    expect(txParticipationUpsert).toHaveBeenCalledTimes(1);
+    expect(txParticipationCreate).toHaveBeenCalledTimes(1);
   });
 
   it('ignora de forma segura evento irrelevante e pixQrCodeId desconhecido', async () => {
@@ -501,7 +513,7 @@ describe('PaymentsService', () => {
     await expect(
       service.processWebhook('asaas', webhookRequest),
     ).resolves.toEqual({ received: true, ignored: true });
-    expect(txParticipationUpsert).not.toHaveBeenCalled();
+    expect(txParticipationCreate).not.toHaveBeenCalled();
   });
 
   it('nÃ£o ativa quando valor do webhook diverge de R$ 25', async () => {
@@ -514,7 +526,7 @@ describe('PaymentsService', () => {
     await expect(
       service.processWebhook('asaas', webhookRequest),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(txParticipationUpsert).not.toHaveBeenCalled();
+    expect(txParticipationCreate).not.toHaveBeenCalled();
   });
 
   it.each([2499, 2501, 0, -100, 3000])(
@@ -530,7 +542,7 @@ describe('PaymentsService', () => {
         service.processWebhook('asaas', webhookRequest),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(txPaymentUpdateMany).not.toHaveBeenCalled();
-      expect(txParticipationUpsert).not.toHaveBeenCalled();
+      expect(txParticipationCreate).not.toHaveBeenCalled();
     },
   );
 
@@ -564,7 +576,7 @@ describe('PaymentsService', () => {
       service.processWebhook('asaas', webhookRequest),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(txPaymentUpdateMany).not.toHaveBeenCalled();
-    expect(txParticipationUpsert).not.toHaveBeenCalled();
+    expect(txParticipationCreate).not.toHaveBeenCalled();
   });
 
   it.each([PaymentStatus.CANCELLED, PaymentStatus.FAILED])(
@@ -581,7 +593,7 @@ describe('PaymentsService', () => {
         service.processWebhook('asaas', webhookRequest),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(txPaymentUpdateMany).not.toHaveBeenCalled();
-      expect(txParticipationUpsert).not.toHaveBeenCalled();
+      expect(txParticipationCreate).not.toHaveBeenCalled();
     },
   );
 
@@ -602,7 +614,7 @@ describe('PaymentsService', () => {
       service.processWebhook('asaas', webhookRequest),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(txPaymentUpdateMany).not.toHaveBeenCalled();
-    expect(txParticipationUpsert).not.toHaveBeenCalled();
+    expect(txParticipationCreate).not.toHaveBeenCalled();
   });
 
   it('normaliza colisÃ£o de providerEventId/providerPaymentId sem ativar', async () => {
@@ -617,7 +629,7 @@ describe('PaymentsService', () => {
     await expect(
       service.processWebhook('asaas', webhookRequest),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(txParticipationUpsert).not.toHaveBeenCalled();
+    expect(txParticipationCreate).not.toHaveBeenCalled();
   });
 
   it('rejeita provider desconhecido antes de validar qualquer evento', async () => {
@@ -631,7 +643,7 @@ describe('PaymentsService', () => {
     paymentFindMany.mockResolvedValue([]);
     await service.findMine(userId);
     expect(paymentFindMany).toHaveBeenCalledWith({
-      where: { userId },
+      where: { userId, status: PaymentStatus.PAID },
       orderBy: { createdAt: 'desc' },
       select: expect.any(Object),
     });
@@ -673,6 +685,424 @@ describe('PaymentsService', () => {
     expect(providerCreatePixCharge).not.toHaveBeenCalled();
     expect(providerVerifyWebhook).not.toHaveBeenCalled();
   });
+
+  it.each([PaymentStatus.PENDING, PaymentStatus.EXPIRED])(
+    'reconcilia Payment %s RECEIVED como PAID e ativa Participation',
+    async (status) => {
+      const local = reconciliationPayment({ status });
+      paymentFindFirst.mockResolvedValueOnce(local).mockResolvedValueOnce(null);
+      providerFindPayments.mockResolvedValue([providerReceivedPayment]);
+      txPaymentFindUniqueOrThrow.mockResolvedValue(local);
+
+      await expect(service.reconcile(userId, paymentId)).resolves.toEqual({
+        status: PaymentStatus.PAID,
+        result: 'confirmed',
+        retryAfterSeconds: 0,
+      });
+
+      expect(providerFindPayments).toHaveBeenCalledWith('qr_123');
+      expect(txPaymentUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            providerPaymentId: 'pay_123',
+            providerEventId: null,
+            status: PaymentStatus.PAID,
+            paidAt: providerReceivedPayment.paidAt,
+          }),
+        }),
+      );
+      expect(txParticipationCreate).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('não ativa quando o Asaas ainda não possui cobrança recebida', async () => {
+    paymentFindFirst.mockResolvedValue(reconciliationPayment());
+    providerFindPayments.mockResolvedValue([]);
+
+    await expect(service.reconcile(userId, paymentId)).resolves.toMatchObject({
+      status: PaymentStatus.PENDING,
+      result: 'not_received',
+    });
+    expect(txPaymentUpdateMany).not.toHaveBeenCalled();
+    expect(txParticipationCreate).not.toHaveBeenCalled();
+  });
+
+  it.each([2, 3])(
+    'rejeita resposta ambígua com %i cobranças',
+    async (count) => {
+      paymentFindFirst.mockResolvedValue(reconciliationPayment());
+      providerFindPayments.mockResolvedValue(
+        Array.from({ length: count }, (_, index) => ({
+          ...providerReceivedPayment,
+          providerPaymentId: `pay_${index}`,
+        })),
+      );
+
+      await expect(service.reconcile(userId, paymentId)).rejects.toMatchObject({
+        response: expect.objectContaining({ code: 'ASAAS_PAYMENT_AMBIGUOUS' }),
+      });
+      expect(txPaymentUpdateMany).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ['CANCELLED', { status: PaymentStatus.CANCELLED }],
+    ['FAILED', { status: PaymentStatus.FAILED }],
+    ['provider diferente', { provider: 'outro' }],
+    ['moeda diferente', { currency: 'USD' }],
+    ['sem providerReference', { providerReference: null }],
+    [
+      'período fechado',
+      {
+        period: {
+          participationFeeCents: 2500,
+          status: ParticipationPeriodStatus.CLOSED,
+        },
+      },
+    ],
+    [
+      'taxa mensal divergente',
+      {
+        period: {
+          participationFeeCents: 2600,
+          status: ParticipationPeriodStatus.OPEN,
+        },
+      },
+    ],
+  ])('rejeita Payment local inconsistente: %s', async (_label, overrides) => {
+    paymentFindFirst.mockResolvedValue(reconciliationPayment(overrides));
+
+    await expect(service.reconcile(userId, paymentId)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(providerFindPayments).not.toHaveBeenCalled();
+    expect(txPaymentUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['valor', { amountCents: 2600 }],
+    ['billingType', { billingType: 'BOLETO' }],
+    ['pixQrCodeId', { providerReference: 'qr_outro' }],
+    [
+      'externalReference',
+      { externalReference: '44444444-4444-4444-8444-444444444444' },
+    ],
+  ])('rejeita reconciliação com %s divergente', async (_field, overrides) => {
+    paymentFindFirst.mockResolvedValue(reconciliationPayment());
+    providerFindPayments.mockResolvedValue([
+      { ...providerReceivedPayment, ...overrides },
+    ]);
+
+    await expect(service.reconcile(userId, paymentId)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(txPaymentUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejeita providerPaymentId já usado por outro Payment', async () => {
+    paymentFindFirst
+      .mockResolvedValueOnce(reconciliationPayment())
+      .mockResolvedValueOnce({ id: retryPaymentId });
+    providerFindPayments.mockResolvedValue([providerReceivedPayment]);
+
+    await expect(service.reconcile(userId, paymentId)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(txPaymentUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it('não permite reconciliar Payment de outro usuário', async () => {
+    paymentFindFirst.mockResolvedValue(null);
+
+    await expect(service.reconcile(userId, paymentId)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(providerFindPayments).not.toHaveBeenCalled();
+  });
+
+  it('aplica cooldown após uma consulta ao Asaas', async () => {
+    paymentFindFirst.mockResolvedValue(reconciliationPayment());
+    providerFindPayments.mockResolvedValue([]);
+
+    await service.reconcile(userId, paymentId);
+    await expect(service.reconcile(userId, paymentId)).rejects.toMatchObject({
+      status: 429,
+    });
+    expect(providerFindPayments).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([10, 20])(
+    'permite somente uma consulta ao Asaas em %i reconciliations simultâneas',
+    async (requestCount) => {
+      paymentFindFirst.mockResolvedValue(reconciliationPayment());
+      let releaseProvider!: (value: []) => void;
+      providerFindPayments.mockReturnValue(
+        new Promise((resolve) => {
+          releaseProvider = resolve;
+        }),
+      );
+
+      const requests = Array.from({ length: requestCount }, () =>
+        service.reconcile(userId, paymentId),
+      );
+      await Promise.resolve();
+      releaseProvider([]);
+      const results = await Promise.allSettled(requests);
+
+      expect(providerFindPayments).toHaveBeenCalledTimes(1);
+      expect(
+        results.filter((item) => item.status === 'fulfilled'),
+      ).toHaveLength(1);
+      expect(
+        results.filter(
+          (item) =>
+            item.status === 'rejected' &&
+            item.reason instanceof HttpException &&
+            item.reason.getStatus() === 429,
+        ),
+      ).toHaveLength(requestCount - 1);
+    },
+  );
+
+  it('rejeita status Asaas desconhecido como resposta inconsistente', async () => {
+    paymentFindFirst.mockResolvedValue(reconciliationPayment());
+    providerFindPayments.mockResolvedValue([
+      { ...providerReceivedPayment, status: 'MYSTERY_STATUS' },
+    ]);
+
+    await expect(service.reconcile(userId, paymentId)).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: 'ASAAS_PAYMENT_STATUS_INVALID',
+      }),
+    });
+    expect(txPaymentUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it('registra pagamento duplicado real sem substituir a Participation existente', async () => {
+    const local = reconciliationPayment({
+      id: retryPaymentId,
+      providerReference: 'qr_retry',
+    });
+    const duplicateProviderPayment = {
+      ...providerReceivedPayment,
+      providerPaymentId: 'pay_retry',
+      providerReference: 'qr_retry',
+      externalReference: retryPaymentId,
+    };
+    paymentFindFirst.mockResolvedValueOnce(local).mockResolvedValueOnce(null);
+    providerFindPayments.mockResolvedValue([duplicateProviderPayment]);
+    txPaymentFindUniqueOrThrow.mockResolvedValue(local);
+    txParticipationFindUnique.mockResolvedValue({
+      status: ParticipationStatus.ACTIVE,
+      paymentId,
+    });
+
+    await expect(
+      service.reconcile(userId, retryPaymentId),
+    ).rejects.toMatchObject({
+      status: 409,
+      response: expect.objectContaining({
+        code: 'DUPLICATE_FINANCIAL_PAYMENT_REQUIRES_REVIEW',
+      }),
+    });
+    expect(txPaymentUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: retryPaymentId }),
+        data: expect.objectContaining({
+          status: PaymentStatus.PAID,
+          providerPaymentId: 'pay_retry',
+        }),
+      }),
+    );
+    expect(txParticipationCreate).not.toHaveBeenCalled();
+  });
+
+  it('webhook tardio preenche eventId após reconciliação sem alterar paidAt', async () => {
+    const reconciled = reconciliationPayment({
+      status: PaymentStatus.PAID,
+      providerPaymentId: 'pay_123',
+      providerEventId: null,
+      paidAt: providerReceivedPayment.paidAt,
+      participation: {
+        status: ParticipationStatus.ACTIVE,
+        paymentId,
+      },
+    });
+    providerVerifyWebhook.mockResolvedValue(receivedEvent);
+    paymentFindFirst.mockResolvedValue(webhookPayment());
+    txPaymentFindUniqueOrThrow.mockResolvedValue(reconciled);
+
+    await expect(
+      service.processWebhook('asaas', webhookRequest),
+    ).resolves.toEqual({ received: true, alreadyProcessed: true });
+    expect(txPaymentUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { providerEventId: 'evt_123' },
+      }),
+    );
+    expect(txPaymentUpdateMany.mock.calls[0][0].data).not.toHaveProperty(
+      'paidAt',
+    );
+    expect(txParticipationCreate).not.toHaveBeenCalled();
+  });
+
+  it('repete webhook tardio como idempotente depois de preencher eventId', async () => {
+    let state: Record<string, unknown> & {
+      providerEventId: string | null;
+    } = reconciliationPayment({
+      status: PaymentStatus.PAID,
+      providerPaymentId: 'pay_123',
+      providerEventId: null,
+      paidAt: providerReceivedPayment.paidAt,
+      participation: {
+        status: ParticipationStatus.ACTIVE,
+        paymentId,
+      },
+    });
+    providerVerifyWebhook.mockResolvedValue(receivedEvent);
+    paymentFindFirst.mockResolvedValue(webhookPayment());
+    txPaymentFindUniqueOrThrow.mockImplementation(() =>
+      Promise.resolve({ ...state }),
+    );
+    txPaymentUpdateMany.mockImplementation(
+      ({ data }: { data: { providerEventId?: string } }) => {
+        if (data.providerEventId && state.providerEventId === null) {
+          state = { ...state, providerEventId: data.providerEventId };
+          return Promise.resolve({ count: 1 });
+        }
+        return Promise.resolve({ count: 0 });
+      },
+    );
+
+    await expect(
+      service.processWebhook('asaas', webhookRequest),
+    ).resolves.toEqual({ received: true, alreadyProcessed: true });
+    await expect(
+      service.processWebhook('asaas', webhookRequest),
+    ).resolves.toEqual({ received: true, alreadyProcessed: true });
+    expect(state.providerEventId).toBe('evt_123');
+    expect(txParticipationCreate).not.toHaveBeenCalled();
+  });
+
+  it('webhook tardio rejeita providerEventId conflitante', async () => {
+    providerVerifyWebhook.mockResolvedValue(receivedEvent);
+    paymentFindFirst.mockResolvedValue(webhookPayment());
+    txPaymentFindUniqueOrThrow.mockResolvedValue(
+      reconciliationPayment({
+        status: PaymentStatus.PAID,
+        providerPaymentId: 'pay_123',
+        providerEventId: 'evt_outro',
+        participation: {
+          status: ParticipationStatus.ACTIVE,
+          paymentId,
+        },
+      }),
+    );
+
+    await expect(
+      service.processWebhook('asaas', webhookRequest),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('dois webhooks e dez reconciliations concorrentes produzem uma única ativação', async () => {
+    let state: Record<string, unknown> & {
+      status: PaymentStatus;
+      providerPaymentId: string | null;
+      providerEventId: string | null;
+      paidAt: Date | null;
+      participation: {
+        status: ParticipationStatus;
+        paymentId: string;
+      } | null;
+    } = reconciliationPayment();
+    paymentFindFirst.mockImplementation(
+      ({ where }: { where: Record<string, unknown> }) => {
+        if ('userId' in where) {
+          return Promise.resolve(reconciliationPayment());
+        }
+        if (where.provider === 'asaas') {
+          return Promise.resolve(webhookPayment());
+        }
+        return Promise.resolve(null);
+      },
+    );
+    providerFindPayments.mockResolvedValue([providerReceivedPayment]);
+    providerVerifyWebhook.mockResolvedValue(receivedEvent);
+    txPaymentFindUniqueOrThrow.mockImplementation(() =>
+      Promise.resolve({ ...state }),
+    );
+    txPaymentUpdateMany.mockImplementation(
+      ({ data }: { data: Record<string, unknown> }) => {
+        if (data.status === PaymentStatus.PAID) {
+          if (state.status !== PaymentStatus.PENDING) {
+            return Promise.resolve({ count: 0 });
+          }
+          state = {
+            ...state,
+            status: PaymentStatus.PAID,
+            providerPaymentId: data.providerPaymentId as string,
+            providerEventId: data.providerEventId as string | null,
+            paidAt: data.paidAt as Date,
+            participation: {
+              status: ParticipationStatus.ACTIVE,
+              paymentId,
+            },
+          };
+          return Promise.resolve({ count: 1 });
+        }
+        if (data.providerEventId && state.providerEventId === null) {
+          state = {
+            ...state,
+            providerEventId: data.providerEventId as string,
+          };
+          return Promise.resolve({ count: 1 });
+        }
+        return Promise.resolve({ count: 0 });
+      },
+    );
+
+    const results = await Promise.allSettled([
+      ...Array.from({ length: 10 }, () => service.reconcile(userId, paymentId)),
+      service.processWebhook('asaas', webhookRequest),
+      service.processWebhook('asaas', webhookRequest),
+    ]);
+
+    expect(providerFindPayments).toHaveBeenCalledTimes(1);
+    expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(
+      3,
+    );
+    expect(
+      results.filter(
+        (item) =>
+          item.status === 'rejected' &&
+          item.reason instanceof HttpException &&
+          item.reason.getStatus() === 429,
+      ),
+    ).toHaveLength(9);
+    expect(txParticipationCreate).toHaveBeenCalledTimes(1);
+    expect(state).toMatchObject({
+      status: PaymentStatus.PAID,
+      providerPaymentId: 'pay_123',
+      providerEventId: 'evt_123',
+    });
+  });
+
+  it('histórico inclui Payment que se tornou PAID e exclui tentativas expiradas', async () => {
+    paymentFindMany.mockResolvedValue([
+      {
+        ...paymentWithQr(),
+        status: PaymentStatus.PAID,
+        paidAt: now,
+      },
+    ]);
+
+    await expect(service.findMine(userId)).resolves.toHaveLength(1);
+    expect(paymentFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId, status: PaymentStatus.PAID },
+      }),
+    );
+  });
 });
 
 const userId = '11111111-1111-4111-8111-111111111111';
@@ -713,6 +1143,7 @@ const receivedEvent = {
   providerReference: 'qr_123',
   amountCents: 2500,
   currency: 'BRL' as const,
+  paidAt: null,
 };
 const webhookRequest = { headers: {}, body: {} };
 
@@ -760,6 +1191,7 @@ function webhookPayment() {
     currency: 'BRL',
     method: PaymentMethod.PIX,
     provider: 'asaas',
+    providerReference: 'qr_123',
     period: {
       participationFeeCents: 2500,
       status: ParticipationPeriodStatus.OPEN,
@@ -769,10 +1201,46 @@ function webhookPayment() {
 
 function pendingWebhookPayment() {
   return {
+    id: paymentId,
     status: PaymentStatus.PENDING,
     providerPaymentId: null,
     providerEventId: null,
     userId,
     periodId,
+    participation: null,
   };
 }
+
+function reconciliationPayment(overrides: Record<string, unknown> = {}) {
+  return {
+    id: paymentId,
+    userId,
+    periodId,
+    amountCents: 2500,
+    currency: 'BRL',
+    method: PaymentMethod.PIX,
+    status: PaymentStatus.PENDING,
+    provider: 'asaas',
+    providerReference: 'qr_123',
+    providerPaymentId: null,
+    providerEventId: null,
+    paidAt: null,
+    period: {
+      participationFeeCents: 2500,
+      status: ParticipationPeriodStatus.OPEN,
+    },
+    participation: null,
+    ...overrides,
+  };
+}
+
+const providerReceivedPayment = {
+  providerPaymentId: 'pay_123',
+  providerReference: 'qr_123',
+  externalReference: paymentId,
+  status: 'RECEIVED',
+  billingType: 'PIX',
+  amountCents: 2500,
+  currency: 'BRL' as const,
+  paidAt: new Date('2026-10-07T00:00:00.000Z'),
+};

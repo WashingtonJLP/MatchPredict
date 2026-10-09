@@ -42,9 +42,16 @@ export type PixPayment = {
   pixCopyPaste: string | null;
   pixQrCode: string | null;
   expiresAt: string | null;
+  createdAt: string;
 };
 
 export type PaymentStatusResponse = Pick<
   PaymentHistoryItem,
   "id" | "status" | "paidAt" | "expiresAt"
 >;
+
+export type PaymentReconciliationResponse = {
+  status: "PENDING" | "EXPIRED" | "PAID";
+  result: "confirmed" | "not_received" | "already_paid";
+  retryAfterSeconds: number;
+};

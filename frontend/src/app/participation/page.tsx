@@ -6,11 +6,12 @@ import {
   Copy,
   History,
   QrCode,
+  RefreshCw,
   ShieldCheck,
   TriangleAlert,
   WalletCards,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -24,11 +25,16 @@ import {
   useCurrentParticipation,
   useMyPayments,
   usePaymentStatus,
+  useReconcilePayment,
   useRefreshParticipationData,
 } from "@/hooks/use-payments";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 import { toPixQrCodeImageSrc } from "@/features/participation/pix-qr-code";
+import {
+  getReconciliationCooldownMs,
+  PAYMENT_AUTO_RECONCILIATION_DELAY_MS,
+} from "@/features/participation/payment-polling";
 import type {
   CurrentParticipation,
   PaymentHistoryItem,
@@ -58,9 +64,13 @@ export default function ParticipationPage() {
   const currentPixQuery = useCurrentPixPayment();
   const paymentsQuery = useMyPayments();
   const createPix = useCreatePixPayment();
+  const reconcilePayment = useReconcilePayment();
   const refreshParticipationData = useRefreshParticipationData();
   const [pixPayment, setPixPayment] = useState<PixPayment | null>(null);
   const [pixError, setPixError] = useState<string | null>(null);
+  const [reconciliationCooldownUntil, setReconciliationCooldownUntil] =
+    useState(0);
+  const automaticReconciliations = useRef(new Set<string>());
   const displayedPixPayment = pixPayment ?? currentPixQuery.data ?? null;
   const paymentStatusQuery = usePaymentStatus(
     displayedPixPayment?.id ?? null,
@@ -68,6 +78,106 @@ export default function ParticipationPage() {
   );
   const effectivePixStatus =
     paymentStatusQuery.data?.status ?? displayedPixPayment?.status ?? null;
+
+  const handleReconcile = useCallback(
+    async (automatic = false) => {
+      if (!displayedPixPayment || reconcilePayment.isPending) {
+        return;
+      }
+
+      try {
+        const response = await reconcilePayment.mutateAsync(
+          displayedPixPayment.id,
+        );
+
+        if (response.status === "PAID") {
+          setPixPayment({ ...displayedPixPayment, status: "PAID" });
+          toast.success("Pagamento confirmado. Sua participação está ativa.");
+          await refreshParticipationData();
+          return;
+        }
+
+        setReconciliationCooldownUntil(
+          Date.now() + response.retryAfterSeconds * 1_000,
+        );
+        if (!automatic) {
+          toast.info(
+            "Seu pagamento ainda não foi confirmado. Aguarde alguns instantes e tente novamente.",
+          );
+        }
+      } catch (error) {
+        const cooldownMs = getReconciliationCooldownMs(error);
+        if (cooldownMs) {
+          setReconciliationCooldownUntil(Date.now() + cooldownMs);
+        }
+        if (!automatic) {
+          toast.error(
+            getApiErrorMessage(
+              error,
+              "Não foi possível verificar o pagamento agora. Tente novamente em instantes.",
+            ),
+          );
+        }
+      }
+    }, [
+      displayedPixPayment,
+      reconcilePayment,
+      refreshParticipationData,
+    ],
+  );
+
+  useEffect(() => {
+    if (
+      !displayedPixPayment ||
+      effectivePixStatus !== "PENDING" ||
+      automaticReconciliations.current.has(displayedPixPayment.id)
+    ) {
+      return;
+    }
+
+    const createdAt = new Date(displayedPixPayment.createdAt).getTime();
+    const delay = Math.max(
+      0,
+      createdAt + PAYMENT_AUTO_RECONCILIATION_DELAY_MS - Date.now(),
+    );
+    let visibilityHandler: (() => void) | undefined;
+
+    const attempt = () => {
+      if (document.visibilityState !== "visible") {
+        visibilityHandler = () => {
+          if (document.visibilityState === "visible") {
+            document.removeEventListener("visibilitychange", visibilityHandler!);
+            attempt();
+          }
+        };
+        document.addEventListener("visibilitychange", visibilityHandler);
+        return;
+      }
+
+      automaticReconciliations.current.add(displayedPixPayment.id);
+      void handleReconcile(true);
+    };
+
+    const timer = window.setTimeout(attempt, delay);
+    return () => {
+      window.clearTimeout(timer);
+      if (visibilityHandler) {
+        document.removeEventListener("visibilitychange", visibilityHandler);
+      }
+    };
+  }, [displayedPixPayment, effectivePixStatus, handleReconcile]);
+
+  useEffect(() => {
+    if (reconciliationCooldownUntil <= Date.now()) {
+      return;
+    }
+
+    const timer = window.setTimeout(
+      () => setReconciliationCooldownUntil(0),
+      reconciliationCooldownUntil - Date.now(),
+    );
+    return () => window.clearTimeout(timer);
+  }, [reconciliationCooldownUntil]);
 
   useEffect(() => {
     const status = paymentStatusQuery.data?.status;
@@ -171,6 +281,11 @@ export default function ParticipationPage() {
             onCopy={handleCopyPix}
             onCreateAnother={handleCreatePix}
             isCreatingPix={createPix.isPending}
+            isReconciling={reconcilePayment.isPending}
+            isReconciliationCoolingDown={
+              reconciliationCooldownUntil > Date.now()
+            }
+            onReconcile={() => void handleReconcile(false)}
           />
         ) : null}
 
@@ -274,6 +389,9 @@ type PixPaymentPanelProps = {
   onCopy: () => void;
   onCreateAnother: () => void;
   isCreatingPix: boolean;
+  isReconciling: boolean;
+  isReconciliationCoolingDown: boolean;
+  onReconcile: () => void;
 };
 
 function PixPaymentPanel({
@@ -282,6 +400,9 @@ function PixPaymentPanel({
   onCopy,
   onCreateAnother,
   isCreatingPix,
+  isReconciling,
+  isReconciliationCoolingDown,
+  onReconcile,
 }: PixPaymentPanelProps) {
   const isPending = status === "PENDING";
   const isPaid = status === "PAID";
@@ -352,6 +473,28 @@ function PixPaymentPanel({
                 Copiar código PIX
               </Button>
             </div>
+            <div className="mt-5 flex flex-col gap-3 rounded-xl bg-muted px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm leading-6 text-muted-foreground">
+                Pagou e ainda está aguardando? Consulte a confirmação no Asaas.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="shrink-0 rounded-xl font-bold"
+                onClick={onReconcile}
+                disabled={isReconciling || isReconciliationCoolingDown}
+              >
+                <RefreshCw
+                  className={cn("size-4", isReconciling && "animate-spin")}
+                  aria-hidden
+                />
+                {isReconciling
+                  ? "Verificando..."
+                  : isReconciliationCoolingDown
+                    ? "Aguarde para verificar"
+                    : "Verificar pagamento"}
+              </Button>
+            </div>
           </div>
         </div>
       ) : isPaid ? (
@@ -381,14 +524,31 @@ function PixPaymentPanel({
                 : "Gere um novo PIX para participar deste período."}
             </p>
           </div>
-          <Button
-            type="button"
-            className="rounded-xl font-bold"
-            onClick={onCreateAnother}
-            disabled={isCreatingPix}
-          >
-            Gerar novo PIX
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {isExpired ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl font-bold"
+                onClick={onReconcile}
+                disabled={isReconciling || isReconciliationCoolingDown}
+              >
+                <RefreshCw
+                  className={cn("size-4", isReconciling && "animate-spin")}
+                  aria-hidden
+                />
+                {isReconciling ? "Verificando..." : "Verificar pagamento"}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              className="rounded-xl font-bold"
+              onClick={onCreateAnother}
+              disabled={isCreatingPix}
+            >
+              Gerar novo PIX
+            </Button>
+          </div>
         </div>
       ) : null}
     </section>
@@ -437,7 +597,8 @@ function PaymentHistorySection({
             Nenhum pagamento registrado
           </p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Suas cobranças PIX aparecerão aqui sem substituir meses anteriores.
+            Seus pagamentos PIX confirmados aparecerão aqui sem substituir
+            meses anteriores.
           </p>
         </div>
       ) : (

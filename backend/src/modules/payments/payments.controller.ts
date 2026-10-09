@@ -57,4 +57,18 @@ export class PaymentsController {
   createPix(@CurrentUser() user: AuthenticatedUser) {
     return this.paymentsService.createPix(user);
   }
+
+  @Post(':paymentId/reconcile')
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Verificar uma cobrança PIX própria no provedor' })
+  @ApiResponse({
+    status: 201,
+    description: 'Resultado da verificação pontual.',
+  })
+  reconcile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('paymentId', new ParseUUIDPipe({ version: '4' })) paymentId: string,
+  ) {
+    return this.paymentsService.reconcile(user.id, paymentId);
+  }
 }

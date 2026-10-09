@@ -8,6 +8,7 @@ import {
   getCurrentPixPayment,
   getMyPayments,
   getPaymentStatus,
+  reconcilePayment,
 } from "@/services/payments-service";
 
 export function useCurrentParticipation() {
@@ -34,6 +35,12 @@ export function useCurrentPixPayment() {
 export function useCreatePixPayment() {
   return useMutation({
     mutationFn: createPixPayment,
+  });
+}
+
+export function useReconcilePayment() {
+  return useMutation({
+    mutationFn: reconcilePayment,
   });
 }
 
