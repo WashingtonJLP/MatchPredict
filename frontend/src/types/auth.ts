@@ -4,6 +4,7 @@ export type User = {
   email: string;
   role: "USER" | "ADMIN";
   avatarUrl?: string | null;
+  disabledAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };

@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { Role } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { UsersService } from './users.service';
@@ -26,7 +27,9 @@ describe('UsersService create', () => {
       name: 'Ada Lovelace',
       email: 'ADA@example.com',
       password: 'NovaSenha123',
-    });
+      role: Role.ADMIN,
+      disabledAt: null,
+    } as never);
 
     expect(result).toEqual({
       id: userId,
@@ -42,6 +45,9 @@ describe('UsersService create', () => {
     expect(result).not.toHaveProperty('resetPasswordExpiresAt');
     expect(userCreate).toHaveBeenCalledWith(
       expect.objectContaining({
+        data: expect.objectContaining({
+          role: Role.USER,
+        }),
         select: {
           id: true,
           name: true,

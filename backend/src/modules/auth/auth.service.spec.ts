@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
@@ -54,6 +54,23 @@ describe('AuthService password reset', () => {
     expect(emailService.sendPasswordResetEmail).not.toHaveBeenCalled();
   });
 
+  it('bloqueia login de conta desativada antes de comparar a senha', async () => {
+    usersService.findByEmail.mockResolvedValue({
+      id: userId,
+      email: 'disabled@example.com',
+      password: bcrypt.hashSync('NovaSenha123', 10),
+      role: 'USER',
+      disabledAt: new Date(),
+    });
+
+    await expect(
+      service.login({
+        email: 'disabled@example.com',
+        password: 'NovaSenha123',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
   it('salva hash do token e envia link quando usuario existe', async () => {
     usersService.findByEmail.mockResolvedValue({
       id: userId,
@@ -78,8 +95,8 @@ describe('AuthService password reset', () => {
     });
 
     const storedHash = userUpdate.mock.calls[0][0].data.resetPasswordToken;
-    const resetUrl =
-      emailService.sendPasswordResetEmail.mock.calls[0][0].resetUrl;
+    const resetUrl = emailService.sendPasswordResetEmail.mock.calls[0][0]
+      .resetUrl as string;
     const rawToken = new URL(resetUrl).searchParams.get('token');
 
     expect(rawToken).toHaveLength(64);
@@ -134,6 +151,24 @@ describe('AuthService password reset', () => {
     });
   });
 
+  it('rejeita token de reset emitido antes da desativacao', async () => {
+    userFindFirst.mockResolvedValue({
+      id: userId,
+      disabledAt: new Date('2026-10-09T12:00:00.000Z'),
+      resetPasswordExpiresAt: new Date(Date.now() + 1000 * 60),
+    });
+
+    await expect(
+      service.resetPassword({
+        token: 'token-anterior-a-desativacao',
+        password: 'NovaSenha123',
+        confirmPassword: 'NovaSenha123',
+      }),
+    ).rejects.toThrow(new BadRequestException('Token inválido.'));
+
+    expect(userUpdate).not.toHaveBeenCalled();
+  });
+
   it('atualiza senha e invalida token valido', async () => {
     userFindFirst.mockResolvedValue({
       id: userId,
@@ -160,7 +195,7 @@ describe('AuthService password reset', () => {
       },
     });
 
-    const hashedPassword = userUpdate.mock.calls[0][0].data.password;
+    const hashedPassword = userUpdate.mock.calls[0][0].data.password as string;
     await expect(bcrypt.compare('NovaSenha123', hashedPassword)).resolves.toBe(
       true,
     );
@@ -177,6 +212,7 @@ describe('AuthService register login and forgot password flow', () => {
     email: string;
     password: string;
     role: 'USER';
+    authVersion: number;
     resetPasswordToken: string | null;
     resetPasswordExpiresAt: Date | null;
   }>;
@@ -189,6 +225,7 @@ describe('AuthService register login and forgot password flow', () => {
         email: 'old@example.com',
         password: bcrypt.hashSync('NovaSenha123', 10),
         role: 'USER',
+        authVersion: 0,
         resetPasswordToken: null,
         resetPasswordExpiresAt: null,
       },
@@ -222,6 +259,7 @@ describe('AuthService register login and forgot password flow', () => {
               email: data.email,
               password: data.password,
               role: 'USER' as const,
+              authVersion: 0,
               resetPasswordToken: null,
               resetPasswordExpiresAt: null,
             };
@@ -286,6 +324,9 @@ describe('AuthService register login and forgot password flow', () => {
     ).resolves.toEqual({
       accessToken: 'access-token',
     });
+    expect(signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ authVersion: 0, role: 'USER' }),
+    );
 
     await service.forgotPassword({ email: 'NEW.USER@example.com' });
 

@@ -13,6 +13,7 @@ import { DailyGamesModule } from './modules/daily-games/daily-games.module';
 import { CompetitionsModule } from './modules/competitions/competitions.module';
 import { ParticipationsModule } from './modules/participations/participations.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -49,6 +50,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
     ParticipationsModule,
 
     PaymentsModule,
+
+    AdminModule,
   ],
 })
 export class AppModule {}

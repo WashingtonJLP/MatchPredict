@@ -5,7 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import {
   activeSeasonWhere,
   latestCreatedOrderBy,
@@ -56,6 +56,7 @@ export class UsersService {
         name: createUserDto.name,
         email,
         password: hashedPassword,
+        role: Role.USER,
       },
       select: {
         id: true,
@@ -77,6 +78,16 @@ export class UsersService {
         id,
       },
       select: publicUserSelect,
+    });
+  }
+
+  async findAuthStateById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        ...publicUserSelect,
+        authVersion: true,
+      },
     });
   }
 

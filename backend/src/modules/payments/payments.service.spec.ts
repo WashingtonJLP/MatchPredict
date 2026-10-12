@@ -1116,6 +1116,8 @@ const user: AuthenticatedUser = {
   name: 'Ada Lovelace',
   email: 'ada@example.com',
   role: Role.USER,
+  avatarUrl: null,
+  disabledAt: null,
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
   updatedAt: new Date('2026-01-01T00:00:00.000Z'),
 };

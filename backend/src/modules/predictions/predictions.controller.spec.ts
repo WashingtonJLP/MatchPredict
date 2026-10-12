@@ -66,6 +66,8 @@ function createAuthenticatedUser(role: Role): AuthenticatedUser {
     name: 'Ada Lovelace',
     email: 'ada@example.com',
     role,
+    avatarUrl: null,
+    disabledAt: null,
     createdAt: new Date('2026-08-01T00:00:00.000Z'),
     updatedAt: new Date('2026-08-01T00:00:00.000Z'),
   };

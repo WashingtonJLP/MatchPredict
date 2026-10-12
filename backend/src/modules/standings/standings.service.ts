@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import {
   activeSeasonWhere,
+  buildStandingPositionMap,
   latestCreatedOrderBy,
   standingRankingOrderBy,
 } from '../../common/prisma/query-presets';
@@ -48,9 +49,10 @@ export class StandingsService {
   async findActiveSeasonRanking(): Promise<RankedStanding[]> {
     const seasonId = await this.findActiveSeasonId();
     const standings = await this.findOrderedStandings(seasonId);
+    const positions = buildStandingPositionMap(standings);
 
-    return standings.map((standing, index) =>
-      this.toRankedStanding(standing, index),
+    return standings.map((standing) =>
+      this.toRankedStanding(standing, positions.get(standing.id)!),
     );
   }
 
@@ -101,10 +103,10 @@ export class StandingsService {
 
   private toRankedStanding(
     standing: StandingWithUser,
-    index: number,
+    position: number,
   ): RankedStanding {
     return {
-      position: index + 1,
+      position,
       userId: standing.user.id,
       name: standing.user.name,
       avatarUrl: standing.user.avatarUrl,
