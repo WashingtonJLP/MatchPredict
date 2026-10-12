@@ -1,163 +1,164 @@
 # Roadmap
 
-Este documento apresenta o estado atual do MatchPredict e a direção de evolução do projeto. A classificação abaixo considera o que está implementado no código atual.
-
-## Status geral
-
-O MatchPredict já possui um fluxo funcional completo para usuários autenticados criarem palpites de placar, acompanharem partidas, consultarem seus palpites, verem ranking, estatísticas e transparência. A integração esportiva atual usa APIs da ESPN, e o deploy está orientado a Docker, TrueNAS e Cloudflare Tunnel.
+Este documento separa o que já existe no código das evoluções ainda abertas. Ele não representa compromisso de prazo.
 
 ## Concluído
 
-### Usuários e autenticação
+### Conta e autenticação
 
-- [x] Cadastro de usuário.
-- [x] Login com JWT.
-- [x] Proteção de rotas autenticadas.
-- [x] Recuperação de senha por e-mail.
-- [x] Redefinição de senha com token temporário.
-- [x] Perfil do usuário autenticado.
-- [x] Atualização de dados do perfil.
+- [x] Cadastro público sempre como `USER`.
+- [x] Login e proteção de rotas com JWT.
 - [x] Política de senha forte.
+- [x] Recuperação e redefinição de senha por e-mail.
+- [x] Consulta e atualização do perfil.
+- [x] Desativação de conta com revogação de sessões por `authVersion`.
 
-### Partidas e dados esportivos
+### Jogos e competições
 
-- [x] Modelagem de liga, temporada, times, jogadores e partidas.
-- [x] Foco inicial na Premier League.
-- [x] Sincronização administrativa de liga.
-- [x] Sincronização administrativa de times.
-- [x] Sincronização administrativa de partidas.
-- [x] Sincronização administrativa de jogadores.
-- [x] Sincronização administrativa de resultados.
-- [x] Listagem autenticada de partidas.
-- [x] Filtros por status, rodada, time e intervalo de datas.
-- [x] Paginação da listagem de partidas.
-- [x] Status de fixtures e placar final quando disponível.
+- [x] Modelagem e sincronização local de liga, temporada, times, jogadores, fixtures e resultados.
+- [x] Fluxo local de palpites para a Premier League.
+- [x] Jogos do dia por data em `America/Sao_Paulo`.
+- [x] Catálogo público de competições nacionais e internacionais.
+- [x] Consulta de temporada atual e classificação esportiva.
+- [x] Visualização de grupos e mata-mata quando suportados pela competição.
+- [x] Cache adaptativo e tolerância a falhas parciais nas consultas à ESPN.
 
-### Palpites
+### Palpites e transparência
 
-- [x] Criação de palpite por placar.
-- [x] Edição de palpite próprio antes do bloqueio.
-- [x] Exclusão de palpite próprio antes do bloqueio.
-- [x] Um palpite por usuário por partida.
-- [x] Bloqueio por kickoff.
-- [x] Bloqueio por status `LIVE`.
-- [x] Bloqueio por status `FT`.
-- [x] Página "Meus Palpites" exibindo apenas palpites já feitos pelo usuário.
-- [x] Separação visual entre palpites ativos e histórico.
-- [x] Filtro de histórico por rodada no frontend.
+- [x] Criação, edição e exclusão de palpite próprio.
+- [x] Um palpite por usuário e fixture.
+- [x] Bloqueio individual por kickoff e status.
+- [x] Exigência de participação mensal ativa para criar e editar.
+- [x] Página de palpites ativos e histórico.
+- [x] Transparência com ocultação antes do fechamento.
+- [x] Resultado final e pontos na experiência de transparência.
 
-### Transparência
+### Pontuação e classificação
 
-- [x] Consulta de palpites por partida.
-- [x] Ocultação de palpites de outros usuários antes do kickoff.
-- [x] Liberação de palpites após kickoff ou durante partida ao vivo.
-- [x] Exibição de resultado final quando a partida está encerrada.
+- [x] Pontuação por placar exato, vencedor/empate e erro.
+- [x] Processamento idempotente de fixtures encerradas.
+- [x] Consolidação de standings por temporada.
+- [x] Suporte a `adjustmentPoints` materializado em `totalPoints`.
+- [x] Política única de ordenação do ranking.
+- [x] Posição dinâmica no ranking público, posição pessoal e detalhe administrativo.
+- [x] Estatísticas pessoais, incluindo média, acurácia e melhor/pior rodada.
 
-### Pontuação e ranking
+### Participação mensal e PIX
 
-- [x] Cálculo de placar exato.
-- [x] Cálculo de acerto de vencedor ou empate.
-- [x] Cálculo de erro do resultado.
-- [x] Processamento de fixtures encerradas.
-- [x] Marcação de fixture processada com `processedAt`.
-- [x] Atualização de standings.
-- [x] Ranking geral da temporada ativa.
-- [x] Ranking do usuário autenticado.
-- [x] Critérios de desempate por pontos, placares exatos, vencedores corretos, erros e data de criação.
-
-### Estatísticas
-
-- [x] Estatísticas do usuário autenticado.
-- [x] Total de palpites.
-- [x] Pontos totais.
-- [x] Média de pontos.
-- [x] Acertos de vencedor.
-- [x] Placares exatos.
-- [x] Posição atual.
-- [x] Melhor e pior rodada com base em palpites processados.
-
-### Infraestrutura e desenvolvimento
-
-- [x] Frontend Next.js.
-- [x] Backend NestJS.
-- [x] Prisma ORM.
-- [x] PostgreSQL.
-- [x] Neon como banco hospedado.
-- [x] Swagger em ambiente de desenvolvimento.
-- [x] Variáveis de ambiente.
-- [x] Dockerfiles para frontend e backend.
-- [x] Docker Compose com frontend, backend e Cloudflare Tunnel.
-- [x] Deploy orientado a TrueNAS e Cloudflare Tunnel.
-- [x] Testes automatizados no backend.
-- [x] Lint e build configurados no frontend.
-
-## Parcialmente concluído
-
-- [ ] Administração: existem endpoints administrativos no backend, mas ainda não há painel administrativo completo no frontend.
-- [ ] Temporadas: a modelagem suporta temporadas e temporada ativa, mas ainda não há experiência completa para navegação histórica de temporadas.
-- [ ] Jogadores: a sincronização e a modelagem existem, mas jogadores ainda não compõem um fluxo de palpite funcional.
-- [ ] MVP: a modelagem possui campos de MVP, mas criação, edição e pontuação por MVP não estão implementadas no fluxo atual.
-- [ ] Logs de sincronização: o model `SyncLog` existe, mas ainda não é usado de forma efetiva pelos serviços.
-- [ ] Estatísticas avançadas: existem estatísticas do usuário, mas ainda há espaço para métricas mais detalhadas, comparações e histórico.
-
-## Pendente
+- [x] `ParticipationPeriod` por mês calendário em `America/Sao_Paulo`.
+- [x] `Participation` como fonte da autorização para palpitar.
+- [x] Valor mensal fixo armazenado em centavos.
+- [x] Criação e retomada de QR PIX estático no Asaas.
+- [x] Estados locais de pagamento e histórico de pagamentos confirmados.
+- [x] Webhook autenticado para `PAYMENT_RECEIVED`.
+- [x] Ativação transacional e idempotente da participação.
+- [x] Consulta de status, `current-pix` e reconciliação pontual.
+- [x] Cooldown, retry controlado e recuperação quando o webhook atrasa.
 
 ### Administração
 
-- [ ] Painel administrativo no frontend.
-- [ ] Controle visual de sincronizações.
-- [ ] Visualização de falhas de sincronização.
-- [ ] CRUD administrativo de ligas, temporadas, times e partidas, se necessário.
-- [ ] Uso efetivo de `SyncLog`.
+- [x] Área administrativa protegida por `Role.ADMIN`.
+- [x] Dashboard com indicadores do mês e atividade recente.
+- [x] Listagem, busca, filtros e detalhe de usuários.
+- [x] Classificação e desempenho corretos no detalhe do usuário.
+- [x] Consulta de pagamentos e participações.
+- [x] Fila observacional de pendências financeiras.
+- [x] Auditoria por `AdminAuditLog`.
+- [x] Desativação e reativação com preservação de histórico.
+- [x] Confirmação explícita antes da desativação.
+- [x] Análise de impacto e exclusão restrita de conta de teste elegível.
+- [x] Navegação desktop e navegação mobile com atalhos e drawer acessível.
 
-### Experiência do usuário
+### Infraestrutura e qualidade
+
+- [x] Frontend Next.js e backend NestJS em TypeScript.
+- [x] PostgreSQL/Neon com Prisma e migrations versionadas.
+- [x] Dockerfiles multi-stage e Docker Compose.
+- [x] Cloudflare Tunnel previsto na composição de produção.
+- [x] Swagger fora de produção.
+- [x] Testes automatizados relevantes no backend e testes unitários direcionados no frontend.
+- [x] Scheduler de resultados com gate ESPN/fingerprint para reduzir atividade no Neon.
+
+## Parcialmente concluído
+
+### Múltiplas competições
+
+A experiência pública já permite navegar por várias competições, incluindo jogos, classificações e torneios. O jogo de palpites persistido, seu processamento e seu ranking continuam concentrados na Premier League. Expandir palpites para outras competições permanece uma evolução distinta.
+
+### Temporadas
+
+O banco e as integrações suportam temporadas, mas não há uma experiência completa de navegação histórica dos palpites, standings e campeões de temporadas anteriores.
+
+### Jogadores e MVP
+
+Jogadores são sincronizados e os campos de MVP permanecem no schema. Criação, edição e pontuação por MVP não fazem parte do fluxo funcional.
+
+### Sincronizações operacionais
+
+Há endpoints protegidos, scheduler e logs da aplicação. O modelo `SyncLog` ainda não é preenchido e o painel não possui controle visual de sincronizações nem uma tela dedicada às falhas esportivas.
+
+### Estatísticas
+
+As métricas principais estão implementadas. Comparações históricas, sequências e outras análises avançadas ainda não existem.
+
+## Próximos passos
+
+Estes itens já estavam alinhados à direção do projeto e continuam pertinentes:
+
+1. decidir se os campos de MVP serão removidos em trabalho próprio ou transformados em funcionalidade completa;
+2. implementar histórico navegável de temporadas e campeões;
+3. persistir informações úteis de sincronização ou remover `SyncLog` em uma decisão de modelagem específica;
+4. oferecer visibilidade operacional das sincronizações sem introduzir mutações financeiras no Admin;
+5. melhorar a atualização visual de telas sensíveis ao kickoff;
+6. ampliar testes de integração e fluxos end-to-end do frontend;
+7. avaliar a expansão do jogo de palpites para outras competições já presentes no catálogo.
+
+## Futuro
+
+### Experiência do participante
 
 - [ ] Perfil público de participantes.
-- [ ] Avatar personalizado.
-- [ ] Compartilhamento de ranking.
-- [ ] Melhor sequência de acertos.
+- [ ] Upload de avatar personalizado.
+- [ ] Compartilhamento de classificação.
+- [ ] Sequências de acertos.
 - [ ] Conquistas e medalhas.
-- [ ] Notificacoes.
+- [ ] Notificações.
 
-### Competições e temporadas
+### Competições e histórico
 
 - [ ] Histórico completo de temporadas anteriores.
 - [ ] Histórico de campeões.
-- [ ] Suporte de produto para múltiplas competições.
-- [ ] Bundesliga.
-- [ ] La Liga.
-- [ ] Serie A.
-- [ ] Brasileirão.
-- [ ] Copa do Mundo.
-- [ ] Copa Libertadores.
+- [ ] Palpites e rankings para múltiplas competições.
+- [ ] Inclusão de novas competições ainda ausentes do catálogo, quando houver demanda.
 
-### Social
+### Recursos sociais
 
 - [ ] Ligas privadas.
 - [ ] Convites por código.
-- [ ] Ranking por liga.
+- [ ] Classificação por liga privada.
 - [ ] Comentários nas partidas.
 
 ### Autenticação e plataforma
 
-- [ ] Login com Google.
-- [ ] Login com GitHub.
-- [ ] Login com Discord.
+- [ ] Login com provedores externos, como Google, GitHub ou Discord.
 - [ ] Internacionalização.
-- [ ] Aplicativo mobile.
+- [ ] Aplicativo móvel nativo.
 
-## Itens que não fazem mais sentido como descritos originalmente
+## Fora da direção atual
 
-- Deploy em Vercel e Railway não representa a topologia atual documentada, que usa Docker, TrueNAS e Cloudflare Tunnel.
-- API-Football não representa a integração atual; o código usa APIs da ESPN.
-- MVP obrigatório no palpite não representa o contrato atual, que aceita apenas placar.
-- "Desenvolvimento será iniciado" não representa mais o estado do projeto, pois a aplicação já possui frontend, backend, banco, autenticação e fluxos principais implementados.
+Não fazem parte do produto implementado nem deste roadmap:
 
-## Próximos passos recomendados
+- prêmio, premiação ou rateio;
+- carteira ou saque;
+- odds ou apostas;
+- promoção de `USER` para `ADMIN` pela interface;
+- edição manual, marcação como pago, estorno ou alteração de valor de pagamentos;
+- ativação financeira manual de participação.
 
-1. Criar painel administrativo mínimo para acompanhar sincronizações e executar rotinas com mais segurança operacional.
-2. Persistir logs reais no model `SyncLog`.
-3. Melhorar a atualização visual de páginas sensíveis a horário, como "Meus Palpites", no momento do kickoff.
-4. Definir se MVP será removido do modelo ou implementado como funcionalidade real.
-5. Evoluir histórico de temporadas antes de adicionar múltiplas competições.
-6. Ampliar testes de integração e fluxos end-to-end do frontend.
+## Decisões já superadas
+
+- O painel administrativo não é mais uma entrega futura: ele já cobre a operação atual, exceto o acompanhamento específico de sincronizações.
+- A participação mensal e o pagamento PIX não são mais propostas: o fluxo com Asaas, webhook e reconciliação está implementado.
+- A integração esportiva atual é ESPN, não API-Football.
+- MVP obrigatório não corresponde ao contrato atual, que aceita somente placar.
+- O repositório está orientado a containers e Cloudflare Tunnel; referências antigas a uma aplicação ainda não iniciada ou a uma topologia Vercel/Railway não representam o estado atual.
