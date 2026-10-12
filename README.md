@@ -1,8 +1,25 @@
-# MatchPredict
+<div align="center">
 
-MatchPredict é uma plataforma full-stack de palpites de futebol. Usuários acompanham jogos e competições, participam mensalmente via PIX, registram placares antes do kickoff e consultam transparência, pontuação, classificação e estatísticas. Uma área administrativa protegida reúne a operação de usuários, pagamentos, participações, pendências e auditoria.
+<h1>MatchPredict</h1>
 
-![MatchPredict](docs/images/MatchPredict.png)
+<h3>Uma plataforma de palpites de futebol</h3>
+
+<p>
+  Acompanhe jogos e competições, registre seus palpites e dispute posições no ranking.<br>
+  O MatchPredict está disponível online.
+</p>
+
+<a href="https://matchpredict.com.br">
+  <img src="https://img.shields.io/badge/Acessar_MatchPredict-65A30D?style=for-the-badge" alt="Acessar MatchPredict">
+</a>
+
+<br><br>
+
+<img src="docs/images/MatchPredict.png" alt="Identidade visual do MatchPredict" width="720">
+
+</div>
+
+MatchPredict é uma plataforma full-stack em que usuários acompanham jogos e competições, participam mensalmente via PIX, registram placares antes do kickoff e consultam transparência, pontuação, classificação e estatísticas. Uma área administrativa protegida reúne a operação de usuários, pagamentos, participações, pendências e auditoria.
 
 ## Funcionalidades
 
