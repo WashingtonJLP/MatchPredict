@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   PieChart,
+  ShieldCheck,
   Trophy,
   UserRound,
   WalletCards,
@@ -114,6 +115,17 @@ const sidebarSections: SidebarSection[] = [
   },
 ];
 
+const adminSidebarSection: SidebarSection = {
+  label: "Administração",
+  links: [
+    {
+      href: "/admin",
+      label: "Área administrativa",
+      icon: ShieldCheck,
+    },
+  ],
+};
+
 type DashboardShellProps = {
   children: React.ReactNode;
 };
@@ -150,9 +162,16 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const { user, logout } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [currentHash, setCurrentHash] = useState("");
+  const visibleSidebarSections = useMemo(
+    () =>
+      user?.role === "ADMIN"
+        ? [...sidebarSections, adminSidebarSection]
+        : sidebarSections,
+    [user?.role],
+  );
   const mobileLinks = useMemo(
-    () => sidebarSections.flatMap((section) => section.links),
-    [],
+    () => visibleSidebarSections.flatMap((section) => section.links),
+    [visibleSidebarSections],
   );
 
   useEffect(() => {
@@ -233,7 +252,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           className="mt-8 min-h-0 flex-1 space-y-7 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           aria-label="Navegação principal"
         >
-          {sidebarSections.map((section) => (
+          {visibleSidebarSections.map((section) => (
             <div key={section.label} className="space-y-2">
               <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-primary-foreground">
                 {section.label}
@@ -371,7 +390,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           className="mt-8 min-h-0 flex-1 space-y-7 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           aria-label="Navegação principal"
         >
-          {sidebarSections.map((section) => (
+          {visibleSidebarSections.map((section) => (
             <div key={section.label} className="space-y-2">
               <p className="px-4 text-xs font-extrabold uppercase tracking-wide text-primary-foreground">
                 {section.label}

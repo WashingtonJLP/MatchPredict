@@ -2,6 +2,7 @@ import { httpClient } from "@/services/http-client";
 import type {
   CurrentParticipation,
   PaymentHistoryItem,
+  PaymentReconciliationResponse,
   PaymentStatusResponse,
   PixPayment,
 } from "@/types/payment";
@@ -37,6 +38,14 @@ export async function createPixPayment() {
 export async function getPaymentStatus(paymentId: string) {
   const { data } = await httpClient.get<PaymentStatusResponse>(
     `/payments/${paymentId}/status`,
+  );
+
+  return data;
+}
+
+export async function reconcilePayment(paymentId: string) {
+  const { data } = await httpClient.post<PaymentReconciliationResponse>(
+    `/payments/${paymentId}/reconcile`,
   );
 
   return data;

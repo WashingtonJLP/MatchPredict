@@ -20,13 +20,33 @@ describe('request DTO validation', () => {
     forbidNonWhitelisted: true,
   });
 
-  it('rejects role mass assignment on register', async () => {
+  it.each([
+    { role: 'ADMIN' },
+    { role: 'admin' },
+    { role: 'USER', disabledAt: null },
+    {
+      disabledAt: null,
+      id: '11111111-1111-4111-8111-111111111111',
+      createdAt: '2026-10-09T00:00:00.000Z',
+      updatedAt: '2026-10-09T00:00:00.000Z',
+    },
+  ])('rejects register mass assignment: %j', async (extraFields) => {
     await expect(
       transform(RegisterDto, {
         name: 'Ada Lovelace',
         email: 'ada@example.com',
         password: 'NovaSenha123',
+        ...extraFields,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects role and account-state mass assignment on profile update', async () => {
+    await expect(
+      transform(UpdateUserDto, {
+        name: 'Ada Lovelace',
         role: 'ADMIN',
+        disabledAt: null,
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });

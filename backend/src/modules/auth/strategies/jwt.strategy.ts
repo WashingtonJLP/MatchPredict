@@ -21,12 +21,25 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const user = await this.usersService.findById(payload.sub);
+    const user = await this.usersService.findAuthStateById(payload.sub);
 
-    if (!user) {
+    if (
+      !user ||
+      user.disabledAt ||
+      (payload.authVersion ?? 0) !== user.authVersion
+    ) {
       throw new UnauthorizedException('Usuário não encontrado.');
     }
 
-    return user;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      disabledAt: user.disabledAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 }

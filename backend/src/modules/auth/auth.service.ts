@@ -42,7 +42,7 @@ export class AuthService {
     const user = await this.usersService.findByEmail(loginDto.email);
 
     // Se não existir, retorna erro
-    if (!user) {
+    if (!user || user.disabledAt) {
       throw new UnauthorizedException('E-mail ou senha inválidos.');
     }
 
@@ -62,6 +62,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      authVersion: user.authVersion,
     };
 
     // Gera e retorna o token
@@ -73,7 +74,7 @@ export class AuthService {
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const user = await this.usersService.findByEmail(forgotPasswordDto.email);
 
-    if (!user) {
+    if (!user || user.disabledAt) {
       return {
         message: forgotPasswordMessage,
       };
@@ -121,11 +122,16 @@ export class AuthService {
       },
       select: {
         id: true,
+        disabledAt: true,
         resetPasswordExpiresAt: true,
       },
     });
 
     if (!user) {
+      throw new BadRequestException('Token inválido.');
+    }
+
+    if (user.disabledAt) {
       throw new BadRequestException('Token inválido.');
     }
 

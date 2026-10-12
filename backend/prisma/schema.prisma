@@ -48,6 +48,12 @@ enum PaymentStatus {
   FAILED
 }
 
+enum AdminAuditAction {
+  USER_DELETED
+  USER_DISABLED
+  USER_REACTIVATED
+}
+
 model User {
   id String @id @default(uuid()) @db.Uuid
 
@@ -57,7 +63,9 @@ model User {
 
   role Role @default(USER)
 
-  avatarUrl String? @map("avatar_url")
+  avatarUrl   String?   @map("avatar_url")
+  disabledAt  DateTime? @map("disabled_at")
+  authVersion Int       @default(0) @map("auth_version")
 
   resetPasswordToken     String?   @unique @map("reset_password_token")
   resetPasswordExpiresAt DateTime? @map("reset_password_expires_at")
@@ -66,11 +74,36 @@ model User {
   standings      Standing[]
   participations Participation[]
   payments       Payment[]
+  adminAuditLogs AdminAuditLog[] @relation("AdminAuditActor")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([disabledAt])
+  @@index([role, createdAt])
+  @@index([disabledAt, createdAt])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_name_trgm_idx")
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_email_trgm_idx")
   @@map("users")
+}
+
+model AdminAuditLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  adminUserId String           @map("admin_user_id") @db.Uuid
+  action      AdminAuditAction
+  targetType  String           @map("target_type")
+  targetId    String           @map("target_id")
+  metadata    Json?
+
+  adminUser User @relation("AdminAuditActor", fields: [adminUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([adminUserId, createdAt])
+  @@index([targetType, targetId])
+  @@index([action, createdAt])
+  @@map("admin_audit_logs")
 }
 
 model ParticipationPeriod {
@@ -116,6 +149,7 @@ model Participation {
   @@unique([userId, periodId])
   @@index([userId, status])
   @@index([periodId])
+  @@index([status, createdAt])
   @@map("participations")
 }
 
@@ -151,6 +185,7 @@ model Payment {
   @@unique([provider, providerReference])
   @@index([userId, createdAt])
   @@index([periodId])
+  @@index([status, createdAt])
   @@map("payments")
 }
 
@@ -196,9 +231,7 @@ model Season {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([leagueId, year])
-
   @@index([leagueId])
-
   @@map("seasons")
 }
 

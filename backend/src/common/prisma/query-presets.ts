@@ -5,6 +5,8 @@ export const publicUserSelect = {
   name: true,
   email: true,
   role: true,
+  avatarUrl: true,
+  disabledAt: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -37,3 +39,23 @@ export const standingRankingOrderBy = [
     createdAt: 'asc',
   },
 ] satisfies Prisma.StandingOrderByWithRelationInput[];
+
+type OrderedStandingIdentity = {
+  id: string;
+  seasonId: string;
+};
+
+export function buildStandingPositionMap(
+  orderedStandings: readonly OrderedStandingIdentity[],
+) {
+  const positions = new Map<string, number>();
+  const seasonCounts = new Map<string, number>();
+
+  for (const standing of orderedStandings) {
+    const position = (seasonCounts.get(standing.seasonId) ?? 0) + 1;
+    seasonCounts.set(standing.seasonId, position);
+    positions.set(standing.id, position);
+  }
+
+  return positions;
+}

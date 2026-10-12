@@ -18,6 +18,11 @@ export class DisabledPixPaymentProvider implements PixPaymentProvider {
     throw this.notConfigured();
   }
 
+  findPaymentsByPixQrCodeId(providerReference: string): Promise<never> {
+    void providerReference;
+    throw this.notConfigured();
+  }
+
   verifyWebhook(request: PixWebhookRequest): Promise<never> {
     void request;
     throw this.notConfigured();

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const authCookieName = "matchpredict_token";
 const privateRoutes = [
+  "/admin",
   "/dashboard",
   "/matches",
   "/participation",
@@ -40,6 +41,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/admin/:path*",
     "/dashboard/:path*",
     "/matches/:path*",
     "/participation/:path*",

@@ -2,14 +2,14 @@ import type { LucideIcon } from "lucide-react";
 
 type StatCardProps = {
   title: string;
-  value: string | number;
+  value: React.ReactNode;
   description?: string;
   icon?: LucideIcon;
 };
 
 export function StatCard({ title, value, description, icon: Icon }: StatCardProps) {
   return (
-    <article className="group rounded-2xl border border-border bg-card p-5 shadow-sm shadow-primary/5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg hover:shadow-primary/10 sm:p-6">
+    <article className="group h-full rounded-2xl border border-border bg-card p-5 shadow-sm shadow-primary/5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg hover:shadow-primary/10 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-sm font-semibold leading-6 text-muted-foreground">

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 
 type PaginationProps = {
+  itemLabel?: string;
   page: number;
   total: number;
   totalPages: number;
@@ -8,6 +9,7 @@ type PaginationProps = {
 };
 
 export function Pagination({
+  itemLabel = "partidas",
   page,
   total,
   totalPages,
@@ -18,7 +20,7 @@ export function Pagination({
   return (
     <div className="flex flex-col items-stretch justify-between gap-4 rounded-2xl border border-border bg-card px-4 py-4 shadow-sm shadow-primary/5 sm:flex-row sm:items-center sm:px-5">
       <p className="text-center text-base font-medium text-muted-foreground sm:text-left">
-        Página {page} de {safeTotalPages} - {total} partidas
+        Página {page} de {safeTotalPages} - {total} {itemLabel}
       </p>
       <div className="grid grid-cols-2 gap-2 sm:flex">
         <Button

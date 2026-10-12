@@ -16,6 +16,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
   const isPrivateRoute = [
+    "/admin",
     "/dashboard",
     "/matches",
     "/participation",

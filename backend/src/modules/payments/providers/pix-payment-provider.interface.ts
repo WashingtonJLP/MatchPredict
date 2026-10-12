@@ -15,6 +15,17 @@ export type PixChargeResult = {
   expiresAt: Date;
 };
 
+export type PixProviderPayment = {
+  providerPaymentId: string;
+  providerReference: string;
+  externalReference: string;
+  status: string;
+  billingType: string;
+  amountCents: number;
+  currency: 'BRL';
+  paidAt: Date | null;
+};
+
 export type PixWebhookRequest = {
   headers: Record<string, string | string[] | undefined>;
   rawBody?: Buffer;
@@ -29,6 +40,7 @@ export type VerifiedPixWebhookEvent =
       providerReference: string;
       amountCents: number;
       currency: 'BRL';
+      paidAt: Date | null;
     }
   | {
       kind: 'ignored';
@@ -50,5 +62,8 @@ export interface PixPaymentProvider {
   readonly name: string;
   isConfigured(): boolean;
   createPixCharge(input: CreatePixChargeInput): Promise<PixChargeResult>;
+  findPaymentsByPixQrCodeId(
+    providerReference: string,
+  ): Promise<PixProviderPayment[]>;
   verifyWebhook(request: PixWebhookRequest): Promise<VerifiedPixWebhookEvent>;
 }
