@@ -181,7 +181,7 @@ O sistema deve disponibilizar publicamente a classificação da temporada ativa 
 - A posição deve ser calculada pela ordem oficial, não pelo campo legado `Standing.position`.
 - A ordem deve considerar, nesta sequência: `totalPoints` decrescente, `exactScores` decrescente, `correctWinners` decrescente, `wrongPredictions` crescente e `createdAt` crescente.
 - A resposta deve incluir posição, usuário e estatísticas acumuladas.
-- Quando não houver standing para o usuário autenticado, a resposta deve representar desempenho zerado.
+- Quando não houver standing para o usuário autenticado, a consulta individual deve retornar `404 Not Found`.
 - Ajustes administrativos já materializados em `totalPoints` devem participar normalmente da ordenação.
 
 ### RF20 — Estatísticas pessoais
