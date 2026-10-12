@@ -2,111 +2,95 @@
 
 ## Visão geral
 
-MatchPredict é uma plataforma full-stack de palpites de futebol. O sistema permite que usuários criem uma conta, autentiquem-se, acompanhem partidas sincronizadas, registrem palpites de placar antes do início dos jogos e acompanhem pontuação, ranking, estatísticas e transparência dos palpites.
+MatchPredict é uma plataforma full-stack de palpites de futebol. O produto reúne calendário de jogos, palpites de placar, transparência após o início das partidas, pontuação, classificação entre participantes, consulta de competições e uma participação mensal vinculada a pagamento via PIX.
 
-A versão atual está focada na Premier League e utiliza dados esportivos obtidos por integração com APIs da ESPN. A modelagem já contempla ligas, temporadas, times, partidas, jogadores, palpites e standings, mas a experiência pública atual é concentrada na temporada ativa.
+A aplicação separa a experiência do participante da operação administrativa. Usuários comuns acompanham jogos, registram palpites e consultam seu desempenho. Administradores acompanham usuários, pagamentos, participações, pendências financeiras e auditoria, além de poderem desativar, reativar ou excluir contas dentro das restrições de segurança existentes.
 
-O projeto foi construído como aplicação de portfólio com separação clara entre frontend, backend e banco de dados. O frontend consome a API do backend, o backend concentra autenticação, regras de negócio, sincronização, processamento de resultados e persistência, e o PostgreSQL armazena os dados da aplicação.
+## Proposta do produto
 
-## Objetivos do projeto
+O MatchPredict busca oferecer uma experiência simples e verificável para uma competição de palpites:
 
-- Oferecer uma experiência simples para palpites de futebol por placar.
-- Bloquear criação, edição e exclusão de palpites quando a partida inicia ou entra em estado não editável.
-- Automatizar sincronização de partidas, resultados e processamento de pontuação.
-- Exibir ranking e estatísticas da temporada ativa.
-- Dar transparência aos palpites de cada partida depois do início do jogo.
-- Manter uma arquitetura compreensível e demonstrável como projeto full-stack.
+- reunir jogos de diferentes competições em uma interface única;
+- aceitar um palpite de placar por usuário e partida enquanto a edição estiver permitida;
+- fechar palpites de acordo com o kickoff e o estado da partida;
+- tornar os palpites transparentes no momento definido pelas regras do produto;
+- calcular pontos e ordenar a classificação de forma consistente;
+- controlar a elegibilidade mensal por meio de uma participação ativa;
+- registrar pagamentos PIX e reconciliar seu estado com o provedor;
+- dar suporte operacional por meio de uma área administrativa protegida.
 
-## Funcionalidades implementadas
+## Principais funcionalidades
 
-- Cadastro e login de usuários com JWT.
-- Recuperação e redefinição de senha por e-mail.
-- Perfil do usuário autenticado.
-- Listagem de partidas com filtros e paginação.
-- Registro, edição e exclusão de palpites antes do bloqueio.
-- Página "Meus Palpites" mostrando apenas palpites já feitos pelo usuário, separados entre ativos e histórico.
-- Transparência de palpites por partida.
-- Sincronização administrativa de liga, times, partidas, jogadores e resultados a partir da ESPN.
-- Scheduler para atualização periódica de resultados e processamento de fixtures finalizadas.
-- Cálculo de pontuação por placar.
-- Ranking geral e ranking do usuário autenticado.
-- Estatísticas do usuário.
-- Documentação de API via Swagger em ambiente de desenvolvimento.
+### Conta e autenticação
+
+- cadastro público de usuários comuns;
+- login com JWT;
+- recuperação e redefinição de senha por e-mail;
+- consulta e atualização do perfil;
+- invalidação de sessões quando uma conta é desativada ou reativada.
+
+### Jogos, palpites e transparência
+
+- consulta de jogos por data e de partidas da temporada ativa;
+- criação, edição e exclusão de palpites próprios antes do bloqueio;
+- área de palpites ativos e histórico do usuário;
+- bloqueio de alterações conforme kickoff e estado da partida;
+- visualização dos palpites dos demais participantes somente após a liberação prevista pela regra de transparência;
+- processamento de resultados e atribuição de pontos.
+
+### Classificação e competições
+
+- classificação da temporada ativa e posição do usuário autenticado;
+- estatísticas individuais de desempenho;
+- catálogo de competições nacionais e internacionais;
+- consulta de temporadas, classificações esportivas e fases eliminatórias quando a competição oferece esses dados.
+
+### Participação mensal e PIX
+
+- período de participação baseado no mês calendário em `America/Sao_Paulo`;
+- cobrança mensal de R$ 25,00, armazenada como 2.500 centavos;
+- criação e retomada de pagamento PIX;
+- histórico e consulta de status dos pagamentos;
+- confirmação por webhook e reconciliação pontual com o Asaas;
+- ativação da participação após a confirmação de um pagamento elegível.
+
+Um pagamento `PENDING` não autoriza palpites. A autorização efetiva depende de uma `Participation` com status `ACTIVE` no período correspondente à partida.
+
+### Área administrativa
+
+A área `/admin` é restrita a contas `ADMIN` e oferece:
+
+- visão geral com indicadores operacionais;
+- listagem e detalhe de usuários, incluindo classificação e desempenho;
+- consulta de pagamentos e participações;
+- acompanhamento de pendências financeiras;
+- auditoria de ações administrativas;
+- desativação e reativação de contas com preservação do histórico;
+- análise prévia e exclusão definitiva somente quando as restrições de segurança permitem.
+
+O cadastro público sempre cria uma conta `USER`; não existe promoção para `ADMIN` pela interface.
+
+## Fluxo básico do usuário
+
+1. O usuário cria uma conta ou entra com suas credenciais.
+2. Consulta os jogos disponíveis e o período mensal correspondente.
+3. Obtém uma participação ativa para o período por meio do fluxo de pagamento PIX.
+4. Registra ou ajusta palpites enquanto a partida ainda está aberta.
+5. Após o kickoff, acompanha o jogo e a transparência dos palpites.
+6. Com o resultado processado, consulta seus pontos, estatísticas e posição na classificação.
+
+## Arquitetura em alto nível
+
+- O frontend em Next.js e React entrega as experiências pública, autenticada e administrativa.
+- O backend em NestJS expõe uma API REST sob `/api/v1`, aplica autenticação, autorização e regras de negócio e integra os serviços externos.
+- O Prisma centraliza o acesso ao PostgreSQL, hospedado no Neon no ambiente de produção.
+- A ESPN fornece dados de jogos, resultados e competições.
+- O Asaas é o provedor usado no fluxo de pagamentos PIX.
+- Um scheduler sincroniza resultados e processa partidas concluídas, com verificações que evitam trabalho recorrente desnecessário no banco.
+- Docker e Docker Compose organizam a execução dos serviços do projeto.
 
 ## Escopo atual
 
-O escopo funcional atual cobre a jornada principal do usuário:
+O produto implementa a jornada principal de cadastro, participação mensal, palpites, transparência, pontuação e classificação, além da operação administrativa correspondente. A modelagem ainda contém campos para MVP de jogador, mas esse componente não participa da pontuação funcional atual.
 
-1. criar conta ou entrar;
-2. consultar partidas;
-3. registrar palpites antes do kickoff;
-4. acompanhar palpites ativos e histórico;
-5. consultar transparência, ranking e estatísticas.
-
-As funcionalidades administrativas existem principalmente como endpoints protegidos para sincronização e processamento. Não há, nesta versão, um painel administrativo completo no frontend.
-
-## Tecnologias
-
-### Frontend
-
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- TanStack Query
-- Axios
-- React Hook Form
-- Zod
-- Lucide React
-- Sonner
-
-### Backend
-
-- NestJS
-- TypeScript
-- Prisma ORM
-- JWT com Passport
-- Class Validator e Class Transformer
-- Swagger
-- NestJS Schedule
-- NestJS Throttler
-- Nodemailer
-
-### Banco de dados
-
-- PostgreSQL
-- Neon em ambiente hospedado
-
-### Dados esportivos
-
-- APIs da ESPN
-
-### Deploy e infraestrutura
-
-- Docker
-- Docker Compose
-- TrueNAS
-- Cloudflare Tunnel
-
-## Arquitetura resumida
-
-O frontend Next.js entrega a interface pública e autenticada. Ele usa services HTTP e hooks de dados para consumir a API REST do backend.
-
-O backend NestJS expõe os módulos de autenticação, usuários, futebol, palpites e standings. Ele aplica as regras de negócio, valida entradas por DTOs, protege rotas autenticadas com JWT e restringe rotas administrativas a usuários `ADMIN`.
-
-O Prisma centraliza o acesso ao PostgreSQL. A integração com a ESPN alimenta liga, times, jogadores, partidas e resultados. O processamento de resultados calcula pontuação e atualiza standings da temporada ativa.
-
-## Regras centrais
-
-- Um usuário só pode criar, editar ou excluir palpite próprio antes do kickoff e enquanto a partida não estiver `LIVE` nem `FT`.
-- Cada usuário pode ter apenas um palpite por partida.
-- A pontuação atual é baseada no placar: 3 pontos para placar exato, 1 ponto para acerto de vencedor ou empate, 0 para erro.
-- Palpites de outros usuários ficam ocultos antes do início da partida e são liberados pela regra de transparência depois do kickoff ou quando a partida está ao vivo.
-
-## Limitações conhecidas
-
-- A modelagem possui campos e relações para MVP, mas o fluxo funcional atual de palpite e pontuação por MVP não está implementado.
-- A modelagem suporta mais de uma liga e temporada, mas o produto atual trabalha com a temporada ativa como foco principal.
-- O frontend não possui painel administrativo completo.
-- O model `SyncLog` existe no schema, mas ainda não é usado de forma efetiva para registrar sincronizações.
-- Histórico completo de temporadas anteriores, ligas privadas, convites, notificações, OAuth, aplicativo mobile e internacionalização permanecem como evoluções futuras.
+Recursos como ligas privadas, convites, premiações, carteira, saques, odds, apostas, aplicativo móvel nativo e internacionalização não fazem parte da implementação atual.
