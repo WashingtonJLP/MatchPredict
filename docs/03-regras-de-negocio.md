@@ -149,7 +149,7 @@ Este documento registra as regras efetivamente aplicadas pelo MatchPredict. O ba
 - Somente o estado externo `RECEIVED` confirma o pagamento; demais estados permanecem sem ativação.
 - A reconciliação possui cooldown de dois minutos por pagamento e rate limit no endpoint.
 - Se o webhook chegar depois de uma reconciliação válida, o evento completa a correlação sem duplicar pagamento ou participação.
-- Não existe polling, cron financeiro ou confirmação automática periódica de pagamentos.
+- O backend não possui polling nem cron financeiro. Enquanto a página de participação está aberta e o PIX permanece `PENDING`, o frontend consulta o status a cada 30 segundos e agenda uma única tentativa automática de reconciliação após 90 segundos, somente com a página visível.
 
 ## Palpites e transparência
 
