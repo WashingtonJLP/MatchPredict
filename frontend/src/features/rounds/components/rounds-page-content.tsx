@@ -24,6 +24,7 @@ import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
   formatHighlightNames,
+  getBestHighlightCaption,
   getRoundContentState,
   getRoundStatusCopy,
   getRoundsCatalogState,
@@ -31,6 +32,7 @@ import {
 import { useRoundStats, useRoundsCatalog } from "@/hooks/use-rounds";
 import { cn } from "@/lib/utils";
 import type {
+  RoundBestHighlightParticipant,
   RoundCatalogCompetition,
   RoundCatalogSeason,
   RoundHighlightParticipant,
@@ -458,8 +460,10 @@ function RoundHighlights({
 function FeaturedHighlight({
   participant,
 }: {
-  participant: RoundHighlightParticipant | null;
+  participant: RoundBestHighlightParticipant | null;
 }) {
+  const caption = getBestHighlightCaption(participant);
+
   return (
     <article className="relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-xl shadow-primary/20 sm:p-8">
       <div className="flex items-start justify-between gap-5">
@@ -480,9 +484,11 @@ function FeaturedHighlight({
                   pts
                 </span>
               </p>
-              <p className="mt-5 text-sm font-semibold text-primary-foreground/65">
-                1º lugar após todos os critérios de desempate
-              </p>
+              {caption ? (
+                <p className="mt-5 text-sm font-semibold text-primary-foreground/65">
+                  {caption}
+                </p>
+              ) : null}
             </>
           ) : (
             <p className="mt-5 max-w-md text-base font-semibold leading-7 text-primary-foreground/70">
@@ -516,21 +522,21 @@ function MetricHighlight({
   return (
     <article
       className={cn(
-        "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 p-5 sm:p-6",
+        "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 bg-muted/15 p-5 sm:p-6",
         divided && "border-t border-border",
       )}
     >
-      <span className="flex size-11 items-center justify-center rounded-xl bg-muted text-foreground">
+      <span className="flex size-10 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground">
         <Icon className="size-5" aria-hidden />
       </span>
       <div className="min-w-0">
-        <p className="text-sm font-bold text-muted-foreground">{label}</p>
-        <p className="mt-1 truncate text-lg font-extrabold text-card-foreground">
+        <p className="text-xs font-bold text-muted-foreground">{label}</p>
+        <p className="mt-1 truncate text-base font-extrabold text-card-foreground">
           {formatHighlightNames(participants)}
         </p>
       </div>
       <div className="text-right">
-        <p className="text-3xl font-black text-foreground tabular-nums">
+        <p className="text-2xl font-black text-foreground tabular-nums">
           {participants.length ? value : "—"}
         </p>
         {participants.length ? (
@@ -559,11 +565,11 @@ function WorstHighlight({
           Pior desempenho
         </p>
         <p className="mt-1 truncate text-lg font-extrabold text-card-foreground">
-          {participant?.name ?? "Aguardando rodada completa"}
+          {participant?.name ?? "Sem comparação disponível"}
         </p>
         {!participant ? (
           <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
-            Exige ao menos dois participantes com todos os palpites.
+            Exige ao menos dois participantes com palpites avaliados.
           </p>
         ) : null}
       </div>

@@ -41,6 +41,14 @@ export type RoundRankingEntry = {
   accuracy: number | null;
 };
 
+export type RoundBestTieBreakCriterion =
+  | 'EXACT_SCORES'
+  | 'CORRECT_WINNERS'
+  | 'FEWER_WRONG_PREDICTIONS'
+  | 'EARLIER_REGISTRATION'
+  | 'EARLIER_PREDICTION'
+  | 'STABLE_ID';
+
 type MutableRoundRankingEntry = Omit<
   RoundRankingEntry,
   'position' | 'accuracy'
@@ -280,19 +288,14 @@ export class RoundsService {
     const publicPredictions = predictions.filter((prediction) =>
       publicFixtureIds.has(prediction.fixtureId),
     );
-    const ranking = this.buildRanking(publicPredictions, evaluatedFixtureIds);
+    const { ranking, bestTieBreakCriterion } = this.buildRanking(
+      publicPredictions,
+      evaluatedFixtureIds,
+    );
     const ownPredictions = predictions.filter(
       (prediction) => prediction.userId === userId,
     );
     const ownRankingEntry = ranking.find((entry) => entry.userId === userId);
-    const allFixturesAreTransparent =
-      eligibleFixtures.length > 0 &&
-      publicFixtures.length === eligibleFixtures.length;
-    const fullyParticipatingUserIds = this.findFullyParticipatingUserIds(
-      predictions,
-      eligibleFixtureIds,
-    );
-
     return {
       status: this.resolveRoundStatus(
         eligibleFixtures.length,
@@ -317,11 +320,7 @@ export class RoundsService {
             fixture.awayGoals === null ||
             fixture.processedAt === null),
       ),
-      highlights: this.buildHighlights(
-        ranking,
-        allFixturesAreTransparent,
-        fullyParticipatingUserIds,
-      ),
+      highlights: this.buildHighlights(ranking, bestTieBreakCriterion),
       myPerformance: this.buildMyPerformance(
         ownRankingEntry,
         ownPredictions.length,
@@ -436,7 +435,7 @@ export class RoundsService {
   private buildRanking(
     predictions: RoundPrediction[],
     evaluatedFixtureIds: Set<string>,
-  ): RoundRankingEntry[] {
+  ) {
     const entries = new Map<string, MutableRoundRankingEntry>();
 
     for (const prediction of predictions) {
@@ -472,62 +471,51 @@ export class RoundsService {
       entries.set(prediction.userId, current);
     }
 
-    return [...entries.values()]
-      .sort(compareRoundPerformance)
-      .map((entry, index) => ({
-        userId: entry.userId,
-        name: entry.name,
-        avatarUrl: entry.avatarUrl,
-        position: index + 1,
-        naturalPoints: entry.naturalPoints,
-        predictionsCount: entry.predictionsCount,
-        evaluatedPredictions: entry.evaluatedPredictions,
-        exactScores: entry.exactScores,
-        correctWinners: entry.correctWinners,
-        wrongPredictions: entry.wrongPredictions,
-        accuracy:
-          entry.evaluatedPredictions > 0
-            ? Math.round(
-                (entry.correctWinners / entry.evaluatedPredictions) * 1000,
-              ) / 10
-            : null,
-      }));
-  }
-
-  private findFullyParticipatingUserIds(
-    predictions: RoundPrediction[],
-    eligibleFixtureIds: string[],
-  ) {
-    const eligibleIds = new Set(eligibleFixtureIds);
-    const predictionsByUser = new Map<string, Set<string>>();
-
-    for (const prediction of predictions) {
-      if (!eligibleIds.has(prediction.fixtureId)) {
-        continue;
-      }
-
-      const fixtureIds = predictionsByUser.get(prediction.userId) ?? new Set();
-      fixtureIds.add(prediction.fixtureId);
-      predictionsByUser.set(prediction.userId, fixtureIds);
-    }
-
-    return new Set(
-      [...predictionsByUser.entries()]
-        .filter(([, fixtureIds]) => fixtureIds.size === eligibleIds.size)
-        .map(([userId]) => userId),
+    const orderedEntries = [...entries.values()].sort(compareRoundPerformance);
+    const evaluatedEntries = orderedEntries.filter(
+      (entry) => entry.evaluatedPredictions > 0,
     );
+    const bestTieBreakCriterion = resolveBestTieBreakCriterion(
+      evaluatedEntries[0],
+      evaluatedEntries[1],
+    );
+    const ranking = orderedEntries.map((entry, index) => ({
+      userId: entry.userId,
+      name: entry.name,
+      avatarUrl: entry.avatarUrl,
+      position: index + 1,
+      naturalPoints: entry.naturalPoints,
+      predictionsCount: entry.predictionsCount,
+      evaluatedPredictions: entry.evaluatedPredictions,
+      exactScores: entry.exactScores,
+      correctWinners: entry.correctWinners,
+      wrongPredictions: entry.wrongPredictions,
+      accuracy:
+        entry.evaluatedPredictions > 0
+          ? Math.round(
+              (entry.correctWinners / entry.evaluatedPredictions) * 1000,
+            ) / 10
+          : null,
+    }));
+
+    return { ranking, bestTieBreakCriterion };
   }
 
   private buildHighlights(
     ranking: RoundRankingEntry[],
-    allFixturesAreTransparent: boolean,
-    fullyParticipatingUserIds: Set<string>,
+    bestTieBreakCriterion: RoundBestTieBreakCriterion | null,
   ) {
     const evaluatedRanking = ranking.filter(
       (entry) => entry.evaluatedPredictions > 0,
     );
     const best = evaluatedRanking[0]
-      ? this.toHighlight(evaluatedRanking[0], evaluatedRanking[0].naturalPoints)
+      ? {
+          ...this.toHighlight(
+            evaluatedRanking[0],
+            evaluatedRanking[0].naturalPoints,
+          ),
+          tieBreakCriterion: bestTieBreakCriterion,
+        }
       : null;
     const maxExactScores = Math.max(
       0,
@@ -537,12 +525,9 @@ export class RoundsService {
       0,
       ...evaluatedRanking.map((entry) => entry.correctWinners),
     );
-    const fullyParticipating = allFixturesAreTransparent
-      ? ranking.filter((entry) => fullyParticipatingUserIds.has(entry.userId))
-      : [];
     const worst =
-      fullyParticipating.length >= 2
-        ? fullyParticipating[fullyParticipating.length - 1]
+      evaluatedRanking.length >= 2
+        ? [...evaluatedRanking].sort(compareWorstPerformance)[0]
         : null;
 
     return {
@@ -620,4 +605,50 @@ function compareRoundPerformance(
     first.firstPredictionAt.getTime() - second.firstPredictionAt.getTime() ||
     first.userId.localeCompare(second.userId)
   );
+}
+
+function compareWorstPerformance(
+  first: RoundRankingEntry,
+  second: RoundRankingEntry,
+) {
+  return (
+    first.naturalPoints - second.naturalPoints ||
+    first.exactScores - second.exactScores ||
+    first.correctWinners - second.correctWinners ||
+    second.wrongPredictions - first.wrongPredictions ||
+    second.position - first.position
+  );
+}
+
+function resolveBestTieBreakCriterion(
+  first?: MutableRoundRankingEntry,
+  second?: MutableRoundRankingEntry,
+): RoundBestTieBreakCriterion | null {
+  if (!first || !second || first.naturalPoints !== second.naturalPoints) {
+    return null;
+  }
+
+  if (first.exactScores !== second.exactScores) {
+    return 'EXACT_SCORES';
+  }
+
+  if (first.correctWinners !== second.correctWinners) {
+    return 'CORRECT_WINNERS';
+  }
+
+  if (first.wrongPredictions !== second.wrongPredictions) {
+    return 'FEWER_WRONG_PREDICTIONS';
+  }
+
+  if (first.userCreatedAt.getTime() !== second.userCreatedAt.getTime()) {
+    return 'EARLIER_REGISTRATION';
+  }
+
+  if (
+    first.firstPredictionAt.getTime() !== second.firstPredictionAt.getTime()
+  ) {
+    return 'EARLIER_PREDICTION';
+  }
+
+  return 'STABLE_ID';
 }

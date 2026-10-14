@@ -1,4 +1,4 @@
-import type { RoundStats } from "@/types/round";
+import type { RoundBestHighlightParticipant, RoundStats } from "@/types/round";
 
 export type RoundContentState =
   "UPCOMING" | "NO_PREDICTIONS" | "IN_PROGRESS" | "COMPLETED";
@@ -64,4 +64,25 @@ export function formatHighlightNames(participants: Array<{ name: string }>) {
   }
 
   return `${participants[0].name}, ${participants[1].name} +${participants.length - 2}`;
+}
+
+export function getBestHighlightCaption(
+  participant: RoundBestHighlightParticipant | null,
+) {
+  switch (participant?.tieBreakCriterion) {
+    case "EXACT_SCORES":
+      return "Desempate por mais placares exatos";
+    case "CORRECT_WINNERS":
+      return "Desempate por mais vencedores acertados";
+    case "FEWER_WRONG_PREDICTIONS":
+      return "Desempate por menos erros";
+    case "EARLIER_REGISTRATION":
+      return "Desempate pelo cadastro mais antigo";
+    case "EARLIER_PREDICTION":
+      return "Desempate pelo primeiro palpite registrado";
+    case "STABLE_ID":
+      return "Desempate pelo identificador estável";
+    default:
+      return null;
+  }
 }

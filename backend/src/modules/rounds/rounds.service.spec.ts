@@ -162,7 +162,11 @@ describe('RoundsService', () => {
     const result = await getStats();
 
     expect(result.highlights.best).toEqual(
-      expect.objectContaining({ userId: firstUserId, value: 3 }),
+      expect.objectContaining({
+        userId: firstUserId,
+        value: 3,
+        tieBreakCriterion: null,
+      }),
     );
   });
 
@@ -192,20 +196,61 @@ describe('RoundsService', () => {
       firstUserId,
       secondUserId,
     ]);
+    expect(result.highlights.best?.tieBreakCriterion).toBe(
+      'EARLIER_REGISTRATION',
+    );
   });
 
-  it('nao mostra pior da rodada quando participantes nao completaram a rodada', async () => {
+  it('marca como pior o participante 6/10 com 2 pontos diante de 10/10 com 4 pontos', async () => {
+    const fixtureIds = Array.from(
+      { length: 10 },
+      (_, index) => `fixture-${index + 1}`,
+    );
+    fixtureFindMany.mockResolvedValue(
+      fixtureIds.map((id) => createFixture({ id })),
+    );
     predictionFindMany.mockResolvedValue([
-      createPrediction({ userId: firstUserId, fixtureId: firstFixtureId }),
-      createPrediction({ userId: secondUserId, fixtureId: firstFixtureId }),
+      ...fixtureIds.map((fixtureId, index) =>
+        createPrediction({
+          userId: firstUserId,
+          fixtureId,
+          scorePoints: index < 4 ? 1 : 0,
+          correctWinner: index < 4,
+        }),
+      ),
+      ...fixtureIds.slice(0, 6).map((fixtureId, index) =>
+        createPrediction({
+          userId: secondUserId,
+          fixtureId,
+          scorePoints: index < 2 ? 1 : 0,
+          correctWinner: index < 2,
+        }),
+      ),
     ]);
 
     const result = await getStats();
 
-    expect(result.highlights.worst).toBeNull();
+    expect(result.ranking).toEqual([
+      expect.objectContaining({
+        userId: firstUserId,
+        predictionsCount: 10,
+        naturalPoints: 4,
+      }),
+      expect.objectContaining({
+        userId: secondUserId,
+        predictionsCount: 6,
+        naturalPoints: 2,
+      }),
+    ]);
+    expect(result.ranking.some((entry) => entry.userId === thirdUserId)).toBe(
+      false,
+    );
+    expect(result.highlights.worst).toEqual(
+      expect.objectContaining({ userId: secondUserId, value: 2 }),
+    );
   });
 
-  it('mostra pior apenas entre ao menos dois participantes completos', async () => {
+  it('desempata o menor numero de pontos por mais erros', async () => {
     predictionFindMany.mockResolvedValue([
       createPrediction({
         userId: firstUserId,
@@ -215,18 +260,19 @@ describe('RoundsService', () => {
         correctWinner: true,
       }),
       createPrediction({
-        userId: firstUserId,
-        fixtureId: secondFixtureId,
+        userId: secondUserId,
+        fixtureId: firstFixtureId,
         scorePoints: 1,
         correctWinner: true,
       }),
       createPrediction({
-        userId: secondUserId,
+        userId: thirdUserId,
         fixtureId: firstFixtureId,
-        scorePoints: 0,
+        scorePoints: 1,
+        correctWinner: true,
       }),
       createPrediction({
-        userId: secondUserId,
+        userId: thirdUserId,
         fixtureId: secondFixtureId,
         scorePoints: 0,
       }),
@@ -234,12 +280,64 @@ describe('RoundsService', () => {
 
     const result = await getStats();
 
+    expect(result.ranking.slice(1).map((entry) => entry.naturalPoints)).toEqual(
+      [1, 1],
+    );
     expect(result.highlights.worst).toEqual(
-      expect.objectContaining({ userId: secondUserId, value: 0 }),
+      expect.objectContaining({ userId: thirdUserId, value: 1 }),
     );
   });
 
-  it('nao mostra pior durante rodada parcial mesmo com palpites completos', async () => {
+  it('considera menos placares exatos antes de vencedores no desempate do pior', async () => {
+    const fixtureIds = Array.from(
+      { length: 4 },
+      (_, index) => `tie-fixture-${index + 1}`,
+    );
+    fixtureFindMany.mockResolvedValue(
+      fixtureIds.map((id) => createFixture({ id })),
+    );
+    predictionFindMany.mockResolvedValue([
+      createPrediction({
+        userId: firstUserId,
+        fixtureId: fixtureIds[0],
+        scorePoints: 3,
+        exactScore: true,
+        correctWinner: true,
+      }),
+      createPrediction({
+        userId: firstUserId,
+        fixtureId: fixtureIds[1],
+        scorePoints: 1,
+        correctWinner: true,
+      }),
+      createPrediction({
+        userId: secondUserId,
+        fixtureId: fixtureIds[0],
+        scorePoints: 3,
+        exactScore: true,
+        correctWinner: true,
+      }),
+      ...fixtureIds.slice(0, 3).map((fixtureId) =>
+        createPrediction({
+          userId: thirdUserId,
+          fixtureId,
+          scorePoints: 1,
+          correctWinner: true,
+        }),
+      ),
+    ]);
+
+    const result = await getStats();
+
+    expect(result.ranking.slice(1).map((entry) => entry.naturalPoints)).toEqual(
+      [3, 3],
+    );
+    expect(result.highlights.worst).toEqual(
+      expect.objectContaining({ userId: thirdUserId, value: 3 }),
+    );
+  });
+
+  it('protege palpites futuros ao calcular o pior durante rodada parcial', async () => {
     fixtureFindMany.mockResolvedValue([
       createFixture({ id: firstFixtureId }),
       createFixture({
@@ -252,17 +350,42 @@ describe('RoundsService', () => {
       }),
     ]);
     predictionFindMany.mockResolvedValue([
-      createPrediction({ userId: firstUserId, fixtureId: firstFixtureId }),
+      createPrediction({
+        userId: firstUserId,
+        fixtureId: firstFixtureId,
+        scorePoints: 1,
+        correctWinner: true,
+      }),
       createPrediction({ userId: firstUserId, fixtureId: secondFixtureId }),
       createPrediction({ userId: secondUserId, fixtureId: firstFixtureId }),
-      createPrediction({ userId: secondUserId, fixtureId: secondFixtureId }),
+      createPrediction({
+        userId: secondUserId,
+        fixtureId: secondFixtureId,
+        scorePoints: 3,
+        exactScore: true,
+        correctWinner: true,
+      }),
     ]);
 
     const result = await getStats();
 
     expect(result.status).toBe('IN_PROGRESS');
     expect(result.publicFixtures).toBe(1);
-    expect(result.highlights.worst).toBeNull();
+    expect(result.ranking).toEqual([
+      expect.objectContaining({
+        userId: firstUserId,
+        predictionsCount: 1,
+        naturalPoints: 1,
+      }),
+      expect.objectContaining({
+        userId: secondUserId,
+        predictionsCount: 1,
+        naturalPoints: 0,
+      }),
+    ]);
+    expect(result.highlights.worst).toEqual(
+      expect.objectContaining({ userId: secondUserId, value: 0 }),
+    );
   });
 
   it('retorna desempenho do usuario autenticado e aproveitamento coerente', async () => {
@@ -368,6 +491,7 @@ const firstFixtureId = '33333333-3333-4333-8333-333333333333';
 const secondFixtureId = '44444444-4444-4444-8444-444444444444';
 const firstUserId = '55555555-5555-4555-8555-555555555555';
 const secondUserId = '66666666-6666-4666-8666-666666666666';
+const thirdUserId = '77777777-7777-4777-8777-777777777777';
 
 const season = {
   id: seasonId,
@@ -446,7 +570,12 @@ function createPrediction({
     createdAt: new Date('2026-10-01T00:00:00.000Z'),
     user: {
       id: userId,
-      name: userId === firstUserId ? 'Ana' : 'Bruno',
+      name:
+        userId === firstUserId
+          ? 'Ana'
+          : userId === secondUserId
+            ? 'Bruno'
+            : 'Carla',
       avatarUrl: null,
       createdAt: userCreatedAt,
     },

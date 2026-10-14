@@ -4,6 +4,7 @@ import test from "node:test";
 import type { RoundStats } from "../../types/round.ts";
 import {
   formatHighlightNames,
+  getBestHighlightCaption,
   getRoundContentState,
   getRoundStatusCopy,
   getRoundsCatalogState,
@@ -76,6 +77,28 @@ test("resume empates de destaque sem criar nomes", () => {
       { name: "Carla" },
     ]),
     "Ana, Bruno +1",
+  );
+});
+
+test("não mostra texto de desempate quando o líder vence por pontos", () => {
+  assert.equal(
+    getBestHighlightCaption({
+      ...participant,
+      value: participant.naturalPoints,
+      tieBreakCriterion: null,
+    }),
+    null,
+  );
+});
+
+test("informa o critério real quando o desempate decide o primeiro lugar", () => {
+  assert.equal(
+    getBestHighlightCaption({
+      ...participant,
+      value: participant.naturalPoints,
+      tieBreakCriterion: "EXACT_SCORES",
+    }),
+    "Desempate por mais placares exatos",
   );
 });
 

@@ -102,7 +102,8 @@ Regras relevantes:
 - exclui usuários sem palpites públicos da classificação;
 - não retorna placares previstos;
 - antes do kickoff, oculta ranking, destaques e qualquer informação de terceiros;
-- o pior desempenho só é retornado quando a rodada está totalmente transparente e existem ao menos dois participantes completos.
+- o pior desempenho considera ao menos dois participantes com palpite público e avaliado, mesmo quando algum deles não preencheu todos os jogos da rodada;
+- o melhor desempenho informa `tieBreakCriterion` somente quando a igualdade de pontos foi resolvida por um critério determinístico.
 
 Erros relevantes: `400` para parâmetros inválidos, `401` para JWT ausente/inválido e `404` para competição, temporada ou rodada inexistente.
 

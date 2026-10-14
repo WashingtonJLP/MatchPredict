@@ -245,7 +245,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 - `Standing.adjustmentPoints` nunca entra no ranking, nos destaques ou no desempenho da rodada.
 - O desempate segue pontos naturais, placares exatos, vencedores corretos, menos erros e critérios temporais determinísticos.
 - O melhor da rodada exige ao menos um palpite avaliado.
-- O pior da rodada exige que todos os jogos elegíveis estejam transparentes, ao menos dois participantes completos e todos os palpites elegíveis de cada candidato.
+- O pior da rodada é o menor desempenho entre ao menos dois participantes com palpite público e avaliado, sem exigir participação completa; o desempate inverte explicitamente as métricas de desempenho e termina pela posição determinística do ranking.
 - Fixtures canceladas não compõem o denominador de palpites elegíveis; fixtures adiadas permanecem pendentes.
 - Aproveitamento é o percentual de palpites avaliados com vencedor correto e fica ausente quando não há denominador.
 - Antes do kickoff, o ranking e os destaques não revelam terceiros; o usuário autenticado pode ver somente a própria quantidade de palpites.

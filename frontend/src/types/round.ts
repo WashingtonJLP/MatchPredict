@@ -51,6 +51,18 @@ export type RoundHighlightParticipant = Pick<
   value: number;
 };
 
+export type RoundBestTieBreakCriterion =
+  | "EXACT_SCORES"
+  | "CORRECT_WINNERS"
+  | "FEWER_WRONG_PREDICTIONS"
+  | "EARLIER_REGISTRATION"
+  | "EARLIER_PREDICTION"
+  | "STABLE_ID";
+
+export type RoundBestHighlightParticipant = RoundHighlightParticipant & {
+  tieBreakCriterion: RoundBestTieBreakCriterion | null;
+};
+
 export type RoundMyPerformance = Omit<
   RoundParticipant,
   "userId" | "name" | "avatarUrl" | "position"
@@ -78,7 +90,7 @@ export type RoundStats = {
   cancelledFixtures: number;
   dataIncomplete: boolean;
   highlights: {
-    best: RoundHighlightParticipant | null;
+    best: RoundBestHighlightParticipant | null;
     mostExactScores: RoundHighlightParticipant[];
     mostCorrectWinners: RoundHighlightParticipant[];
     worst: RoundHighlightParticipant | null;

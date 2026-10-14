@@ -119,9 +119,34 @@ export class RoundHighlightParticipantResponseDto {
   value!: number;
 }
 
+export class RoundBestHighlightParticipantResponseDto extends RoundHighlightParticipantResponseDto {
+  @ApiProperty({
+    enum: [
+      'EXACT_SCORES',
+      'CORRECT_WINNERS',
+      'FEWER_WRONG_PREDICTIONS',
+      'EARLIER_REGISTRATION',
+      'EARLIER_PREDICTION',
+      'STABLE_ID',
+    ],
+    nullable: true,
+  })
+  tieBreakCriterion!:
+    | 'EXACT_SCORES'
+    | 'CORRECT_WINNERS'
+    | 'FEWER_WRONG_PREDICTIONS'
+    | 'EARLIER_REGISTRATION'
+    | 'EARLIER_PREDICTION'
+    | 'STABLE_ID'
+    | null;
+}
+
 export class RoundHighlightsResponseDto {
-  @ApiProperty({ type: RoundHighlightParticipantResponseDto, nullable: true })
-  best!: RoundHighlightParticipantResponseDto | null;
+  @ApiProperty({
+    type: RoundBestHighlightParticipantResponseDto,
+    nullable: true,
+  })
+  best!: RoundBestHighlightParticipantResponseDto | null;
 
   @ApiProperty({ type: RoundHighlightParticipantResponseDto, isArray: true })
   mostExactScores!: RoundHighlightParticipantResponseDto[];
