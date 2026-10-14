@@ -72,6 +72,80 @@ describe('RoundsService', () => {
     );
   });
 
+  it('lista rodadas anteriores, a atual e somente a proxima futura', async () => {
+    seasonFindMany.mockResolvedValue([{ ...season, isActive: true }]);
+    fixtureGroupBy.mockResolvedValue([
+      createRoundGroup({
+        round: 1,
+        status: FixtureStatus.FT,
+        count: 10,
+        kickoff: new Date('2026-10-01T19:00:00.000Z'),
+      }),
+      createRoundGroup({
+        round: 2,
+        status: FixtureStatus.LIVE,
+        count: 10,
+        kickoff: new Date('2026-10-10T19:00:00.000Z'),
+      }),
+      createRoundGroup({
+        round: 3,
+        status: FixtureStatus.NS,
+        count: 10,
+        kickoff: new Date('2026-10-20T19:00:00.000Z'),
+      }),
+      createRoundGroup({
+        round: 4,
+        status: FixtureStatus.NS,
+        count: 10,
+        kickoff: new Date('2026-10-27T19:00:00.000Z'),
+      }),
+    ]);
+
+    const result = await service.findCatalog();
+    const catalogSeason = result.competitions[0].seasons[0];
+
+    expect(catalogSeason.rounds.map((round) => round.number)).toEqual([
+      1, 2, 3,
+    ]);
+    expect(catalogSeason.defaultRound).toBe(2);
+  });
+
+  it('nao presume uma quantidade fixa de rodadas por competicao', async () => {
+    seasonFindMany.mockResolvedValue([{ ...season, isActive: true }]);
+    fixtureGroupBy.mockResolvedValue(
+      Array.from({ length: 6 }, (_, index) =>
+        createRoundGroup({
+          round: index + 1,
+          status: FixtureStatus.FT,
+          count: 4,
+          kickoff: new Date(
+            `2026-09-${String(index + 1).padStart(2, '0')}T19:00:00.000Z`,
+          ),
+        }),
+      ),
+    );
+
+    const result = await service.findCatalog();
+
+    expect(
+      result.competitions[0].seasons[0].rounds.map((round) => round.number),
+    ).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('retorna catalogo vazio quando nao ha temporadas com fixtures', async () => {
+    seasonFindMany.mockResolvedValue([]);
+
+    await expect(service.findCatalog()).resolves.toEqual({
+      competitions: [],
+      defaults: {
+        competitionId: null,
+        seasonId: null,
+        round: null,
+      },
+    });
+    expect(fixtureGroupBy).not.toHaveBeenCalled();
+  });
+
   it('nao inclui usuario sem palpite no ranking', async () => {
     predictionFindMany.mockResolvedValue([
       createPrediction({ userId: firstUserId, fixtureId: firstFixtureId }),
@@ -129,6 +203,43 @@ describe('RoundsService', () => {
       }),
     );
     expect(result.myPerformance.naturalPoints).toBe(4);
+  });
+
+  it('conta placar exato dentro dos resultados corretos sem somar categorias', async () => {
+    const fixtureIds = Array.from(
+      { length: 6 },
+      (_, index) => `score-fixture-${index + 1}`,
+    );
+    fixtureFindMany.mockResolvedValue(
+      fixtureIds.map((id) => createFixture({ id })),
+    );
+    predictionFindMany.mockResolvedValue([
+      createPrediction({
+        fixtureId: fixtureIds[0],
+        scorePoints: 3,
+        exactScore: true,
+        correctWinner: true,
+      }),
+      ...fixtureIds.slice(1, 5).map((fixtureId) =>
+        createPrediction({
+          fixtureId,
+          scorePoints: 1,
+          correctWinner: true,
+        }),
+      ),
+      createPrediction({ fixtureId: fixtureIds[5], scorePoints: 0 }),
+    ]);
+
+    const result = await getStats();
+
+    expect(result.ranking[0]).toEqual(
+      expect.objectContaining({
+        naturalPoints: 7,
+        exactScores: 1,
+        correctWinners: 5,
+        wrongPredictions: 1,
+      }),
+    );
   });
 
   it('ignora adjustmentPoints porque nao consulta Standing', async () => {

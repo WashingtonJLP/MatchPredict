@@ -2,28 +2,33 @@
 
 import {
   Award,
+  CalendarDays,
   CalendarRange,
   CheckCircle2,
-  ChevronDown,
   CircleAlert,
   CircleX,
   Clock3,
   Crown,
+  Info,
   Medal,
   RefreshCw,
   ShieldAlert,
   Target,
+  Trophy,
   UsersRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
+import { DashboardFilterSelect } from "@/components/shared/dashboard-filter-select";
 import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
+  formatGameCount,
   formatHighlightNames,
+  formatRoundPoints,
   getBestHighlightCaption,
   getRoundContentState,
   getRoundStatusCopy,
@@ -198,92 +203,50 @@ function RoundFilters({
 }) {
   return (
     <section
-      className="rounded-2xl border border-border bg-card p-4 sm:p-6"
+      className="grid gap-3 md:grid-cols-3"
       aria-label="Selecionar rodada"
     >
-      <div className="grid gap-4 md:grid-cols-3">
-        <RoundSelect
-          id="round-competition"
-          label="Competição"
-          value={selection?.competitionId ?? ""}
-          disabled={competitions.length <= 1}
-          onChange={onCompetitionChange}
-        >
-          {competitions.map((competition) => (
-            <option key={competition.id} value={competition.id}>
-              {competition.name}
-            </option>
-          ))}
-        </RoundSelect>
+      <DashboardFilterSelect
+        icon={Trophy}
+        label="Competição"
+        value={selection?.competitionId ?? ""}
+        disabled={competitions.length <= 1}
+        options={competitions.map((competition) => ({
+          label: competition.name,
+          value: competition.id,
+        }))}
+        onValueChange={onCompetitionChange}
+      />
 
-        <RoundSelect
-          id="round-season"
-          label="Temporada"
-          value={selection?.seasonId ?? ""}
-          disabled={(selectedCompetition?.seasons.length ?? 0) <= 1}
-          onChange={onSeasonChange}
-        >
-          {selectedCompetition?.seasons.map((season) => (
-            <option key={season.id} value={season.id}>
-              {season.name}
-            </option>
-          ))}
-        </RoundSelect>
+      <DashboardFilterSelect
+        icon={CalendarDays}
+        label="Temporada"
+        value={selection?.seasonId ?? ""}
+        disabled={(selectedCompetition?.seasons.length ?? 0) <= 1}
+        options={
+          selectedCompetition?.seasons.map((season) => ({
+            label: season.name,
+            value: season.id,
+          })) ?? []
+        }
+        onValueChange={onSeasonChange}
+      />
 
-        <RoundSelect
-          id="round-number"
-          label="Rodada"
-          value={selection?.round ? String(selection.round) : ""}
-          disabled={(selectedSeason?.rounds.length ?? 0) <= 1}
-          onChange={(value) => onRoundChange(Number(value))}
-        >
-          {selectedSeason?.rounds.map((round) => (
-            <option key={round.number} value={round.number}>
-              Rodada {round.number}
-            </option>
-          ))}
-        </RoundSelect>
-      </div>
+      <DashboardFilterSelect
+        icon={CalendarRange}
+        label="Rodada"
+        value={selection?.round ? String(selection.round) : ""}
+        disabled={(selectedSeason?.rounds.length ?? 0) <= 1}
+        options={
+          selectedSeason?.rounds.map((round) => ({
+            badge: String(round.number),
+            label: `Rodada ${round.number}`,
+            value: String(round.number),
+          })) ?? []
+        }
+        onValueChange={(value) => onRoundChange(Number(value))}
+      />
     </section>
-  );
-}
-
-function RoundSelect({
-  children,
-  disabled,
-  id,
-  label,
-  onChange,
-  value,
-}: {
-  children: React.ReactNode;
-  disabled: boolean;
-  id: string;
-  label: string;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  return (
-    <label htmlFor={id} className="block min-w-0">
-      <span className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
-      <span className="relative mt-2 block">
-        <select
-          id={id}
-          value={value}
-          disabled={disabled}
-          className="min-h-12 w-full appearance-none rounded-xl border border-input bg-background px-4 pr-11 font-navigation text-base font-bold text-foreground transition hover:border-accent/50 focus:border-accent focus:ring-4 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-          onChange={(event) => onChange(event.target.value)}
-        >
-          {children}
-        </select>
-        <ChevronDown
-          className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-      </span>
-    </label>
   );
 }
 
@@ -410,6 +373,15 @@ function RoundHighlights({
         </div>
       </div>
 
+      <div className="mt-4 flex max-w-3xl items-start gap-3 rounded-xl bg-muted/55 px-4 py-3 text-sm leading-6 text-muted-foreground">
+        <Info className="mt-0.5 size-4 shrink-0 text-foreground" aria-hidden />
+        <p>
+          <span className="font-bold text-foreground">Como pontua:</span> placar
+          exato vale 3 pts; resultado correto sem placar exato vale 1 pt. Todo
+          placar exato também conta como resultado correto.
+        </p>
+      </div>
+
       {contentState === "UPCOMING" ? (
         <div className="mt-5 rounded-2xl border border-dashed border-border bg-card p-6 sm:p-8">
           <Clock3 className="size-8 text-muted-foreground" aria-hidden />
@@ -438,15 +410,15 @@ function RoundHighlights({
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
             <MetricHighlight
               icon={Target}
-              label="Mais placares exatos"
+              label="Placares exatos"
               participants={stats.highlights.mostExactScores}
-              unit="acerto"
+              unit="jogo"
             />
             <MetricHighlight
               icon={CheckCircle2}
-              label="Mais vencedores acertados"
+              label="Resultados corretos"
               participants={stats.highlights.mostCorrectWinners}
-              unit="acerto"
+              unit="jogo"
               divided
             />
             <WorstHighlight participant={stats.highlights.worst} />
@@ -481,7 +453,7 @@ function FeaturedHighlight({
                   {participant.value}
                 </span>
                 <span className="pb-1 text-xl font-extrabold text-accent">
-                  pts
+                  {participant.value === 1 ? "pt" : "pts"}
                 </span>
               </p>
               {caption ? (
@@ -574,7 +546,7 @@ function WorstHighlight({
         ) : null}
       </div>
       <p className="text-3xl font-black text-foreground tabular-nums">
-        {participant ? participant.value : "—"}
+        {participant ? formatRoundPoints(participant.value) : "—"}
       </p>
     </article>
   );
@@ -623,7 +595,7 @@ function MyRoundPerformance({ stats }: { stats: RoundStats }) {
                 <Medal className="size-8 text-accent" aria-hidden />
               </div>
               <p className="mt-6 text-3xl font-black tabular-nums">
-                {performance.naturalPoints} pts
+                {formatRoundPoints(performance.naturalPoints)}
               </p>
               <p className="mt-2 text-sm font-semibold text-primary-foreground/65">
                 {performance.predictionsCount}/{stats.totalFixtures} palpites
@@ -632,16 +604,16 @@ function MyRoundPerformance({ stats }: { stats: RoundStats }) {
 
             <dl className="grid grid-cols-2 sm:grid-cols-4">
               <PerformanceFact
-                label="Placar exato"
-                value={performance.exactScores}
+                label="Placares exatos"
+                value={formatGameCount(performance.exactScores)}
               />
               <PerformanceFact
-                label="Vencedores"
-                value={performance.correctWinners}
+                label="Resultados corretos"
+                value={formatGameCount(performance.correctWinners)}
               />
               <PerformanceFact
                 label="Erros"
-                value={performance.wrongPredictions}
+                value={formatGameCount(performance.wrongPredictions)}
               />
               <PerformanceFact
                 label="Aproveitamento"
@@ -752,10 +724,10 @@ function RoundRanking({
                     Palpites públicos
                   </th>
                   <th scope="col" className="px-5 py-4 text-right">
-                    Exatos
+                    Placares exatos
                   </th>
                   <th scope="col" className="px-5 py-4 text-right">
-                    Vencedores
+                    Resultados corretos
                   </th>
                   <th scope="col" className="px-5 py-4 text-right">
                     Pontos
@@ -853,9 +825,18 @@ function RankingMobileItem({
         </p>
       </div>
       <dl className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-muted/65 p-3 text-center">
-        <CompactFact label="Exatos" value={participant.exactScores} />
-        <CompactFact label="Vencedores" value={participant.correctWinners} />
-        <CompactFact label="Erros" value={participant.wrongPredictions} />
+        <CompactFact
+          label="Placar exato"
+          value={formatGameCount(participant.exactScores)}
+        />
+        <CompactFact
+          label="Resultado correto"
+          value={formatGameCount(participant.correctWinners)}
+        />
+        <CompactFact
+          label="Erro"
+          value={formatGameCount(participant.wrongPredictions)}
+        />
       </dl>
     </li>
   );
@@ -876,7 +857,7 @@ function PositionBadge({ position }: { position: number }) {
   );
 }
 
-function CompactFact({ label, value }: { label: string; value: number }) {
+function CompactFact({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-[0.6875rem] font-bold uppercase tracking-wide text-muted-foreground">

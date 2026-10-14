@@ -184,6 +184,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 - Placar exato vale 3 pontos.
 - Acerto do vencedor ou empate, sem placar exato, vale 1 ponto.
 - Erro do vencedor/empate vale 0 ponto.
+- Um placar exato também recebe `correctWinner: true`; por isso, `correctWinners` inclui os placares exatos e não deve ser somado como uma categoria independente. A decomposição é `exactScores * 3 + (correctWinners - exactScores) * 1`.
 - Se a partida não possuir placar final, a pontuação calculada é 0.
 - `scorePoints` e `totalPoints` recebem o mesmo valor no cálculo atual.
 - Campos de MVP existem no modelo de dados, mas MVP não faz parte do fluxo atual de criação/edição de palpites nem do motor de pontuação atual.
@@ -250,6 +251,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 - Aproveitamento é o percentual de palpites avaliados com vencedor correto e fica ausente quando não há denominador.
 - Antes do kickoff, o ranking e os destaques não revelam terceiros; o usuário autenticado pode ver somente a própria quantidade de palpites.
 - Durante a rodada, apenas palpites de fixtures já fechadas pela mesma regra de transparência existente participam da resposta pública.
+- O catálogo de navegação oferece todas as rodadas que já começaram e somente a próxima rodada futura disponível, com base nas datas dos fixtures persistidos e sem presumir uma quantidade fixa por competição.
 - As consultas são executadas sob demanda e não criam cron, polling de backend ou alteração no scheduler.
 - Competição e temporada são identificadas por seus UUIDs persistidos; o módulo não contém condição específica para a Premier League.
 

@@ -154,6 +154,7 @@ export class RoundsService {
       };
 
       const seasonRounds = roundsBySeason.get(season.id) ?? [];
+      const selectableRounds = this.selectSelectableRounds(seasonRounds);
 
       competition.seasons.push({
         id: season.id,
@@ -161,7 +162,7 @@ export class RoundsService {
         name: season.name,
         isActive: season.isActive,
         defaultRound: this.resolveDefaultRound(seasonRounds),
-        rounds: seasonRounds.map((round) => ({
+        rounds: selectableRounds.map((round) => ({
           number: round.number,
           fixtureCount: round.fixtureCount,
           startsAt: round.startsAt,
@@ -413,6 +414,22 @@ export class RoundsService {
     const next = rounds.find((round) => round.startsAt.getTime() > now);
 
     return next?.number ?? rounds[rounds.length - 1].number;
+  }
+
+  private selectSelectableRounds(rounds: CatalogRound[]) {
+    const now = Date.now();
+    const nextRound = [...rounds]
+      .filter((round) => round.startsAt.getTime() > now)
+      .sort(
+        (first, second) =>
+          first.startsAt.getTime() - second.startsAt.getTime() ||
+          first.number - second.number,
+      )[0];
+
+    return rounds.filter(
+      (round) =>
+        round.startsAt.getTime() <= now || round.number === nextRound?.number,
+    );
   }
 
   private isFixtureTransparent(fixture: RoundFixture, now: Date) {

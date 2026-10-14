@@ -77,11 +77,13 @@ Swagger é habilitado somente fora de produção:
 
 ## GET /api/v1/rounds/catalog
 
-Lista somente competições, temporadas e rodadas que já existem no banco. Retorna também a seleção padrão calculada para a navegação inicial.
+Lista somente competições e temporadas que já possuem fixtures no banco. Para cada temporada, retorna todas as rodadas que já começaram e somente a próxima rodada futura disponível. Retorna também a seleção padrão calculada para a navegação inicial.
 
 Acesso: autenticado.
 
 Não consulta a ESPN e não cria processamento em background. A resposta é obtida sob demanda com agregação por `seasonId`, `round` e status.
+
+A janela de rodadas é derivada das datas dos fixtures persistidos; não há quantidade total de rodadas hardcoded.
 
 ## GET /api/v1/rounds/:competitionId/seasons/:seasonId/:round
 
@@ -98,6 +100,7 @@ Acesso: autenticado.
 Regras relevantes:
 
 - usa apenas `Prediction.scorePoints` de fixtures avaliadas;
+- `correctWinners` inclui previsões com placar exato; as duas contagens são sobrepostas e não categorias aditivas;
 - não lê nem retorna `Standing.adjustmentPoints`;
 - exclui usuários sem palpites públicos da classificação;
 - não retorna placares previstos;

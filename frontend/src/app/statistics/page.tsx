@@ -5,6 +5,7 @@ import {
   BarChart3,
   CircleX,
   Gauge,
+  History,
   LineChart,
   Medal,
   Sparkles,
@@ -14,11 +15,13 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { DashboardFilterSelect } from "@/components/shared/dashboard-filter-select";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { PredictionFixtureCard } from "@/features/matches/components/prediction-fixture-card";
+import { buildStatisticsRoundFilterOptions } from "@/features/statistics/statistics-view";
 import { useMyPredictions } from "@/hooks/use-predictions";
 import { useMyStatistics } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
@@ -396,27 +399,16 @@ function RoundEvolutionChart({ rounds }: { rounds: RoundPerformance[] }) {
           </h2>
         </div>
         {selectedRound ? (
-          <div className="grid gap-3 rounded-2xl bg-muted px-4 py-3 sm:min-w-72 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-            <label
-              htmlFor="round-selector"
-              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
-            >
-              Rodada
-            </label>
-            <select
-              id="round-selector"
-              value={selectedRound.round}
-              onChange={(event) => selectRound(Number(event.target.value))}
-              className="min-h-11 rounded-xl border border-border bg-background px-3 text-base font-extrabold text-foreground shadow-sm outline-none transition focus:border-accent focus:ring-3 focus:ring-ring/50"
-            >
-              {rounds.map((round) => (
-                <option key={round.round} value={round.round}>
-                  Rodada {round.round}
-                </option>
-              ))}
-            </select>
-            <p className="text-2xl font-black text-foreground tabular-nums sm:text-right">
-              R{selectedRound.round} · {formatPoints(selectedRound.points)}
+          <div className="grid gap-2 sm:w-72 sm:shrink-0">
+            <DashboardFilterSelect
+              icon={History}
+              label="Rodada analisada"
+              value={String(selectedRound.round)}
+              options={buildStatisticsRoundFilterOptions(rounds)}
+              onValueChange={(round) => selectRound(Number(round))}
+            />
+            <p className="px-1 text-right text-sm font-extrabold text-muted-foreground tabular-nums">
+              {formatPoints(selectedRound.points)} nesta rodada
             </p>
           </div>
         ) : null}
@@ -424,12 +416,16 @@ function RoundEvolutionChart({ rounds }: { rounds: RoundPerformance[] }) {
 
       {rounds.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-dashed border-border bg-muted/40 p-6 text-center">
-          <LineChart className="mx-auto size-10 text-muted-foreground" aria-hidden />
+          <LineChart
+            className="mx-auto size-10 text-muted-foreground"
+            aria-hidden
+          />
           <p className="mt-4 text-lg font-extrabold text-foreground">
             Nenhuma rodada avaliada ainda
           </p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            O gráfico aparece quando suas partidas finalizadas forem processadas.
+            O gráfico aparece quando suas partidas finalizadas forem
+            processadas.
           </p>
         </div>
       ) : (
@@ -591,13 +587,11 @@ function ChartSvg({
               />
             </g>
             {isActive ? (
-              <g aria-hidden transform={`translate(${activeLabelX - 38} ${activeLabelY})`}>
-                <rect
-                  width="76"
-                  height="34"
-                  rx="10"
-                  className="fill-primary"
-                />
+              <g
+                aria-hidden
+                transform={`translate(${activeLabelX - 38} ${activeLabelY})`}
+              >
+                <rect width="76" height="34" rx="10" className="fill-primary" />
                 <text
                   x="38"
                   y="14"

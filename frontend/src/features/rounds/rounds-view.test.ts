@@ -3,7 +3,9 @@ import test from "node:test";
 
 import type { RoundStats } from "../../types/round.ts";
 import {
+  formatGameCount,
   formatHighlightNames,
+  formatRoundPoints,
   getBestHighlightCaption,
   getRoundContentState,
   getRoundStatusCopy,
@@ -80,6 +82,13 @@ test("resume empates de destaque sem criar nomes", () => {
   );
 });
 
+test("formata unidades de pontos e jogos sem ambiguidade", () => {
+  assert.equal(formatRoundPoints(1), "1 pt");
+  assert.equal(formatRoundPoints(2), "2 pts");
+  assert.equal(formatGameCount(1), "1 jogo");
+  assert.equal(formatGameCount(5), "5 jogos");
+});
+
 test("não mostra texto de desempate quando o líder vence por pontos", () => {
   assert.equal(
     getBestHighlightCaption({
@@ -99,6 +108,14 @@ test("informa o critério real quando o desempate decide o primeiro lugar", () =
       tieBreakCriterion: "EXACT_SCORES",
     }),
     "Desempate por mais placares exatos",
+  );
+  assert.equal(
+    getBestHighlightCaption({
+      ...participant,
+      value: participant.naturalPoints,
+      tieBreakCriterion: "CORRECT_WINNERS",
+    }),
+    "Desempate por mais resultados corretos",
   );
 });
 

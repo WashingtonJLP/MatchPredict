@@ -66,6 +66,14 @@ export function formatHighlightNames(participants: Array<{ name: string }>) {
   return `${participants[0].name}, ${participants[1].name} +${participants.length - 2}`;
 }
 
+export function formatRoundPoints(value: number) {
+  return `${value} ${value === 1 ? "pt" : "pts"}`;
+}
+
+export function formatGameCount(value: number) {
+  return `${value} ${value === 1 ? "jogo" : "jogos"}`;
+}
+
 export function getBestHighlightCaption(
   participant: RoundBestHighlightParticipant | null,
 ) {
@@ -73,7 +81,7 @@ export function getBestHighlightCaption(
     case "EXACT_SCORES":
       return "Desempate por mais placares exatos";
     case "CORRECT_WINNERS":
-      return "Desempate por mais vencedores acertados";
+      return "Desempate por mais resultados corretos";
     case "FEWER_WRONG_PREDICTIONS":
       return "Desempate por menos erros";
     case "EARLIER_REGISTRATION":
