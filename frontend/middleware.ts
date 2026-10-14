@@ -8,6 +8,7 @@ const privateRoutes = [
   "/participation",
   "/profile",
   "/predictions",
+  "/rounds",
   "/statistics",
   "/transparency",
 ];
@@ -47,6 +48,7 @@ export const config = {
     "/participation/:path*",
     "/profile/:path*",
     "/predictions/:path*",
+    "/rounds/:path*",
     "/statistics/:path*",
     "/transparency/:path*",
     "/login",

@@ -3,6 +3,7 @@
 import {
   BarChart3,
   BookOpen,
+  CalendarRange,
   CalendarDays,
   Eye,
   Globe2,
@@ -59,6 +60,12 @@ const sidebarSections: SidebarSection[] = [
         href: "/dashboard#ranking",
         label: "Ranking",
         icon: Trophy,
+        emphasis: true,
+      },
+      {
+        href: "/rounds",
+        label: "Rodadas",
+        icon: CalendarRange,
         emphasis: true,
       },
     ],
@@ -353,7 +360,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
       <div
         className={cn(
           "fixed inset-0 z-50 bg-primary/40 opacity-0 transition-opacity duration-200 lg:hidden",
-          isDrawerOpen ? "pointer-events-auto opacity-100" : "pointer-events-none",
+          isDrawerOpen
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none",
         )}
         aria-hidden
         onClick={() => setIsDrawerOpen(false)}

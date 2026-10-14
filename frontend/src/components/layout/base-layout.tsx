@@ -22,6 +22,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
     "/participation",
     "/profile",
     "/predictions",
+    "/rounds",
     "/statistics",
     "/transparency",
   ].some((route) => pathname.startsWith(route));

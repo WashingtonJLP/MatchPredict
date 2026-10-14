@@ -32,7 +32,7 @@ The core user journey is:
 2. Browse Premier League fixtures.
 3. Submit or edit a score prediction before the match locks.
 4. Track active predictions and historical predictions.
-5. Review transparency, standings, personal statistics, and rules.
+5. Review transparency, standings, round performance, personal statistics, and rules.
 
 The current public experience is centered on the active Premier League season. Administrative capabilities exist mainly as protected backend endpoints for synchronizing league, team, player, fixture, and result data.
 
@@ -40,7 +40,7 @@ The project is already in production. UI and UX improvements should be increment
 
 ## Capabilities and Constraints
 
-Implemented capabilities include user registration, JWT login, password recovery by email, authenticated profile management, fixture browsing with filters and pagination, prediction creation/editing/deletion before lock, "Meus Palpites", match prediction transparency, result display, automated score processing, standings, user statistics, and protected administrative synchronization endpoints.
+Implemented capabilities include user registration, JWT login, password recovery by email, authenticated profile management, fixture browsing with filters and pagination, prediction creation/editing/deletion before lock, "Meus Palpites", match prediction transparency, result display, automated score processing, standings, on-demand round rankings and highlights, user statistics, and protected administrative synchronization endpoints.
 
 Confirmed product constraints:
 

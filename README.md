@@ -13,6 +13,7 @@ MatchPredict é uma plataforma full-stack de palpites de futebol focada na Premi
 - Transparência de palpites por partida, respeitando ocultação antes do kickoff.
 - Pontuação automática: 3 pontos por placar exato, 1 por vencedor/empate correto e 0 por erro.
 - Ranking geral, ranking do usuário autenticado e estatísticas individuais.
+- Área "Rodadas" com seleção de competição/temporada, destaques, desempenho individual e classificação por rodada.
 - Sincronização administrativa de liga, times, jogadores, partidas e resultados via ESPN.
 - Scheduler backend para atualizar resultados e processar fixtures encerradas.
 - Deploy com Docker Compose, backend, frontend e Cloudflare Tunnel.
@@ -78,6 +79,7 @@ O frontend é separado do backend e consome a API REST por services HTTP. O back
 - `Football`: listagem e sincronização de dados esportivos.
 - `Predictions`: criação, edição, exclusão, transparência e processamento de palpites.
 - `Standings`: ranking geral e posição do usuário.
+- `Rounds`: catálogo e estatísticas sob demanda por competição, temporada e rodada.
 - `Email`: envio SMTP de recuperação de senha.
 - `Prisma`: acesso ao banco PostgreSQL.
 

@@ -236,7 +236,26 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN17 - Administração
+## RN17 - Estatísticas por rodada
+
+- A rodada é identificada pelo campo `Fixture.round`, sempre dentro de uma `Season` pertencente a uma `League`.
+- As estatísticas são derivadas de `Fixture` e `Prediction`; não existe tabela de vencedores de rodada nem estado duplicado.
+- Usuários sem palpite público na rodada não entram na classificação e não aparecem com zero ponto.
+- Pontos naturais são a soma de `Prediction.scorePoints` apenas para fixtures finalizadas, com placar e `processedAt`.
+- `Standing.adjustmentPoints` nunca entra no ranking, nos destaques ou no desempenho da rodada.
+- O desempate segue pontos naturais, placares exatos, vencedores corretos, menos erros e critérios temporais determinísticos.
+- O melhor da rodada exige ao menos um palpite avaliado.
+- O pior da rodada exige que todos os jogos elegíveis estejam transparentes, ao menos dois participantes completos e todos os palpites elegíveis de cada candidato.
+- Fixtures canceladas não compõem o denominador de palpites elegíveis; fixtures adiadas permanecem pendentes.
+- Aproveitamento é o percentual de palpites avaliados com vencedor correto e fica ausente quando não há denominador.
+- Antes do kickoff, o ranking e os destaques não revelam terceiros; o usuário autenticado pode ver somente a própria quantidade de palpites.
+- Durante a rodada, apenas palpites de fixtures já fechadas pela mesma regra de transparência existente participam da resposta pública.
+- As consultas são executadas sob demanda e não criam cron, polling de backend ou alteração no scheduler.
+- Competição e temporada são identificadas por seus UUIDs persistidos; o módulo não contém condição específica para a Premier League.
+
+---
+
+## RN18 - Administração
 
 - O sistema possui usuários com perfil `ADMIN`.
 - Endpoints administrativos exigem JWT válido e role `ADMIN`.
@@ -252,7 +271,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN18 - Integridade e segurança
+## RN19 - Integridade e segurança
 
 - A API usa validação global com `whitelist`, transformação de tipos e rejeição de campos não permitidos.
 - IDs recebidos em parâmetros de rota de palpites são validados como UUID v4.
@@ -265,7 +284,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 
 ---
 
-## RN19 - Limitações atuais
+## RN20 - Limitações atuais
 
 - Não há endpoint público específico para listar ligas, temporadas, times ou jogadores.
 - Não há painel administrativo no frontend.

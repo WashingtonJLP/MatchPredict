@@ -75,6 +75,9 @@ O MatchPredict já possui um fluxo funcional completo para usuários autenticado
 - [x] Placares exatos.
 - [x] Posição atual.
 - [x] Melhor e pior rodada com base em palpites processados.
+- [x] Área de rodadas com seleção de competição, temporada e rodada.
+- [x] Ranking, destaques e desempenho individual por rodada sem ajustes administrativos.
+- [x] Proteção de transparência nas estatísticas de rodadas futuras ou em andamento.
 
 ### Infraestrutura e desenvolvimento
 
@@ -98,7 +101,7 @@ O MatchPredict já possui um fluxo funcional completo para usuários autenticado
 - [ ] Jogadores: a sincronização e a modelagem existem, mas jogadores ainda não compõem um fluxo de palpite funcional.
 - [ ] MVP: a modelagem possui campos de MVP, mas criação, edição e pontuação por MVP não estão implementadas no fluxo atual.
 - [ ] Logs de sincronização: o model `SyncLog` existe, mas ainda não é usado de forma efetiva pelos serviços.
-- [ ] Estatísticas avançadas: existem estatísticas do usuário, mas ainda há espaço para métricas mais detalhadas, comparações e histórico.
+- [ ] Estatísticas avançadas: já existem estatísticas do usuário e por rodada, mas ainda há espaço para comparações, evolução de posição, conquistas e históricos agregados.
 
 ## Pendente
 

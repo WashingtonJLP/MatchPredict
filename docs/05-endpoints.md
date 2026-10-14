@@ -68,6 +68,43 @@ Swagger é habilitado somente fora de produção:
 | `POST` | `/api/v1/predictions/process/:fixtureId` | ADMIN | Processar palpites de uma partida |
 | `GET` | `/api/v1/standings` | Público | Listar ranking da temporada ativa |
 | `GET` | `/api/v1/standings/me` | Autenticado | Obter posição do usuário autenticado |
+| `GET` | `/api/v1/rounds/catalog` | Autenticado | Listar competições, temporadas e rodadas persistidas |
+| `GET` | `/api/v1/rounds/:competitionId/seasons/:seasonId/:round` | Autenticado | Obter estatísticas de uma rodada |
+
+---
+
+# Rounds
+
+## GET /api/v1/rounds/catalog
+
+Lista somente competições, temporadas e rodadas que já existem no banco. Retorna também a seleção padrão calculada para a navegação inicial.
+
+Acesso: autenticado.
+
+Não consulta a ESPN e não cria processamento em background. A resposta é obtida sob demanda com agregação por `seasonId`, `round` e status.
+
+## GET /api/v1/rounds/:competitionId/seasons/:seasonId/:round
+
+Retorna o estado da rodada, contadores de fixtures, destaques, desempenho do usuário autenticado e ranking.
+
+Acesso: autenticado.
+
+| Parâmetro | Tipo | Descrição |
+| --- | --- | --- |
+| `competitionId` | UUID | ID persistido de `League` |
+| `seasonId` | UUID | ID persistido de `Season` pertencente à competição |
+| `round` | inteiro positivo | Número persistido em `Fixture.round` |
+
+Regras relevantes:
+
+- usa apenas `Prediction.scorePoints` de fixtures avaliadas;
+- não lê nem retorna `Standing.adjustmentPoints`;
+- exclui usuários sem palpites públicos da classificação;
+- não retorna placares previstos;
+- antes do kickoff, oculta ranking, destaques e qualquer informação de terceiros;
+- o pior desempenho só é retornado quando a rodada está totalmente transparente e existem ao menos dois participantes completos.
+
+Erros relevantes: `400` para parâmetros inválidos, `401` para JWT ausente/inválido e `404` para competição, temporada ou rodada inexistente.
 
 ---
 

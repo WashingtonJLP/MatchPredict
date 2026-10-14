@@ -10,6 +10,7 @@
     "test:prediction-form": "node --experimental-strip-types --test src/features/matches/score-input-value.test.ts src/features/matches/prediction-form-state.test.ts",
     "test:score-input": "node --experimental-strip-types --test src/features/matches/score-input-value.test.ts",
     "test:transparency": "node --experimental-strip-types --test src/features/transparency/transparency-live-game.test.ts",
+    "test:rounds": "node --experimental-strip-types src/features/rounds/rounds-view.test.ts",
     "test:match-live-context": "node --experimental-strip-types --test src/features/matches/match-live-context.test.ts",
     "test:participation": "node --experimental-strip-types --test src/features/participation/*.test.ts",
     "test:admin": "node --experimental-strip-types --test src/features/admin/*.test.ts"

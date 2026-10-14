@@ -31,6 +31,7 @@ O projeto foi construído como aplicação de portfólio com separação clara e
 - Cálculo de pontuação por placar.
 - Ranking geral e ranking do usuário autenticado.
 - Estatísticas do usuário.
+- Área "Rodadas" com catálogo de competição/temporada, classificação, destaques e desempenho individual calculados sob demanda.
 - Documentação de API via Swagger em ambiente de desenvolvimento.
 
 ## Escopo atual
@@ -41,7 +42,7 @@ O escopo funcional atual cobre a jornada principal do usuário:
 2. consultar partidas;
 3. registrar palpites antes do kickoff;
 4. acompanhar palpites ativos e histórico;
-5. consultar transparência, ranking e estatísticas.
+5. consultar transparência, ranking, rodadas e estatísticas.
 
 As funcionalidades administrativas existem principalmente como endpoints protegidos para sincronização e processamento. Não há, nesta versão, um painel administrativo completo no frontend.
 
@@ -102,6 +103,7 @@ O Prisma centraliza o acesso ao PostgreSQL. A integração com a ESPN alimenta l
 - Cada usuário pode ter apenas um palpite por partida.
 - A pontuação atual é baseada no placar: 3 pontos para placar exato, 1 ponto para acerto de vencedor ou empate, 0 para erro.
 - Palpites de outros usuários ficam ocultos antes do início da partida e são liberados pela regra de transparência depois do kickoff ou quando a partida está ao vivo.
+- Estatísticas de rodada usam `Fixture.round` e `Prediction.scorePoints`; ajustes administrativos do `Standing` não participam desse cálculo.
 
 ## Limitações conhecidas
 

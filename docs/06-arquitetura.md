@@ -84,7 +84,7 @@ O frontend fica em `frontend/` e usa Next.js com App Router.
 - Renderizar a interface pública e a área autenticada.
 - Gerenciar sessão no cliente com JWT armazenado localmente.
 - Consumir a API backend por HTTP.
-- Exibir partidas, palpites, ranking, estatísticas e transparência.
+- Exibir partidas, palpites, ranking, estatísticas por rodada, estatísticas individuais e transparência.
 - Permitir cadastro, login, recuperação de senha e atualização de perfil.
 - Criar, editar e excluir palpites conforme as regras aplicadas pelo backend.
 
@@ -111,6 +111,7 @@ O frontend possui telas para:
 - meus palpites;
 - transparência;
 - estatísticas;
+- rodadas;
 - regras;
 - perfil.
 
@@ -145,7 +146,7 @@ O backend fica em `backend/` e usa NestJS.
 - Sincronizar liga, temporada, times, partidas, jogadores e resultados a partir da ESPN.
 - Processar pontuação de palpites.
 - Atualizar standings.
-- Fornecer ranking, estatísticas e transparência.
+- Fornecer ranking, estatísticas por rodada, estatísticas individuais e transparência.
 - Enviar e-mails de recuperação de senha via SMTP.
 
 ### Módulos principais
@@ -155,6 +156,7 @@ O backend fica em `backend/` e usa NestJS.
 - `FootballModule`: fixtures e sincronização com ESPN.
 - `PredictionsModule`: palpites, transparência, cálculo e processamento.
 - `StandingsModule`: ranking e posição do usuário.
+- `RoundsModule`: catálogo e agregações sob demanda por competição, temporada e rodada.
 - `EmailModule`: envio de e-mails.
 - `PrismaModule`: acesso ao banco.
 
@@ -175,6 +177,21 @@ O banco usado pela aplicação é PostgreSQL, acessado via Prisma ORM.
 - `Standing`
 - `Player`
 - `SyncLog`
+
+### Fluxo das estatísticas por rodada
+
+```text
+League
+  -> Season
+  -> Fixture.round
+  -> fixtures da rodada
+  -> Predictions
+  -> agregação sob demanda no RoundsModule
+```
+
+O módulo usa UUIDs persistidos de `League` e `Season`, evitando acoplamento ao slug ESPN da Premier League. Não há tabela derivada de vencedores, migration, cron novo ou polling de backend. Para cada rodada, o backend consulta as fixtures uma vez e os palpites correspondentes uma vez, agrega em memória um conjunto pequeno e aplica a transparência antes de serializar a resposta.
+
+`Standing` não é consultado no cálculo por rodada: `adjustmentPoints` continua restrito ao ranking geral. Palpites de terceiros entram no ranking da rodada somente quando a fixture já está fechada pela regra existente de kickoff/status.
 
 ### Observações
 

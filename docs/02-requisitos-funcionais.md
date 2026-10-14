@@ -185,8 +185,21 @@ O frontend deve oferecer as principais telas de uso do produto.
 - Meus Palpites.
 - Transparência.
 - Ranking e estatísticas.
+- Rodadas.
 - Perfil.
 - Regras.
+
+## RF21 - Estatísticas por rodada
+
+O sistema deve permitir que o usuário autenticado acompanhe uma rodada dentro de uma competição e temporada persistidas.
+
+- A seleção deve seguir a hierarquia competição, temporada e rodada.
+- O ranking da rodada inclui somente usuários com ao menos um palpite já público para a rodada; antes do kickoff, a existência de palpites de terceiros permanece oculta.
+- A pontuação da rodada é a soma de `Prediction.scorePoints` em fixtures avaliadas e não inclui `Standing.adjustmentPoints`.
+- A resposta inclui destaques, desempenho do usuário autenticado e classificação completa da rodada.
+- O pior desempenho só pode ser destacado depois que toda a rodada estiver transparente e entre ao menos dois participantes que tenham palpitado todos os jogos elegíveis.
+- A consulta é feita sob demanda, sem cron, polling de backend ou alteração no scheduler de resultados.
+- A rota e os contratos recebem identificadores de competição e temporada para permitir expansão futura sem habilitar novas ligas de palpites nesta versão.
 
 ## Funcionalidades fora do escopo atual
 
