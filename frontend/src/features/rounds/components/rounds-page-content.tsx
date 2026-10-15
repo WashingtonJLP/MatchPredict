@@ -377,8 +377,8 @@ function RoundHighlights({
         <Info className="mt-0.5 size-4 shrink-0 text-foreground" aria-hidden />
         <p>
           <span className="font-bold text-foreground">Como pontua:</span> placar
-          exato vale 3 pts; resultado correto sem placar exato vale 1 pt. Todo
-          placar exato também conta como resultado correto.
+          exato vale 3 pts; vencedor correto sem placar exato vale 1 pt; erro
+          vale 0 pt. Cada jogo avaliado entra em uma única categoria.
         </p>
       </div>
 
@@ -410,14 +410,14 @@ function RoundHighlights({
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
             <MetricHighlight
               icon={Target}
-              label="Placares exatos"
+              label="Mais placares exatos"
               participants={stats.highlights.mostExactScores}
               unit="jogo"
             />
             <MetricHighlight
               icon={CheckCircle2}
-              label="Resultados corretos"
-              participants={stats.highlights.mostCorrectWinners}
+              label="Mais vencedores corretos"
+              participants={stats.highlights.mostCorrectWinnersOnly}
               unit="jogo"
               divided
             />
@@ -528,7 +528,7 @@ function WorstHighlight({
   participant: RoundHighlightParticipant | null;
 }) {
   return (
-    <article className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 border-t border-border bg-muted/35 p-5 sm:p-6">
+    <article className="grid grid-cols-[auto_minmax(0,1fr)_max-content] items-center gap-x-3 gap-y-1 border-t border-border bg-muted/35 p-5 sm:gap-x-4 sm:p-6">
       <span className="flex size-11 items-center justify-center rounded-xl bg-card text-muted-foreground">
         <CircleX className="size-5" aria-hidden />
       </span>
@@ -536,7 +536,7 @@ function WorstHighlight({
         <p className="text-sm font-bold text-muted-foreground">
           Pior desempenho
         </p>
-        <p className="mt-1 truncate text-lg font-extrabold text-card-foreground">
+        <p className="mt-1 break-words text-lg font-extrabold leading-snug text-card-foreground">
           {participant?.name ?? "Sem comparação disponível"}
         </p>
         {!participant ? (
@@ -545,7 +545,7 @@ function WorstHighlight({
           </p>
         ) : null}
       </div>
-      <p className="text-3xl font-black text-foreground tabular-nums">
+      <p className="min-w-[4.5rem] whitespace-nowrap text-right text-3xl font-black text-foreground tabular-nums">
         {participant ? formatRoundPoints(participant.value) : "—"}
       </p>
     </article>
@@ -604,15 +604,15 @@ function MyRoundPerformance({ stats }: { stats: RoundStats }) {
 
             <dl className="grid grid-cols-2 sm:grid-cols-4">
               <PerformanceFact
-                label="Placares exatos"
+                label="Placar exato"
                 value={formatGameCount(performance.exactScores)}
               />
               <PerformanceFact
-                label="Resultados corretos"
-                value={formatGameCount(performance.correctWinners)}
+                label="Vencedor correto"
+                value={formatGameCount(performance.correctWinnersOnly)}
               />
               <PerformanceFact
-                label="Erros"
+                label="Erro"
                 value={formatGameCount(performance.wrongPredictions)}
               />
               <PerformanceFact
@@ -724,10 +724,10 @@ function RoundRanking({
                     Palpites públicos
                   </th>
                   <th scope="col" className="px-5 py-4 text-right">
-                    Placares exatos
+                    Placar exato
                   </th>
                   <th scope="col" className="px-5 py-4 text-right">
-                    Resultados corretos
+                    Vencedor correto
                   </th>
                   <th scope="col" className="px-5 py-4 text-right">
                     Pontos
@@ -788,7 +788,7 @@ function RankingTableRow({
         {participant.exactScores}
       </td>
       <td className="px-5 py-4 text-right font-bold text-foreground tabular-nums">
-        {participant.correctWinners}
+        {participant.correctWinnersOnly}
       </td>
       <td className="px-5 py-4 text-right text-xl font-black text-foreground tabular-nums">
         {participant.naturalPoints}
@@ -806,18 +806,17 @@ function RankingMobileItem({
 }) {
   return (
     <li className="p-4 sm:p-5">
-      <div className="flex items-center gap-3">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_max-content] items-center gap-3">
         <PositionBadge position={participant.position} />
-        <UserAvatar name={participant.name} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-extrabold text-card-foreground">
+        <div className="min-w-0">
+          <p className="break-words font-extrabold leading-snug text-card-foreground">
             {participant.name}
           </p>
           <p className="mt-1 text-xs font-semibold text-muted-foreground">
             {participant.predictionsCount}/{publicFixtures} palpites públicos
           </p>
         </div>
-        <p className="text-right">
+        <p className="shrink-0 whitespace-nowrap text-right">
           <span className="block text-2xl font-black text-foreground tabular-nums">
             {participant.naturalPoints}
           </span>
@@ -830,8 +829,8 @@ function RankingMobileItem({
           value={formatGameCount(participant.exactScores)}
         />
         <CompactFact
-          label="Resultado correto"
-          value={formatGameCount(participant.correctWinners)}
+          label="Vencedor correto"
+          value={formatGameCount(participant.correctWinnersOnly)}
         />
         <CompactFact
           label="Erro"

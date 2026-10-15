@@ -100,7 +100,7 @@ Acesso: autenticado.
 Regras relevantes:
 
 - usa apenas `Prediction.scorePoints` de fixtures avaliadas;
-- `correctWinners` inclui previsões com placar exato; as duas contagens são sobrepostas e não categorias aditivas;
+- expõe `correctWinnersOnly` somente para vencedor/empate correto sem placar exato; `exactScores`, `correctWinnersOnly` e `wrongPredictions` são categorias mutuamente exclusivas;
 - não lê nem retorna `Standing.adjustmentPoints`;
 - exclui usuários sem palpites públicos da classificação;
 - não retorna placares previstos;

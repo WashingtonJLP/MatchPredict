@@ -92,8 +92,8 @@ export class RoundParticipantResponseDto {
   @ApiProperty({ example: 1 })
   exactScores!: number;
 
-  @ApiProperty({ example: 5 })
-  correctWinners!: number;
+  @ApiProperty({ example: 4 })
+  correctWinnersOnly!: number;
 
   @ApiProperty({ example: 0 })
   wrongPredictions!: number;
@@ -152,7 +152,7 @@ export class RoundHighlightsResponseDto {
   mostExactScores!: RoundHighlightParticipantResponseDto[];
 
   @ApiProperty({ type: RoundHighlightParticipantResponseDto, isArray: true })
-  mostCorrectWinners!: RoundHighlightParticipantResponseDto[];
+  mostCorrectWinnersOnly!: RoundHighlightParticipantResponseDto[];
 
   @ApiProperty({ type: RoundHighlightParticipantResponseDto, nullable: true })
   worst!: RoundHighlightParticipantResponseDto | null;
@@ -175,7 +175,7 @@ export class RoundMyPerformanceResponseDto {
   exactScores!: number;
 
   @ApiProperty()
-  correctWinners!: number;
+  correctWinnersOnly!: number;
 
   @ApiProperty()
   wrongPredictions!: number;

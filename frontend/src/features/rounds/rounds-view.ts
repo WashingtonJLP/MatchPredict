@@ -81,7 +81,7 @@ export function getBestHighlightCaption(
     case "EXACT_SCORES":
       return "Desempate por mais placares exatos";
     case "CORRECT_WINNERS":
-      return "Desempate por mais resultados corretos";
+      return "Desempate por mais vencedores corretos";
     case "FEWER_WRONG_PREDICTIONS":
       return "Desempate por menos erros";
     case "EARLIER_REGISTRATION":

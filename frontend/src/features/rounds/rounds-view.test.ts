@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import type { RoundStats } from "../../types/round.ts";
@@ -115,9 +116,49 @@ test("informa o critério real quando o desempate decide o primeiro lugar", () =
       value: participant.naturalPoints,
       tieBreakCriterion: "CORRECT_WINNERS",
     }),
-    "Desempate por mais resultados corretos",
+    "Desempate por mais vencedores corretos",
   );
 });
+
+test("preserva espaço para nomes e mantém os pontos visíveis nos cards", () => {
+  const componentSource = readFileSync(
+    new URL("./components/rounds-page-content.tsx", import.meta.url),
+    "utf8",
+  );
+  const worstHighlight = extractFunctionSource(
+    componentSource,
+    "function WorstHighlight",
+    "function MyRoundPerformance",
+  );
+  const mobileRanking = extractFunctionSource(
+    componentSource,
+    "function RankingMobileItem",
+    "function PositionBadge",
+  );
+
+  assert.doesNotMatch(worstHighlight, /truncate/);
+  assert.match(
+    worstHighlight,
+    /grid-cols-\[auto_minmax\(0,1fr\)_max-content\]/,
+  );
+  assert.match(worstHighlight, /whitespace-nowrap/);
+  assert.doesNotMatch(mobileRanking, /truncate/);
+  assert.match(mobileRanking, /grid-cols-\[auto_minmax\(0,1fr\)_max-content\]/);
+  assert.match(mobileRanking, /whitespace-nowrap/);
+});
+
+function extractFunctionSource(
+  source: string,
+  startMarker: string,
+  endMarker: string,
+) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start);
+
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  return source.slice(start, end);
+}
 
 const participant = {
   userId: "user-1",
@@ -128,7 +169,7 @@ const participant = {
   predictionsCount: 1,
   evaluatedPredictions: 1,
   exactScores: 1,
-  correctWinners: 1,
+  correctWinnersOnly: 0,
   wrongPredictions: 0,
   accuracy: 100,
 };
@@ -147,7 +188,7 @@ function createStats(overrides: Partial<RoundStats> = {}): RoundStats {
     highlights: {
       best: null,
       mostExactScores: [],
-      mostCorrectWinners: [],
+      mostCorrectWinnersOnly: [],
       worst: null,
     },
     myPerformance: {
@@ -156,7 +197,7 @@ function createStats(overrides: Partial<RoundStats> = {}): RoundStats {
       predictionsCount: 0,
       evaluatedPredictions: 0,
       exactScores: 0,
-      correctWinners: 0,
+      correctWinnersOnly: 0,
       wrongPredictions: 0,
       pendingPredictions: 0,
       accuracy: null,

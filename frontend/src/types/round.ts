@@ -39,7 +39,7 @@ export type RoundParticipant = {
   predictionsCount: number;
   evaluatedPredictions: number;
   exactScores: number;
-  correctWinners: number;
+  correctWinnersOnly: number;
   wrongPredictions: number;
   accuracy: number | null;
 };
@@ -92,7 +92,7 @@ export type RoundStats = {
   highlights: {
     best: RoundBestHighlightParticipant | null;
     mostExactScores: RoundHighlightParticipant[];
-    mostCorrectWinners: RoundHighlightParticipant[];
+    mostCorrectWinnersOnly: RoundHighlightParticipant[];
     worst: RoundHighlightParticipant | null;
   };
   myPerformance: RoundMyPerformance;

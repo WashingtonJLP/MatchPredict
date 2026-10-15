@@ -36,7 +36,7 @@ export type RoundRankingEntry = {
   predictionsCount: number;
   evaluatedPredictions: number;
   exactScores: number;
-  correctWinners: number;
+  correctWinnersOnly: number;
   wrongPredictions: number;
   accuracy: number | null;
 };
@@ -465,7 +465,7 @@ export class RoundsService {
         predictionsCount: 0,
         evaluatedPredictions: 0,
         exactScores: 0,
-        correctWinners: 0,
+        correctWinnersOnly: 0,
         wrongPredictions: 0,
         userCreatedAt: prediction.user.createdAt,
         firstPredictionAt: prediction.createdAt,
@@ -480,9 +480,14 @@ export class RoundsService {
       if (isEvaluated) {
         current.naturalPoints += prediction.scorePoints;
         current.evaluatedPredictions++;
-        current.exactScores += Number(prediction.exactScore);
-        current.correctWinners += Number(prediction.correctWinner);
-        current.wrongPredictions += Number(!prediction.correctWinner);
+
+        if (prediction.exactScore) {
+          current.exactScores++;
+        } else if (prediction.correctWinner) {
+          current.correctWinnersOnly++;
+        } else {
+          current.wrongPredictions++;
+        }
       }
 
       entries.set(prediction.userId, current);
@@ -505,12 +510,14 @@ export class RoundsService {
       predictionsCount: entry.predictionsCount,
       evaluatedPredictions: entry.evaluatedPredictions,
       exactScores: entry.exactScores,
-      correctWinners: entry.correctWinners,
+      correctWinnersOnly: entry.correctWinnersOnly,
       wrongPredictions: entry.wrongPredictions,
       accuracy:
         entry.evaluatedPredictions > 0
           ? Math.round(
-              (entry.correctWinners / entry.evaluatedPredictions) * 1000,
+              ((entry.exactScores + entry.correctWinnersOnly) /
+                entry.evaluatedPredictions) *
+                1000,
             ) / 10
           : null,
     }));
@@ -538,9 +545,9 @@ export class RoundsService {
       0,
       ...evaluatedRanking.map((entry) => entry.exactScores),
     );
-    const maxCorrectWinners = Math.max(
+    const maxCorrectWinnersOnly = Math.max(
       0,
-      ...evaluatedRanking.map((entry) => entry.correctWinners),
+      ...evaluatedRanking.map((entry) => entry.correctWinnersOnly),
     );
     const worst =
       evaluatedRanking.length >= 2
@@ -555,11 +562,13 @@ export class RoundsService {
               .filter((entry) => entry.exactScores === maxExactScores)
               .map((entry) => this.toHighlight(entry, entry.exactScores))
           : [],
-      mostCorrectWinners:
-        maxCorrectWinners > 0
+      mostCorrectWinnersOnly:
+        maxCorrectWinnersOnly > 0
           ? evaluatedRanking
-              .filter((entry) => entry.correctWinners === maxCorrectWinners)
-              .map((entry) => this.toHighlight(entry, entry.correctWinners))
+              .filter(
+                (entry) => entry.correctWinnersOnly === maxCorrectWinnersOnly,
+              )
+              .map((entry) => this.toHighlight(entry, entry.correctWinnersOnly))
           : [],
       worst: worst ? this.toHighlight(worst, worst.naturalPoints) : null,
     };
@@ -585,7 +594,7 @@ export class RoundsService {
       predictionsCount,
       evaluatedPredictions: entry?.evaluatedPredictions ?? 0,
       exactScores: entry?.exactScores ?? 0,
-      correctWinners: entry?.correctWinners ?? 0,
+      correctWinnersOnly: entry?.correctWinnersOnly ?? 0,
       wrongPredictions: entry?.wrongPredictions ?? 0,
       pendingPredictions: predictionsCount - (entry?.evaluatedPredictions ?? 0),
       accuracy: entry?.accuracy ?? null,
@@ -616,7 +625,7 @@ function compareRoundPerformance(
   return (
     second.naturalPoints - first.naturalPoints ||
     second.exactScores - first.exactScores ||
-    second.correctWinners - first.correctWinners ||
+    second.correctWinnersOnly - first.correctWinnersOnly ||
     first.wrongPredictions - second.wrongPredictions ||
     first.userCreatedAt.getTime() - second.userCreatedAt.getTime() ||
     first.firstPredictionAt.getTime() - second.firstPredictionAt.getTime() ||
@@ -631,7 +640,7 @@ function compareWorstPerformance(
   return (
     first.naturalPoints - second.naturalPoints ||
     first.exactScores - second.exactScores ||
-    first.correctWinners - second.correctWinners ||
+    first.correctWinnersOnly - second.correctWinnersOnly ||
     second.wrongPredictions - first.wrongPredictions ||
     second.position - first.position
   );
@@ -649,7 +658,7 @@ function resolveBestTieBreakCriterion(
     return 'EXACT_SCORES';
   }
 
-  if (first.correctWinners !== second.correctWinners) {
+  if (first.correctWinnersOnly !== second.correctWinnersOnly) {
     return 'CORRECT_WINNERS';
   }
 

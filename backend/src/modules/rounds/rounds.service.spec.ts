@@ -199,15 +199,16 @@ describe('RoundsService', () => {
       expect.objectContaining({
         naturalPoints: 4,
         exactScores: 1,
-        correctWinners: 2,
+        correctWinnersOnly: 1,
+        wrongPredictions: 0,
       }),
     );
     expect(result.myPerformance.naturalPoints).toBe(4);
   });
 
-  it('conta placar exato dentro dos resultados corretos sem somar categorias', async () => {
+  it('separa 1 placar exato, 4 vencedores corretos e 5 erros em 10 avaliados', async () => {
     const fixtureIds = Array.from(
-      { length: 6 },
+      { length: 10 },
       (_, index) => `score-fixture-${index + 1}`,
     );
     fixtureFindMany.mockResolvedValue(
@@ -227,19 +228,82 @@ describe('RoundsService', () => {
           correctWinner: true,
         }),
       ),
-      createPrediction({ fixtureId: fixtureIds[5], scorePoints: 0 }),
+      ...fixtureIds
+        .slice(5)
+        .map((fixtureId) => createPrediction({ fixtureId, scorePoints: 0 })),
+    ]);
+
+    const result = await getStats();
+    const participant = result.ranking[0];
+
+    expect(participant).toEqual(
+      expect.objectContaining({
+        naturalPoints: 7,
+        evaluatedPredictions: 10,
+        exactScores: 1,
+        correctWinnersOnly: 4,
+        wrongPredictions: 5,
+        accuracy: 50,
+      }),
+    );
+    expect(
+      participant.exactScores +
+        participant.correctWinnersOnly +
+        participant.wrongPredictions,
+    ).toBe(participant.evaluatedPredictions);
+    expect(participant.exactScores * 3 + participant.correctWinnersOnly).toBe(
+      participant.naturalPoints,
+    );
+    expect(result.myPerformance).toEqual(
+      expect.objectContaining({
+        naturalPoints: 7,
+        evaluatedPredictions: 10,
+        exactScores: 1,
+        correctWinnersOnly: 4,
+        wrongPredictions: 5,
+      }),
+    );
+  });
+
+  it('usa somente vencedores sem placar exato no destaque especifico', async () => {
+    const fixtureIds = [
+      firstFixtureId,
+      secondFixtureId,
+      '88888888-8888-4888-8888-888888888888',
+    ];
+    fixtureFindMany.mockResolvedValue(
+      fixtureIds.map((id) => createFixture({ id })),
+    );
+    predictionFindMany.mockResolvedValue([
+      createPrediction({
+        userId: firstUserId,
+        fixtureId: fixtureIds[0],
+        scorePoints: 3,
+        exactScore: true,
+        correctWinner: true,
+      }),
+      createPrediction({
+        userId: secondUserId,
+        fixtureId: fixtureIds[0],
+        scorePoints: 1,
+        correctWinner: true,
+      }),
+      createPrediction({
+        userId: secondUserId,
+        fixtureId: fixtureIds[1],
+        scorePoints: 1,
+        correctWinner: true,
+      }),
     ]);
 
     const result = await getStats();
 
-    expect(result.ranking[0]).toEqual(
-      expect.objectContaining({
-        naturalPoints: 7,
-        exactScores: 1,
-        correctWinners: 5,
-        wrongPredictions: 1,
-      }),
-    );
+    expect(result.highlights.mostExactScores).toEqual([
+      expect.objectContaining({ userId: firstUserId, value: 1 }),
+    ]);
+    expect(result.highlights.mostCorrectWinnersOnly).toEqual([
+      expect.objectContaining({ userId: secondUserId, value: 2 }),
+    ]);
   });
 
   it('ignora adjustmentPoints porque nao consulta Standing', async () => {
@@ -529,7 +593,7 @@ describe('RoundsService', () => {
       predictionsCount: 2,
       evaluatedPredictions: 2,
       exactScores: 0,
-      correctWinners: 1,
+      correctWinnersOnly: 1,
       wrongPredictions: 1,
       pendingPredictions: 0,
       accuracy: 50,

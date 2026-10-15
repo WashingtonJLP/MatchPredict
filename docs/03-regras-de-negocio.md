@@ -243,6 +243,7 @@ O backend NestJS é a fonte de verdade para as regras de autenticação, palpite
 - As estatísticas são derivadas de `Fixture` e `Prediction`; não existe tabela de vencedores de rodada nem estado duplicado.
 - Usuários sem palpite público na rodada não entram na classificação e não aparecem com zero ponto.
 - Pontos naturais são a soma de `Prediction.scorePoints` apenas para fixtures finalizadas, com placar e `processedAt`.
+- Para apresentação em Rodadas, cada palpite avaliado pertence a uma única categoria: `exactScores`, `correctWinnersOnly` (vencedor/empate correto sem placar exato) ou `wrongPredictions`. A soma dessas métricas é igual a `evaluatedPredictions`.
 - `Standing.adjustmentPoints` nunca entra no ranking, nos destaques ou no desempenho da rodada.
 - O desempate segue pontos naturais, placares exatos, vencedores corretos, menos erros e critérios temporais determinísticos.
 - O melhor da rodada exige ao menos um palpite avaliado.
