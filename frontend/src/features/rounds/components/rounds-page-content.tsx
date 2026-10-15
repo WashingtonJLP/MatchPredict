@@ -807,47 +807,56 @@ function RankingMobileItem({
   publicFixtures: number;
 }) {
   return (
-    <li className="p-4 sm:p-5">
+    <li className="px-4 py-3 sm:px-5 sm:py-3.5">
       <div className="grid grid-cols-[auto_minmax(0,1fr)_max-content] items-center gap-3">
-        <PositionBadge position={participant.position} />
+        <PositionBadge position={participant.position} compact />
         <div className="min-w-0">
-          <p className="break-words font-extrabold leading-snug text-card-foreground">
+          <p className="break-words text-sm font-extrabold leading-snug text-card-foreground sm:text-base">
             {participant.name}
           </p>
-          <p className="mt-1 text-xs font-semibold text-muted-foreground">
-            {participant.predictionsCount}/{publicFixtures} palpites públicos
+          <p className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[0.6875rem] font-semibold leading-4 text-muted-foreground sm:text-xs">
+            <span>
+              {participant.predictionsCount}/{publicFixtures} palpites
+            </span>
+            <span>
+              {participant.exactScores}{" "}
+              {participant.exactScores === 1 ? "exato" : "exatos"}
+            </span>
+            <span>
+              {participant.correctWinnersOnly}{" "}
+              {participant.correctWinnersOnly === 1
+                ? "vencedor"
+                : "vencedores"}
+            </span>
+            <span>
+              {participant.wrongPredictions}{" "}
+              {participant.wrongPredictions === 1 ? "erro" : "erros"}
+            </span>
           </p>
         </div>
-        <p className="shrink-0 whitespace-nowrap text-right">
-          <span className="block text-2xl font-black text-foreground tabular-nums">
+        <p className="flex shrink-0 items-baseline gap-1 whitespace-nowrap text-right">
+          <span className="text-xl font-black text-foreground tabular-nums">
             {participant.naturalPoints}
           </span>
           <span className="text-xs font-bold text-muted-foreground">pts</span>
         </p>
       </div>
-      <dl className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-muted/65 p-3 text-center">
-        <CompactFact
-          label="Placar exato"
-          value={formatGameCount(participant.exactScores)}
-        />
-        <CompactFact
-          label="Vencedor correto"
-          value={formatGameCount(participant.correctWinnersOnly)}
-        />
-        <CompactFact
-          label="Erro"
-          value={formatGameCount(participant.wrongPredictions)}
-        />
-      </dl>
     </li>
   );
 }
 
-function PositionBadge({ position }: { position: number }) {
+function PositionBadge({
+  position,
+  compact = false,
+}: {
+  position: number;
+  compact?: boolean;
+}) {
   return (
     <span
       className={cn(
-        "inline-flex size-10 items-center justify-center rounded-xl text-sm font-black tabular-nums",
+        "inline-flex items-center justify-center font-black tabular-nums",
+        compact ? "size-9 rounded-lg text-xs" : "size-10 rounded-xl text-sm",
         position === 1
           ? "bg-accent text-accent-foreground"
           : "bg-muted text-foreground",
@@ -855,19 +864,6 @@ function PositionBadge({ position }: { position: number }) {
     >
       {position}º
     </span>
-  );
-}
-
-function CompactFact({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-[0.6875rem] font-bold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="mt-1 text-lg font-black text-foreground tabular-nums">
-        {value}
-      </dd>
-    </div>
   );
 }
 
