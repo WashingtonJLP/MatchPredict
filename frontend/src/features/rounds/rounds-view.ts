@@ -54,18 +54,6 @@ export function getRoundStatusCopy(stats: RoundStats) {
   };
 }
 
-export function formatHighlightNames(participants: Array<{ name: string }>) {
-  if (participants.length === 0) {
-    return "Sem destaque ainda";
-  }
-
-  if (participants.length <= 2) {
-    return participants.map((participant) => participant.name).join(" e ");
-  }
-
-  return `${participants[0].name}, ${participants[1].name} +${participants.length - 2}`;
-}
-
 export function formatRoundPoints(value: number) {
   return `${value} ${value === 1 ? "pt" : "pts"}`;
 }

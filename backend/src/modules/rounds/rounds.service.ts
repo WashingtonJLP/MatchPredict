@@ -539,38 +539,37 @@ export class RoundsService {
             evaluatedRanking[0].naturalPoints,
           ),
           tieBreakCriterion: bestTieBreakCriterion,
+          exactScores: evaluatedRanking[0].exactScores,
+          correctWinnersOnly: evaluatedRanking[0].correctWinnersOnly,
+          evaluatedPredictions: evaluatedRanking[0].evaluatedPredictions,
         }
       : null;
-    const maxExactScores = Math.max(
-      0,
-      ...evaluatedRanking.map((entry) => entry.exactScores),
-    );
-    const maxCorrectWinnersOnly = Math.max(
-      0,
-      ...evaluatedRanking.map((entry) => entry.correctWinnersOnly),
-    );
-    const worst =
-      evaluatedRanking.length >= 2
-        ? [...evaluatedRanking].sort(compareWorstPerformance)[0]
-        : null;
+    const minimumPoints = evaluatedRanking.length
+      ? Math.min(...evaluatedRanking.map((entry) => entry.naturalPoints))
+      : null;
+    const lowestScoreParticipants =
+      minimumPoints === null
+        ? []
+        : evaluatedRanking.filter(
+            (entry) => entry.naturalPoints === minimumPoints,
+          );
 
     return {
       best,
-      mostExactScores:
-        maxExactScores > 0
-          ? evaluatedRanking
-              .filter((entry) => entry.exactScores === maxExactScores)
-              .map((entry) => this.toHighlight(entry, entry.exactScores))
-          : [],
-      mostCorrectWinnersOnly:
-        maxCorrectWinnersOnly > 0
-          ? evaluatedRanking
-              .filter(
-                (entry) => entry.correctWinnersOnly === maxCorrectWinnersOnly,
-              )
-              .map((entry) => this.toHighlight(entry, entry.correctWinnersOnly))
-          : [],
-      worst: worst ? this.toHighlight(worst, worst.naturalPoints) : null,
+      lowestScore:
+        minimumPoints === null
+          ? null
+          : {
+              value: minimumPoints,
+              participantCount: lowestScoreParticipants.length,
+              participant:
+                lowestScoreParticipants.length === 1
+                  ? this.toHighlight(
+                      lowestScoreParticipants[0],
+                      lowestScoreParticipants[0].naturalPoints,
+                    )
+                  : null,
+            },
     };
   }
 
@@ -630,19 +629,6 @@ function compareRoundPerformance(
     first.userCreatedAt.getTime() - second.userCreatedAt.getTime() ||
     first.firstPredictionAt.getTime() - second.firstPredictionAt.getTime() ||
     first.userId.localeCompare(second.userId)
-  );
-}
-
-function compareWorstPerformance(
-  first: RoundRankingEntry,
-  second: RoundRankingEntry,
-) {
-  return (
-    first.naturalPoints - second.naturalPoints ||
-    first.exactScores - second.exactScores ||
-    first.correctWinnersOnly - second.correctWinnersOnly ||
-    second.wrongPredictions - first.wrongPredictions ||
-    second.position - first.position
   );
 }
 

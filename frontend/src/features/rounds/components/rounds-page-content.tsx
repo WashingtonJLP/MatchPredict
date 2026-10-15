@@ -6,14 +6,15 @@ import {
   CalendarRange,
   CheckCircle2,
   CircleAlert,
-  CircleX,
   Clock3,
   Crown,
   Info,
+  ListChecks,
   Medal,
   RefreshCw,
   ShieldAlert,
   Target,
+  TrendingDown,
   Trophy,
   UsersRound,
 } from "lucide-react";
@@ -27,7 +28,6 @@ import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
   formatGameCount,
-  formatHighlightNames,
   formatRoundPoints,
   getBestHighlightCaption,
   getRoundContentState,
@@ -40,7 +40,7 @@ import type {
   RoundBestHighlightParticipant,
   RoundCatalogCompetition,
   RoundCatalogSeason,
-  RoundHighlightParticipant,
+  RoundLowestScore,
   RoundParticipant,
   RoundSelection,
   RoundStats,
@@ -408,20 +408,42 @@ function RoundHighlights({
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.92fr)]">
           <FeaturedHighlight participant={stats.highlights.best} />
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <MetricHighlight
+            <div className="border-b border-border bg-muted/35 px-5 py-4 sm:px-6">
+              <p className="text-sm font-extrabold text-card-foreground">
+                Como o melhor pontuou
+              </p>
+              <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+                Métricas exclusivas do líder da classificação.
+              </p>
+            </div>
+            <BestMetricRow
               icon={Target}
-              label="Mais placares exatos"
-              participants={stats.highlights.mostExactScores}
-              unit="jogo"
+              label="Placares exatos"
+              value={
+                stats.highlights.best
+                  ? formatGameCount(stats.highlights.best.exactScores)
+                  : "—"
+              }
             />
-            <MetricHighlight
+            <BestMetricRow
               icon={CheckCircle2}
-              label="Mais vencedores corretos"
-              participants={stats.highlights.mostCorrectWinnersOnly}
-              unit="jogo"
-              divided
+              label="Vencedores corretos"
+              value={
+                stats.highlights.best
+                  ? formatGameCount(stats.highlights.best.correctWinnersOnly)
+                  : "—"
+              }
             />
-            <WorstHighlight participant={stats.highlights.worst} />
+            <BestMetricRow
+              icon={ListChecks}
+              label="Palpites avaliados"
+              value={
+                stats.highlights.best
+                  ? `${stats.highlights.best.evaluatedPredictions}/${stats.totalFixtures}`
+                  : "—"
+              }
+            />
+            <LowestScoreHighlight lowestScore={stats.highlights.lowestScore} />
           </div>
         </div>
       )}
@@ -476,77 +498,57 @@ function FeaturedHighlight({
   );
 }
 
-function MetricHighlight({
-  divided = false,
+function BestMetricRow({
   icon: Icon,
   label,
-  participants,
-  unit,
+  value,
 }: {
-  divided?: boolean;
   icon: typeof Target;
   label: string;
-  participants: RoundHighlightParticipant[];
-  unit: string;
+  value: string;
 }) {
-  const value = participants[0]?.value ?? 0;
-
   return (
-    <article
-      className={cn(
-        "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 bg-muted/15 p-5 sm:p-6",
-        divided && "border-t border-border",
-      )}
-    >
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_max-content] items-center gap-4 border-b border-border bg-muted/10 p-5 sm:px-6 sm:py-5">
       <span className="flex size-10 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground">
         <Icon className="size-5" aria-hidden />
       </span>
-      <div className="min-w-0">
-        <p className="text-xs font-bold text-muted-foreground">{label}</p>
-        <p className="mt-1 truncate text-base font-extrabold text-card-foreground">
-          {formatHighlightNames(participants)}
-        </p>
-      </div>
-      <div className="text-right">
-        <p className="text-2xl font-black text-foreground tabular-nums">
-          {participants.length ? value : "—"}
-        </p>
-        {participants.length ? (
-          <p className="mt-1 max-w-24 text-xs font-bold text-muted-foreground">
-            {unit}
-            {value === 1 ? "" : "s"}
-          </p>
-        ) : null}
-      </div>
-    </article>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="whitespace-nowrap text-right text-xl font-black text-foreground tabular-nums">
+        {value}
+      </p>
+    </div>
   );
 }
 
-function WorstHighlight({
-  participant,
+function LowestScoreHighlight({
+  lowestScore,
 }: {
-  participant: RoundHighlightParticipant | null;
+  lowestScore: RoundLowestScore | null;
 }) {
+  const uniqueParticipant =
+    lowestScore?.participantCount === 1 ? lowestScore.participant : null;
+
   return (
-    <article className="grid grid-cols-[auto_minmax(0,1fr)_max-content] items-center gap-x-3 gap-y-1 border-t border-border bg-muted/35 p-5 sm:gap-x-4 sm:p-6">
+    <article className="grid grid-cols-[auto_minmax(0,1fr)_max-content] items-center gap-x-3 gap-y-1 bg-muted/35 p-5 sm:gap-x-4 sm:p-6">
       <span className="flex size-11 items-center justify-center rounded-xl bg-card text-muted-foreground">
-        <CircleX className="size-5" aria-hidden />
+        <TrendingDown className="size-5" aria-hidden />
       </span>
       <div className="min-w-0">
         <p className="text-sm font-bold text-muted-foreground">
-          Pior desempenho
+          Menor pontuação
         </p>
         <p className="mt-1 break-words text-lg font-extrabold leading-snug text-card-foreground">
-          {participant?.name ?? "Sem comparação disponível"}
+          {uniqueParticipant
+            ? uniqueParticipant.name
+            : lowestScore
+              ? `${lowestScore.participantCount} ${lowestScore.participantCount === 1 ? "participante" : "participantes"}`
+              : "Sem pontuação disponível"}
         </p>
-        {!participant ? (
-          <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
-            Exige ao menos dois participantes com palpites avaliados.
-          </p>
-        ) : null}
       </div>
       <p className="min-w-[4.5rem] whitespace-nowrap text-right text-3xl font-black text-foreground tabular-nums">
-        {participant ? formatRoundPoints(participant.value) : "—"}
+        {lowestScore ? formatRoundPoints(lowestScore.value) : "—"}
       </p>
     </article>
   );

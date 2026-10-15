@@ -263,14 +263,19 @@ describe('RoundsService', () => {
         wrongPredictions: 5,
       }),
     );
+    expect(result.highlights.best).toEqual(
+      expect.objectContaining({
+        userId: firstUserId,
+        value: 7,
+        exactScores: 1,
+        correctWinnersOnly: 4,
+        evaluatedPredictions: 10,
+      }),
+    );
   });
 
-  it('usa somente vencedores sem placar exato no destaque especifico', async () => {
-    const fixtureIds = [
-      firstFixtureId,
-      secondFixtureId,
-      '88888888-8888-4888-8888-888888888888',
-    ];
+  it('nao cria listas de lideres secundarios quando exatos e vencedores empatam', async () => {
+    const fixtureIds = [firstFixtureId, secondFixtureId];
     fixtureFindMany.mockResolvedValue(
       fixtureIds.map((id) => createFixture({ id })),
     );
@@ -283,9 +288,16 @@ describe('RoundsService', () => {
         correctWinner: true,
       }),
       createPrediction({
+        userId: firstUserId,
+        fixtureId: fixtureIds[1],
+        scorePoints: 1,
+        correctWinner: true,
+      }),
+      createPrediction({
         userId: secondUserId,
         fixtureId: fixtureIds[0],
-        scorePoints: 1,
+        scorePoints: 3,
+        exactScore: true,
         correctWinner: true,
       }),
       createPrediction({
@@ -298,11 +310,18 @@ describe('RoundsService', () => {
 
     const result = await getStats();
 
-    expect(result.highlights.mostExactScores).toEqual([
-      expect.objectContaining({ userId: firstUserId, value: 1 }),
-    ]);
-    expect(result.highlights.mostCorrectWinnersOnly).toEqual([
-      expect.objectContaining({ userId: secondUserId, value: 2 }),
+    expect(result.ranking.map((entry) => entry.naturalPoints)).toEqual([4, 4]);
+    expect(result.highlights.best).toEqual(
+      expect.objectContaining({
+        userId: firstUserId,
+        exactScores: 1,
+        correctWinnersOnly: 1,
+        evaluatedPredictions: 2,
+      }),
+    );
+    expect(Object.keys(result.highlights).sort()).toEqual([
+      'best',
+      'lowestScore',
     ]);
   });
 
@@ -341,6 +360,9 @@ describe('RoundsService', () => {
         userId: firstUserId,
         value: 3,
         tieBreakCriterion: null,
+        exactScores: 1,
+        correctWinnersOnly: 0,
+        evaluatedPredictions: 1,
       }),
     );
   });
@@ -376,7 +398,7 @@ describe('RoundsService', () => {
     );
   });
 
-  it('marca como pior o participante 6/10 com 2 pontos diante de 10/10 com 4 pontos', async () => {
+  it('informa nome e pontos quando existe uma unica menor pontuacao', async () => {
     const fixtureIds = Array.from(
       { length: 10 },
       (_, index) => `fixture-${index + 1}`,
@@ -420,12 +442,18 @@ describe('RoundsService', () => {
     expect(result.ranking.some((entry) => entry.userId === thirdUserId)).toBe(
       false,
     );
-    expect(result.highlights.worst).toEqual(
-      expect.objectContaining({ userId: secondUserId, value: 2 }),
-    );
+    expect(result.highlights.lowestScore).toEqual({
+      value: 2,
+      participantCount: 1,
+      participant: expect.objectContaining({
+        userId: secondUserId,
+        name: 'Bruno',
+        value: 2,
+      }),
+    });
   });
 
-  it('desempata o menor numero de pontos por mais erros', async () => {
+  it('resume empate na menor pontuacao sem escolher participante artificial', async () => {
     predictionFindMany.mockResolvedValue([
       createPrediction({
         userId: firstUserId,
@@ -458,61 +486,18 @@ describe('RoundsService', () => {
     expect(result.ranking.slice(1).map((entry) => entry.naturalPoints)).toEqual(
       [1, 1],
     );
-    expect(result.highlights.worst).toEqual(
-      expect.objectContaining({ userId: thirdUserId, value: 1 }),
-    );
-  });
-
-  it('considera menos placares exatos antes de vencedores no desempate do pior', async () => {
-    const fixtureIds = Array.from(
-      { length: 4 },
-      (_, index) => `tie-fixture-${index + 1}`,
-    );
-    fixtureFindMany.mockResolvedValue(
-      fixtureIds.map((id) => createFixture({ id })),
-    );
-    predictionFindMany.mockResolvedValue([
-      createPrediction({
-        userId: firstUserId,
-        fixtureId: fixtureIds[0],
-        scorePoints: 3,
-        exactScore: true,
-        correctWinner: true,
-      }),
-      createPrediction({
-        userId: firstUserId,
-        fixtureId: fixtureIds[1],
-        scorePoints: 1,
-        correctWinner: true,
-      }),
-      createPrediction({
-        userId: secondUserId,
-        fixtureId: fixtureIds[0],
-        scorePoints: 3,
-        exactScore: true,
-        correctWinner: true,
-      }),
-      ...fixtureIds.slice(0, 3).map((fixtureId) =>
-        createPrediction({
-          userId: thirdUserId,
-          fixtureId,
-          scorePoints: 1,
-          correctWinner: true,
-        }),
-      ),
+    expect(result.ranking.slice(1).map((entry) => entry.userId)).toEqual([
+      secondUserId,
+      thirdUserId,
     ]);
-
-    const result = await getStats();
-
-    expect(result.ranking.slice(1).map((entry) => entry.naturalPoints)).toEqual(
-      [3, 3],
-    );
-    expect(result.highlights.worst).toEqual(
-      expect.objectContaining({ userId: thirdUserId, value: 3 }),
-    );
+    expect(result.highlights.lowestScore).toEqual({
+      value: 1,
+      participantCount: 2,
+      participant: null,
+    });
   });
 
-  it('protege palpites futuros ao calcular o pior durante rodada parcial', async () => {
+  it('protege palpites futuros ao calcular a menor pontuacao durante rodada parcial', async () => {
     fixtureFindMany.mockResolvedValue([
       createFixture({ id: firstFixtureId }),
       createFixture({
@@ -558,9 +543,14 @@ describe('RoundsService', () => {
         naturalPoints: 0,
       }),
     ]);
-    expect(result.highlights.worst).toEqual(
-      expect.objectContaining({ userId: secondUserId, value: 0 }),
-    );
+    expect(result.highlights.lowestScore).toEqual({
+      value: 0,
+      participantCount: 1,
+      participant: expect.objectContaining({
+        userId: secondUserId,
+        value: 0,
+      }),
+    });
   });
 
   it('retorna desempenho do usuario autenticado e aproveitamento coerente', async () => {
@@ -621,6 +611,7 @@ describe('RoundsService', () => {
     expect(result.status).toBe('UPCOMING');
     expect(result.ranking).toEqual([]);
     expect(result.highlights.best).toBeNull();
+    expect(result.highlights.lowestScore).toBeNull();
     expect(result.myPerformance.predictionsCount).toBe(1);
     expect(result.myPerformance.position).toBeNull();
   });

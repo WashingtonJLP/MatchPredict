@@ -105,7 +105,8 @@ Regras relevantes:
 - exclui usuários sem palpites públicos da classificação;
 - não retorna placares previstos;
 - antes do kickoff, oculta ranking, destaques e qualquer informação de terceiros;
-- o pior desempenho considera ao menos dois participantes com palpite público e avaliado, mesmo quando algum deles não preencheu todos os jogos da rodada;
+- o destaque `best` representa o primeiro colocado do ranking e inclui `exactScores`, `correctWinnersOnly` e `evaluatedPredictions` desse participante;
+- `lowestScore` retorna o menor valor e a quantidade de participantes empatados; inclui `participant` somente quando existe um único participante com essa pontuação;
 - o melhor desempenho informa `tieBreakCriterion` somente quando a igualdade de pontos foi resolvida por um critério determinístico.
 
 Erros relevantes: `400` para parâmetros inválidos, `401` para JWT ausente/inválido e `404` para competição, temporada ou rodada inexistente.

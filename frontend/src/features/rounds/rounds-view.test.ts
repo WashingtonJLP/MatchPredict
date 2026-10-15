@@ -5,7 +5,6 @@ import test from "node:test";
 import type { RoundStats } from "../../types/round.ts";
 import {
   formatGameCount,
-  formatHighlightNames,
   formatRoundPoints,
   getBestHighlightCaption,
   getRoundContentState,
@@ -72,17 +71,6 @@ test("apresenta estado encerrado com denominador real", () => {
   assert.match(getRoundStatusCopy(stats).description, /9\/9/);
 });
 
-test("resume empates de destaque sem criar nomes", () => {
-  assert.equal(
-    formatHighlightNames([
-      { name: "Ana" },
-      { name: "Bruno" },
-      { name: "Carla" },
-    ]),
-    "Ana, Bruno +1",
-  );
-});
-
 test("formata unidades de pontos e jogos sem ambiguidade", () => {
   assert.equal(formatRoundPoints(1), "1 pt");
   assert.equal(formatRoundPoints(2), "2 pts");
@@ -125,9 +113,9 @@ test("preserva espaço para nomes e mantém os pontos visíveis nos cards", () =
     new URL("./components/rounds-page-content.tsx", import.meta.url),
     "utf8",
   );
-  const worstHighlight = extractFunctionSource(
+  const lowestScoreHighlight = extractFunctionSource(
     componentSource,
-    "function WorstHighlight",
+    "function LowestScoreHighlight",
     "function MyRoundPerformance",
   );
   const mobileRanking = extractFunctionSource(
@@ -136,12 +124,12 @@ test("preserva espaço para nomes e mantém os pontos visíveis nos cards", () =
     "function PositionBadge",
   );
 
-  assert.doesNotMatch(worstHighlight, /truncate/);
+  assert.doesNotMatch(lowestScoreHighlight, /truncate/);
   assert.match(
-    worstHighlight,
+    lowestScoreHighlight,
     /grid-cols-\[auto_minmax\(0,1fr\)_max-content\]/,
   );
-  assert.match(worstHighlight, /whitespace-nowrap/);
+  assert.match(lowestScoreHighlight, /whitespace-nowrap/);
   assert.doesNotMatch(mobileRanking, /truncate/);
   assert.match(mobileRanking, /grid-cols-\[auto_minmax\(0,1fr\)_max-content\]/);
   assert.match(mobileRanking, /whitespace-nowrap/);
@@ -187,9 +175,7 @@ function createStats(overrides: Partial<RoundStats> = {}): RoundStats {
     dataIncomplete: false,
     highlights: {
       best: null,
-      mostExactScores: [],
-      mostCorrectWinnersOnly: [],
-      worst: null,
+      lowestScore: null,
     },
     myPerformance: {
       position: null,

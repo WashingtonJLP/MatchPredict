@@ -61,6 +61,15 @@ export type RoundBestTieBreakCriterion =
 
 export type RoundBestHighlightParticipant = RoundHighlightParticipant & {
   tieBreakCriterion: RoundBestTieBreakCriterion | null;
+  exactScores: number;
+  correctWinnersOnly: number;
+  evaluatedPredictions: number;
+};
+
+export type RoundLowestScore = {
+  value: number;
+  participantCount: number;
+  participant: RoundHighlightParticipant | null;
 };
 
 export type RoundMyPerformance = Omit<
@@ -91,9 +100,7 @@ export type RoundStats = {
   dataIncomplete: boolean;
   highlights: {
     best: RoundBestHighlightParticipant | null;
-    mostExactScores: RoundHighlightParticipant[];
-    mostCorrectWinnersOnly: RoundHighlightParticipant[];
-    worst: RoundHighlightParticipant | null;
+    lowestScore: RoundLowestScore | null;
   };
   myPerformance: RoundMyPerformance;
   ranking: RoundParticipant[];

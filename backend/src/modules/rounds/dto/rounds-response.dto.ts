@@ -139,6 +139,29 @@ export class RoundBestHighlightParticipantResponseDto extends RoundHighlightPart
     | 'EARLIER_PREDICTION'
     | 'STABLE_ID'
     | null;
+
+  @ApiProperty({ example: 1 })
+  exactScores!: number;
+
+  @ApiProperty({ example: 4 })
+  correctWinnersOnly!: number;
+
+  @ApiProperty({ example: 10 })
+  evaluatedPredictions!: number;
+}
+
+export class RoundLowestScoreResponseDto {
+  @ApiProperty({ example: 2 })
+  value!: number;
+
+  @ApiProperty({ example: 3 })
+  participantCount!: number;
+
+  @ApiProperty({
+    type: RoundHighlightParticipantResponseDto,
+    nullable: true,
+  })
+  participant!: RoundHighlightParticipantResponseDto | null;
 }
 
 export class RoundHighlightsResponseDto {
@@ -148,14 +171,8 @@ export class RoundHighlightsResponseDto {
   })
   best!: RoundBestHighlightParticipantResponseDto | null;
 
-  @ApiProperty({ type: RoundHighlightParticipantResponseDto, isArray: true })
-  mostExactScores!: RoundHighlightParticipantResponseDto[];
-
-  @ApiProperty({ type: RoundHighlightParticipantResponseDto, isArray: true })
-  mostCorrectWinnersOnly!: RoundHighlightParticipantResponseDto[];
-
-  @ApiProperty({ type: RoundHighlightParticipantResponseDto, nullable: true })
-  worst!: RoundHighlightParticipantResponseDto | null;
+  @ApiProperty({ type: RoundLowestScoreResponseDto, nullable: true })
+  lowestScore!: RoundLowestScoreResponseDto | null;
 }
 
 export class RoundMyPerformanceResponseDto {
