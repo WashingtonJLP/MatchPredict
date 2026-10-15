@@ -1,205 +1,327 @@
-# ParticipaÃ§Ã£o mensal via PIX
+# Participação mensal via PIX
 
-## Arquitetura
+## Visão geral
 
-A participaÃ§Ã£o mensal custa R$ 25,00 (2.500 centavos), definidos exclusivamente
-pelo backend. Cada `Payment` local recebe um QR PIX estÃ¡tico Asaas exclusivo, com
-valor fixo, expiraÃ§Ã£o e `allowsMultiplePayments: false`:
+O MatchPredict usa uma participação mensal para autorizar a criação e a edição de palpites. O pagamento é feito por PIX, com QR estático individual gerado pelo Asaas.
+
+Os três registros têm responsabilidades diferentes:
+
+- `ParticipationPeriod` representa o mês e o valor aplicável;
+- `Payment` representa a cobrança e sua confirmação financeira;
+- `Participation` representa a autorização efetiva do usuário naquele período.
 
 ```text
 Payment PENDING
-  -> POST /v3/pix/qrCodes/static
-  -> providerReference = qrCode.id
-  -> encodedImage + payload
-  -> pagamento PIX
-  -> PAYMENT_RECEIVED
-  -> payment.pixQrCodeId encontra providerReference
-  -> providerPaymentId = payment.id
-  -> Payment PAID
-  -> Participation ACTIVE
+  → QR PIX estático do Asaas
+  → PAYMENT_RECEIVED ou reconciliação válida
+  → Payment PAID
+  → Participation ACTIVE
+  → autorização para palpitar no período
 ```
 
-"EstÃ¡tico" Ã© a modalidade da API Asaas; o MatchPredict nÃ£o reutiliza um QR global.
-Cada tentativa local elegÃ­vel possui sua prÃ³pria referÃªncia Asaas.
+`Payment PENDING` não autoriza palpites. Mesmo um `Payment PAID` só integra o fluxo correto quando possui a `Participation ACTIVE` correspondente. A verificação de autorização consulta a participação, não o estado visual do frontend.
 
-Essa modalidade nÃ£o exige criar previamente uma cobranÃ§a ou um Customer. Quando o
-PIX Ã© recebido, o Asaas importa os dados do pagador e cria a cobranÃ§a. Por isso o
-MatchPredict nÃ£o chama `POST /customers`, nÃ£o coleta CPF/CNPJ e nÃ£o usa Checkout ou
-Payment Link. A `addressKey` pertence Ã  conta recebedora Asaas; ela nÃ£o Ã© um dado
-do usuÃ¡rio/pagador.
+## Valor e período
 
-## PerÃ­odo e autorizaÃ§Ã£o
+O valor atual é definido no backend:
 
-Uma participaÃ§Ã£o autoriza palpites para fixtures cujo `kickoff`, interpretado em
-`America/Sao_Paulo`, pertence ao intervalo mensal `[startsAt, endsAt)`. O backend
-continua exigindo `Participation ACTIVE` para criar ou editar um palpite. `PENDING`
-e o estado visual do frontend nunca autorizam.
+- R$ 25,00;
+- `2_500` centavos;
+- moeda `BRL`;
+- método `PIX`.
 
-O fechamento por `kickoff <= agora`, `LIVE` ou `FT` continua sendo verificado antes
-da autorizaÃ§Ã£o mensal. A funcionalidade nÃ£o altera transparÃªncia, ScoreEngine,
-`Standing.adjustmentPoints`, ESPN, Daily Games ou `PredictionResultsScheduler`.
+Valores monetários são persistidos como inteiros em centavos. O cliente não envia nem escolhe o valor.
 
-## CriaÃ§Ã£o do QR
+O período segue o mês calendário em `America/Sao_Paulo`:
 
-O adapter `AsaasPaymentProvider` aceita exclusivamente as combinaÃ§Ãµes oficiais:
+- `referenceYear` e `referenceMonth` identificam o mês;
+- `startsAt` representa a meia-noite local do primeiro dia;
+- `endsAt` representa, como limite exclusivo, a meia-noite local do primeiro dia do mês seguinte;
+- `(referenceYear, referenceMonth)` é único.
 
-- Sandbox: `https://api-sandbox.asaas.com/v3` com chave `$aact_hmlg_...`;
-- ProduÃ§Ã£o: `https://api.asaas.com/v3` com chave `$aact_prod_...`.
+`ParticipationPeriodsService.getOrCreate()` cria o período corrente com status `OPEN` e o valor fixo, ou reutiliza o registro já existente. A operação trata concorrência de criação pela unicidade do mês.
 
-CombinaÃ§Ãµes cruzadas, configuraÃ§Ã£o incompleta e hosts parecidos ou arbitrÃ¡rios sÃ£o
-rejeitados. Em ambos os ambientes, a criaÃ§Ã£o usa `POST /v3/pix/qrCodes/static`:
+## Período exigido por uma fixture
 
-- autenticaÃ§Ã£o: header `access_token`;
-- headers adicionais: `Content-Type: application/json`, `Accept: application/json`
-  e `User-Agent` identificado como Sandbox ou ProduÃ§Ã£o conforme a configuraÃ§Ã£o;
-- `addressKey`: `ASAAS_PIX_ADDRESS_KEY`;
-- `value`: `25.00`;
-- `format`: `ALL`;
-- `allowsMultiplePayments`: `false`;
-- `expirationDate`: instante UTC explÃ­cito;
-- `externalReference`: UUID opaco do `Payment` local;
-- `description`: mÃªs/ano da participaÃ§Ã£o, sem dados pessoais.
+A autorização para um palpite é definida pelo kickoff da fixture:
 
-A resposta utilizada contÃ©m `id`, `encodedImage`, `payload` e `expirationDate`. O
-backend persiste esses dados para que um refresh possa retomar o mesmo QR sem nova
-chamada externa. O frontend aceita somente imagem PNG Base64 e monta localmente a
-URL `data:image/png;base64,...`; o payload Ã© exibido como PIX Copia e Cola.
+```text
+period.startsAt <= fixture.kickoff < period.endsAt
+```
 
-O QR vale 30 minutos, limitado ao `endsAt` do perÃ­odo. QR expirado nÃ£o Ã© reutilizado.
-A expiraÃ§Ã£o Ã© observada em leituras e na prÃ³xima solicitaÃ§Ã£o; nÃ£o existe cron para
-alterar status.
+Para criar ou editar, deve existir uma `Participation ACTIVE` do usuário nesse período, e o `ParticipationPeriod` deve permanecer `OPEN`.
 
-## Identificadores
+Isso é independente da data em que o usuário abre a tela. Uma fixture de outro mês exige a participação correspondente ao mês de seu kickoff. A exclusão de um palpite próprio ainda aberto não executa novamente a verificação de participação.
 
-- `Payment.id`: identidade interna e `externalReference` opaca;
-- `Payment.providerReference`: `qrCode.id`, conhecido antes do pagamento;
-- `Payment.providerPaymentId`: `payment.id` da cobranÃ§a criada automaticamente,
-  preenchido somente no `PAYMENT_RECEIVED` aceito;
-- `Payment.providerEventId`: ID do evento Asaas que efetivou a transiÃ§Ã£o para
-  `PAID`.
+As regras normais de fechamento continuam válidas: kickoff alcançado, `LIVE` ou `FT` bloqueiam alterações mesmo que a participação esteja ativa.
 
-O `externalReference` Ã© apenas auxiliar. A ativaÃ§Ã£o nÃ£o depende de sua propagaÃ§Ã£o
-para a cobranÃ§a criada automaticamente.
+## ParticipationPeriod
 
-## ConcorrÃªncia e timeout inconclusivo
+O período contém:
 
-O endpoint de QR estÃ¡tico nÃ£o documenta idempotency key. O backend cria/reutiliza o
-`Payment PENDING`, protegido pelo Ã­ndice parcial de um pendente por usuÃ¡rio/perÃ­odo,
-e conquista a criaÃ§Ã£o externa com um `updateMany` condicional sobre
-`providerCreationStartedAt`. Somente o vencedor chama o Asaas.
+- referência de ano e mês;
+- início e fim em UTC correspondentes aos limites de `America/Sao_Paulo`;
+- `participationFeeCents`;
+- status `OPEN` ou `CLOSED`.
 
-Se ocorrer timeout, falha de rede, resposta 5xx/ambÃ­gua, resposta 2xx invÃ¡lida ou
-falha ao persistir uma resposta bem-sucedida, o `Payment` permanece `PENDING` com a
-reserva de criaÃ§Ã£o. Uma nova requisiÃ§Ã£o retorna `PIX_CREATION_INCONCLUSIVE` e nÃ£o
-faz retry externo cego. Erros 4xx definitivos (exceto estados potencialmente
-ambÃ­guos como 408, 409, 425 e 429) marcam a tentativa como `FAILED` e permitem uma
-nova tentativa local.
+O status `CLOSED` impede que uma participação autorize palpites e torna o pagamento inelegível à confirmação/reconciliação normal.
 
-Essa escolha pode deixar uma tentativa inconclusiva bloqueada atÃ© conciliaÃ§Ã£o
-manual. A integraÃ§Ã£o assume esse risco operacional sem fazer retry cego. Deve-se
-confirmar com o suporte Asaas: "ApÃ³s timeout na criaÃ§Ã£o de um QR Code PIX estÃ¡tico
-individual via `POST /v3/pix/qrCodes/static`, existe mecanismo oficial de
-idempotÃªncia ou consulta segura pelo `externalReference` que permita descobrir se o
-QR foi criado antes de tentar novamente?".
+## Participation
 
-## Webhook
+Uma participação contém usuário, período, status, data de ativação e um `paymentId` opcional.
 
-Rota pÃºblica: `POST /api/v1/payments/webhook/asaas`.
+Regras estruturais:
 
-O webhook Ã© autenticado pelo token prÃ³prio configurado no painel Asaas. O adapter
-compara em tempo constante o header `asaas-access-token` com
-`ASAAS_WEBHOOK_TOKEN`. Esse token deve ter 32 a 255 caracteres, sem espaÃ§os, e nÃ£o
-pode ser a API Key.
+- existe no máximo uma participação por usuário e período;
+- um pagamento pode ser associado a no máximo uma participação;
+- `ACTIVE` autoriza, desde que o período esteja aberto;
+- `CANCELLED` não autoriza;
+- a participação financeira criada após confirmação fica vinculada ao pagamento que a ativou.
 
-Somente `PAYMENT_RECEIVED` pode ativar a participaÃ§Ã£o, e apenas quando:
+## Payment
 
-- `payment.status === RECEIVED`;
-- `payment.billingType === PIX`;
-- `payment.pixQrCodeId` corresponde a exatamente um `providerReference` local do
-  provider `asaas`;
-- `payment.value === 25.00`;
-- mÃ©todo, moeda, valor local e perÃ­odo estÃ£o consistentes;
-- o estado local aceita a transiÃ§Ã£o.
+O pagamento local registra:
 
-A atualizaÃ§Ã£o de `Payment` e o `upsert` de `Participation ACTIVE` ocorrem na mesma
-transaÃ§Ã£o. O ID do evento, o ID da cobranÃ§a e as constraints tornam o processamento
-idempotente. Reenvio idÃªntico retorna HTTP 200 sem duplicar participaÃ§Ã£o.
+- usuário e período;
+- valor, moeda e método;
+- estado local;
+- provedor;
+- identificadores de correlação;
+- reserva de criação externa;
+- payload PIX, imagem do QR e expiração;
+- data de pagamento e datas de auditoria.
 
-| Evento/condiÃ§Ã£o Asaas                                          | Resultado local                                                                     |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `PAYMENT_RECEIVED` + `RECEIVED` + `PIX` + validaÃ§Ãµes completas | `PAID` e `Participation ACTIVE`                                                     |
-| `PAYMENT_CREATED`                                                | Sem efeito; permanece `PENDING`                                                     |
-| `PAYMENT_CONFIRMED`                                              | Sem efeito; nÃ£o ativa                                                              |
-| `PAYMENT_OVERDUE`                                                | Sem efeito                                                                          |
-| `PAYMENT_DELETED`                                                | Sem efeito nesta arquitetura; nÃ£o hÃ¡ regra segura de cancelamento do QR estÃ¡tico |
-| `PAYMENT_REFUNDED` e variaÃ§Ãµes                                 | Sem efeito nesta versÃ£o; refund/estorno estÃ¡ fora do escopo funcional             |
-| Evento desconhecido/nÃ£o relevante                               | HTTP 200, sem efeito                                                                |
-| QR local expirado antes do pagamento                             | `EXPIRED` em leitura/nova tentativa, sem cron                                       |
-| Falha definitiva na criaÃ§Ã£o                                    | `FAILED`                                                                            |
+### Estados locais
 
-Eventos autenticados de outras operaÃ§Ãµes da conta, inclusive `pixQrCodeId`
-desconhecido, sÃ£o reconhecidos sem efeito para nÃ£o bloquear a fila geral do Asaas.
-Payload `PAYMENT_RECEIVED` inconsistente Ã© rejeitado e nunca ativa participaÃ§Ã£o.
+| Estado | Significado na implementação |
+| --- | --- |
+| `PENDING` | Cobrança reservada/criada, sem confirmação; não autoriza palpites |
+| `PAID` | Recebimento validado pelo fluxo financeiro |
+| `EXPIRED` | Prazo do QR encerrado; pode ser reconciliável enquanto o período estiver aberto |
+| `CANCELLED` | Estado modelado para cobrança cancelada; não autoriza nem é reutilizado como pendente |
+| `FAILED` | Criação externa terminou com falha classificada como definitiva |
 
-## Endpoints MatchPredict
+Uma leitura de status pode apresentar `EXPIRED` para um registro ainda persistido como `PENDING` cuja expiração já passou. Ao solicitar outro PIX, pendências vencidas do usuário e período são persistidas como `EXPIRED` antes da criação de uma nova tentativa.
 
-Todos usam o prefixo global `/api/v1`:
+## Identificadores de correlação
 
-- `GET /participations/me/current`: situaÃ§Ã£o mensal do usuÃ¡rio autenticado;
-- `GET /payments/me`: histÃ³rico do usuÃ¡rio autenticado;
-- `GET /payments/me/current-pix`: retoma somente do banco o QR atual vÃ¡lido;
-- `GET /payments/:paymentId/status`: status local de pagamento prÃ³prio;
-- `POST /payments/pix`: cria ou retoma o QR mensal, sem aceitar valor ou `userId`;
-- `POST /payments/webhook/asaas`: webhook autenticado do Asaas.
+| Campo | Origem e função |
+| --- | --- |
+| `Payment.id` | UUID local; também enviado como `externalReference` ao criar o QR |
+| `providerReference` | `id` do QR estático; existe antes do recebimento e corresponde a `pixQrCodeId` |
+| `providerPaymentId` | ID do pagamento criado pelo Asaas após o recebimento |
+| `providerEventId` | ID único do webhook que confirmou o recebimento; pode ficar nulo quando a primeira confirmação veio da reconciliação |
+| `providerCreationStartedAt` | Reserva local que impede duas criações externas concorrentes |
 
-O polling de 30 segundos existe somente no navegador, enquanto `/participation`
-estÃ¡ montada, a aba estÃ¡ visÃ­vel e o pagamento estÃ¡ `PENDING`. Ele consulta apenas
-o status local. NÃ£o existe polling, worker, cron ou reconciliaÃ§Ã£o periÃ³dica no
-backend.
+`providerPaymentId` e `providerEventId` são únicos. O par `(provider, providerReference)` também é único.
 
-## ConfiguraÃ§Ã£o
+No webhook, a busca local usa `provider + providerReference`. Na reconciliação, além dessa referência, o backend exige que o `externalReference` retornado pelo Asaas seja igual ao `Payment.id` local.
 
-Somente o backend usa estas variÃ¡veis:
+## Criação do PIX
+
+O endpoint `POST /api/v1/payments/pix` usa a conta autenticada; não aceita `userId`, valor ou estado no corpo.
+
+Fluxo:
+
+1. verifica se o provider está configurado;
+2. obtém ou cria o período correspondente ao instante atual;
+3. valida que o valor persistido do período continua igual a 2.500 centavos;
+4. procura participação ativa e recusa nova cobrança se ela já existir;
+5. marca como `EXPIRED` qualquer pendência vencida do mesmo usuário e período;
+6. reutiliza o `PENDING` atual ou cria um novo;
+7. conquista uma reserva condicional por `providerCreationStartedAt`;
+8. solicita o QR estático ao Asaas;
+9. persiste referência, payload, imagem e expiração;
+10. devolve somente os dados necessários para o pagamento.
+
+A migration mantém no máximo um `Payment PENDING` por usuário e período por meio de índice parcial único. A preparação usa transação serializável e retry limitado para conflitos concorrentes. Somente a requisição que conquista a reserva chama o Asaas.
+
+### QR PIX estático
+
+O provider chama `POST /v3/pix/qrCodes/static` com:
+
+- chave PIX recebedora configurada no backend;
+- valor `25.00`;
+- formato `ALL`;
+- `allowsMultiplePayments: false`;
+- expiração explícita;
+- `externalReference` igual ao UUID local do pagamento;
+- descrição do mês/ano, sem dados pessoais do usuário.
+
+O MatchPredict não cria `Customer`, Checkout ou Payment Link para esse fluxo. “Estático” é a modalidade da API; não significa um QR global compartilhado. Cada tentativa elegível tem sua própria referência no Asaas.
+
+A resposta deve conter `id`, `encodedImage` e `payload`. O frontend aceita a imagem somente como Base64 PNG válido e monta localmente `data:image/png;base64,...`; o payload é exibido como PIX copia e cola.
+
+A expiração solicitada ao Asaas é o menor instante entre 30 minutos após a criação e `endsAt`. A resposta só é aceita se trouxer uma expiração futura que não ultrapasse o fim do período. Não existe cron para marcar expiração.
+
+### Reutilização e tentativas inconclusivas
+
+Se houver um PIX `PENDING` com referência, payload, imagem e expiração futura, a API o retorna sem nova chamada externa.
+
+Se a criação externa já foi reservada ou possui referência, mas o payload local não está reutilizável, a API retorna `PIX_CREATION_INCONCLUSIVE` e não executa retry cego.
+
+Erros HTTP 4xx classificados como definitivos, exceto `408`, `409`, `425` e `429`, levam a tentativa sem referência a `FAILED`. Timeout, falha de rede, resposta ambígua ou falha de persistência permanecem inconclusivos para evitar duplicar um QR que possa ter sido criado externamente. A resolução desse caso fica fora do fluxo automático do usuário.
+
+## Confirmação pelo webhook
+
+Rota:
+
+```text
+POST /api/v1/payments/webhook/asaas
+```
+
+O webhook não usa JWT de usuário. Ele é autenticado pelo header `asaas-access-token`, comparado em tempo constante com `ASAAS_WEBHOOK_TOKEN`.
+
+Somente `PAYMENT_RECEIVED` pode confirmar. O evento precisa conter:
+
+- identificadores de evento e pagamento;
+- estado Asaas `RECEIVED`;
+- método `PIX`;
+- `pixQrCodeId` correspondente à referência local;
+- valor positivo representável em centavos.
+
+Depois da correlação, o serviço também valida provedor, método, moeda `BRL`, valor de 2.500 centavos, valor do período e período `OPEN`.
+
+Eventos diferentes de `PAYMENT_RECEIVED` são reconhecidos e ignorados. Evento autenticado de operação sem pagamento local correspondente também é ignorado. Um `PAYMENT_RECEIVED` inconsistente é rejeitado e não ativa participação.
+
+## Transação de ativação
+
+A confirmação por webhook ou reconciliação converge para a mesma rotina:
+
+1. abre transação serializável;
+2. lê o pagamento e seu vínculo atual;
+3. aceita transição somente de `PENDING` ou `EXPIRED`, ou valida idempotência se já estiver `PAID`;
+4. atualiza o pagamento para `PAID` e registra os identificadores disponíveis e `paidAt`;
+5. verifica se já existe participação do usuário no período;
+6. cria a `Participation ACTIVE` vinculada ao pagamento;
+7. conclui os dois efeitos na mesma transação.
+
+Conflitos de serialização têm retry limitado. Reenvio equivalente é idempotente. Identificadores divergentes, participação vinculada a outro pagamento ou reutilização de identificador financeiro produzem conflito em vez de duplicação.
+
+Portanto:
+
+- `PENDING` nunca autoriza;
+- uma confirmação válida muda o pagamento para `PAID` e cria a participação;
+- a autorização posterior continua dependendo de `Participation ACTIVE` em período `OPEN`.
+
+## Consulta de status, histórico e current-pix
+
+| Endpoint | Comportamento |
+| --- | --- |
+| `GET /api/v1/participations/me/current` | Retorna situação da participação e descritor do mês atual |
+| `GET /api/v1/payments/me` | Lista somente pagamentos `PAID` do usuário, do mais recente para o mais antigo |
+| `GET /api/v1/payments/me/current-pix` | Retorna o `PENDING` válido do mês atual ou `null`; não chama o Asaas |
+| `GET /api/v1/payments/:paymentId/status` | Retorna estado local efetivo, `paidAt` e expiração de cobrança própria |
+| `POST /api/v1/payments/pix` | Cria ou retoma o PIX mensal |
+| `POST /api/v1/payments/:paymentId/reconcile` | Consulta pontualmente o Asaas para cobrança própria elegível |
+
+O histórico não expõe referências do provedor, payload do webhook ou credenciais.
+
+## Reconciliação quando o webhook atrasa
+
+A reconciliação aceita pagamentos próprios com método, moeda, valor, provedor e referência corretos, associados a período `OPEN`, nos estados `PENDING`, `EXPIRED` ou `PAID`.
+
+Para `PENDING` ou `EXPIRED`, o backend consulta o Asaas por `pixQrCodeId`, com limite de duas respostas:
+
+- nenhuma correspondência: retorna `not_received` sem ativar;
+- mais de uma correspondência: rejeita como ambígua;
+- uma correspondência: valida método, valor, moeda, referência, `externalReference` e identificador externo;
+- somente estado Asaas `RECEIVED` confirma;
+- demais estados reconhecidos permanecem sem ativação.
+
+Se o pagamento já está `PAID`, a reconciliação retorna `already_paid` somente após confirmar que a participação vinculada está `ACTIVE`.
+
+### Cooldown e atualização da tela
+
+- O endpoint permite 3 requisições por minuto.
+- O serviço mantém cooldown de dois minutos por pagamento em memória e devolve `retryAfterSeconds`; tentativas antecipadas recebem `429`.
+- O frontend respeita esse prazo para desabilitar nova tentativa manual.
+- Enquanto o PIX exibido permanece `PENDING`, o frontend consulta o status local a cada 30 segundos.
+- O polling para quando o estado deixa de ser `PENDING` e não roda em background.
+- Uma tentativa automática de reconciliação é agendada para 90 segundos após a criação e ocorre apenas uma vez por pagamento enquanto a página está montada; se a aba estiver oculta, aguarda voltar a ficar visível.
+- A query de status possui um retry de cliente para falha de consulta.
+- O botão manual continua disponível fora do cooldown.
+
+Quando a confirmação é detectada, as queries de participação, histórico e `current-pix` são invalidadas para atualizar a interface.
+
+Não existe polling, cron ou job financeiro no backend. A atividade descrita acima existe somente enquanto a página de participação está aberta no navegador.
+
+## Quando já existe um registro elegível
+
+### Participação ativa
+
+Se já existe `Participation ACTIVE` para o usuário e período, a criação de outro PIX é recusada com conflito. O usuário já está autorizado e não deve gerar nova cobrança.
+
+### Pagamento pendente válido
+
+O mesmo pagamento e os mesmos dados do QR são reutilizados. Não há nova chamada ao Asaas.
+
+### Pagamento pendente vencido
+
+O registro é marcado como `EXPIRED` durante uma nova solicitação e pode ser criado um novo `PENDING`. O pagamento expirado ainda pode ser reconciliado se o período continuar `OPEN` e o Asaas comprovar recebimento válido.
+
+### Pagamento pago sem participação ativa
+
+Esse estado é inconsistente com o fluxo transacional normal. O Admin o lista como pendência financeira observacional; não existe botão para ativar manualmente, marcar como pago, alterar valor ou estornar.
+
+## Segurança
+
+- Endpoints pessoais exigem JWT e restringem consultas ao `userId` autenticado.
+- Valor, moeda, método e identidade do usuário vêm do servidor.
+- O webhook usa token dedicado, com 32 a 255 caracteres, sem espaços e diferente da API key.
+- Apenas os hosts exatos de sandbox e produção do Asaas são aceitos, coerentes com o prefixo da chave.
+- Chamadas Asaas usam timeout de 15 segundos e não seguem redirecionamentos.
+- `providerPaymentId`, `providerEventId`, `(provider, providerReference)`, `(userId, periodId)` da participação e o vínculo `paymentId` possuem proteções de unicidade.
+- Segredos permanecem no backend e não são enviados ao navegador.
+- Logs registram resultado operacional e identificadores locais necessários, não valores de credenciais.
+- A descrição enviada ao QR não contém nome, e-mail, CPF ou outro dado pessoal do pagador.
+
+Variáveis usadas pelo backend, sem valores:
 
 ```dotenv
-ASAAS_API_KEY=
-ASAAS_BASE_URL=
-ASAAS_PIX_ADDRESS_KEY=
-ASAAS_WEBHOOK_TOKEN=
+ASAAS_API_KEY=<configurado no ambiente>
+ASAAS_BASE_URL=<URL oficial coerente com o ambiente>
+ASAAS_PIX_ADDRESS_KEY=<chave da conta recebedora>
+ASAAS_WEBHOOK_TOKEN=<token dedicado do webhook>
 ```
 
-`ASAAS_BASE_URL` deve ser exatamente `https://api-sandbox.asaas.com/v3` ou
-`https://api.asaas.com/v3`, coerente com o prefixo da API Key.
-`ASAAS_PIX_ADDRESS_KEY` deve ser uma chave PIX cadastrada na mesma conta/ambiente.
-`ASAAS_WEBHOOK_TOKEN` Ã© definido pelo operador no cadastro do webhook e nunca deve
-ser igual Ã  API Key. Nenhuma dessas variÃ¡veis Ã© enviada ao frontend ou registrada
-em logs.
+## Responsabilidades
 
-## Sandbox
+### MatchPredict
 
-O teste manual oficial usa o payload retornado pelo QR em
-`POST /v3/pix/qrCodes/pay`. Esse endpoint cria a cobranÃ§a simulada, associa
-`pixTransaction`/`pixQrCodeId` e dispara os eventos do fluxo Sandbox. O MatchPredict
-nÃ£o expÃµe endpoint para essa simulaÃ§Ã£o e nÃ£o a executa automaticamente.
+- definir período, valor e elegibilidade;
+- criar e persistir o pagamento local;
+- solicitar e exibir o QR estático;
+- autenticar e validar webhook;
+- correlacionar registros locais e externos;
+- reconciliar sob demanda;
+- mudar `Payment` para `PAID` e criar `Participation ACTIVE` de forma atômica;
+- expor status e histórico sem segredos;
+- preservar idempotência e indicar inconsistências para revisão administrativa.
 
-O webhook local precisa de URL HTTPS pÃºblica apontando exatamente para
-`/api/v1/payments/webhook/asaas`; Cloudflare Tunnel ou ngrok sÃ£o opÃ§Ãµes citadas na
-documentaÃ§Ã£o Asaas. Nenhum tÃºnel Ã© instalado ou iniciado pelo projeto.
+### Asaas
 
-## Migration
+- gerar o QR PIX estático;
+- receber e registrar a transação PIX;
+- atribuir os identificadores externos;
+- emitir o evento `PAYMENT_RECEIVED`;
+- permitir consulta do pagamento pela referência do QR.
 
-A migration aplicada `20261005120000_add_monthly_participations` inclui as tabelas
-e constraints da fundaÃ§Ã£o, unicidade de `(provider, provider_reference)`, unicidade
-dos IDs de pagamento/evento Asaas, reserva de criaÃ§Ã£o e o Ã­ndice parcial de um
-`PENDING` por usuÃ¡rio/perÃ­odo. O Neon atual registra sete migrations aplicadas e
-nenhuma pendente na Ãºltima verificaÃ§Ã£o operacional.
+O MatchPredict não executa estorno, reembolso ou alteração financeira no Asaas. Essas operações não fazem parte do fluxo implementado.
 
-## DocumentaÃ§Ã£o oficial reconfirmada
+## Configuração de ambiente
 
-- [Criar QR Code estÃ¡tico](https://docs.asaas.com/reference/create-static-qrcode)
-- [Fluxo de QR Code estÃ¡tico](https://docs.asaas.com/docs/creating-a-static-qr-code)
-- [Eventos de pagamento](https://docs.asaas.com/docs/payment-events)
-- [Receber eventos no webhook](https://docs.asaas.com/docs/receive-asaas-events-at-your-webhook-endpoint)
-- [FAQ de webhooks](https://docs.asaas.com/docs/webhooks-faq)
-- [Testar pagamento de QR PIX](https://docs.asaas.com/docs/testing-pix-qr-code-payment)
-- [AutenticaÃ§Ã£o](https://docs.asaas.com/docs/authentication)
+O adapter aceita somente:
+
+- sandbox: `https://api-sandbox.asaas.com/v3`, com chave de sandbox;
+- produção: `https://api.asaas.com/v3`, com chave de produção.
+
+Combinação cruzada entre URL e prefixo de chave é recusada. A chave PIX e o token de webhook também são obrigatórios para o provider ser considerado configurado.
+
+Nenhuma credencial, payload privado ou valor real de variável de ambiente deve ser incluído na documentação ou versionado.
+
+## Banco e migrations
+
+A fundação do fluxo foi criada pela migration `20261005120000_add_monthly_participations`, que adicionou enums, tabelas, FKs restritivas, constraints de valor e datas, unicidades de correlação e o índice parcial de um `PENDING` por usuário e período.
+
+O painel administrativo e seus índices foram adicionados posteriormente sem alterar as regras financeiras. Esta documentação não pressupõe execução manual de migration nem informa estado operacional de um banco específico.

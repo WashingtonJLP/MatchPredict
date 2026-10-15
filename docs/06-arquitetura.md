@@ -1,368 +1,257 @@
-# Arquitetura da Aplicação
+# Arquitetura da aplicação
 
-## Objetivo
+## Visão geral
 
-Este documento descreve a arquitetura atual do MatchPredict.
-
-O projeto é uma aplicação full-stack com frontend Next.js, backend NestJS, banco PostgreSQL via Prisma ORM, integração com APIs da ESPN, envio de e-mails por SMTP e deploy containerizado com Docker.
-
----
-
-## Visão Geral
-
-O MatchPredict é dividido em três partes principais:
-
-1. Frontend web.
-2. API backend.
-3. Banco de dados PostgreSQL.
-
-Além disso, a implantação atual prevista no repositório usa Cloudflare Tunnel para expor os serviços por meio de um túnel configurado fora do código.
-
-O diagrama abaixo representa a arquitetura conceitual atual, sem expor domínio, IP, token ou credencial. Em produção, o browser acessa a API pública configurada em `NEXT_PUBLIC_API_URL`; essa URL é exposta pelo Cloudflare Tunnel, não por uma comunicação interna obrigatória entre os containers de frontend e backend.
+O MatchPredict é uma aplicação full-stack formada por frontend Next.js, API NestJS e PostgreSQL acessado pelo Prisma. O backend concentra as regras de negócio e as integrações com ESPN, Asaas e SMTP; o frontend consome a API REST e organiza as experiências pública, autenticada e administrativa.
 
 ```mermaid
-flowchart TD
-    browser[Usuário / Browser]
+flowchart LR
+    browser[Browser]
+    frontend[Next.js 15<br/>React 19]
+    backend[NestJS 11<br/>API /api/v1]
+    prisma[Prisma ORM]
+    db[(PostgreSQL / Neon)]
+    espn[ESPN]
+    asaas[Asaas]
+    smtp[Servidor SMTP]
 
-    subgraph cloudflare[Cloudflare]
-        edge[Cloudflare Edge]
-    end
-
-    subgraph host[Servidor / TrueNAS]
-        tunnel[Cloudflare Tunnel<br/>cloudflared]
-        frontend[Frontend<br/>Next.js]
-        backend[Backend<br/>NestJS API /api/v1]
-    end
-
-    subgraph external[Serviços externos]
-        db[(PostgreSQL / Neon)]
-        espn[ESPN APIs]
-        smtp[SMTP]
-    end
-
-    browser -->|HTTPS| edge
-    edge -->|Tunnel| tunnel
-    tunnel --> frontend
-    tunnel --> backend
-
-    browser -.->|API pública configurada em NEXT_PUBLIC_API_URL| backend
-
-    backend -->|Prisma ORM| db
-    backend -->|Sincronização esportiva| espn
-    backend -->|Recuperação de senha| smtp
+    browser --> frontend
+    frontend -->|HTTP + JWT| backend
+    backend --> prisma --> db
+    backend -->|dados esportivos| espn
+    backend -->|PIX e reconciliação| asaas
+    asaas -->|webhook autenticado| backend
+    backend -->|recuperação de senha| smtp
 ```
 
-Os principais elementos são:
+## Organização do repositório
 
-- `Cloudflare Tunnel`: expõe frontend e backend sem registrar detalhes sensíveis na documentação.
-- `Frontend Next.js`: entrega a interface web e usa a URL pública da API configurada em `NEXT_PUBLIC_API_URL`.
-- `Backend NestJS`: concentra regras de negócio, autenticação, sincronização, processamento de palpites e integrações externas.
-- `PostgreSQL / Neon`, `ESPN APIs` e `SMTP`: serviços externos consumidos pelo backend.
-
----
+| Área | Diretório | Responsabilidade |
+| --- | --- | --- |
+| Frontend | `frontend/` | Interface web, estado cliente e consumo da API |
+| Backend | `backend/` | API, autenticação, regras, persistência e integrações |
+| Documentação | `docs/` | Visão funcional e técnica do projeto |
+| Orquestração | `compose.yaml` | Containers de frontend, backend e Cloudflare Tunnel |
 
 ## Frontend
 
-O frontend fica em `frontend/` e usa Next.js com App Router.
+### Tecnologias
 
-### Principais tecnologias
+- Next.js 15 com App Router e saída standalone;
+- React 19 e TypeScript;
+- Tailwind CSS;
+- TanStack Query para cache e estado assíncrono;
+- Axios para HTTP;
+- React Hook Form e Zod para formulários;
+- Base UI para primitives acessíveis, como o drawer administrativo;
+- Lucide React, Sonner e `next-themes`.
 
-- Next.js 15
-- React 19
-- TypeScript
-- Tailwind CSS
-- TanStack Query
-- Axios
-- React Hook Form
-- Zod
-- Lucide React
-- Sonner
-- next-themes
+### Camadas
 
-### Responsabilidades
+- `src/app`: rotas e layouts do App Router;
+- `src/features`: componentes e lógica de apresentação por domínio;
+- `src/components`: UI e layouts compartilhados;
+- `src/services`: funções HTTP agrupadas por domínio;
+- `src/hooks`: composição de queries e mutations do TanStack Query;
+- `src/providers`: autenticação, tema e `QueryClient`;
+- `src/types`: contratos TypeScript consumidos pela interface.
 
-- Renderizar a interface pública e a área autenticada.
-- Gerenciar sessão no cliente com JWT armazenado localmente.
-- Consumir a API backend por HTTP.
-- Exibir partidas, palpites, ranking, estatísticas por rodada, estatísticas individuais e transparência.
-- Permitir cadastro, login, recuperação de senha e atualização de perfil.
-- Criar, editar e excluir palpites conforme as regras aplicadas pelo backend.
+O cliente Axios usa `NEXT_PUBLIC_API_URL` e, na ausência da variável, `http://localhost:3000/api/v1`. Um interceptor anexa o JWT e limpa a sessão em respostas `401` de rotas protegidas.
 
-### Estrutura Relevante
+### Sessão e navegação protegida
 
-- `frontend/src/app`: rotas do App Router.
-- `frontend/src/services`: clientes HTTP por domínio.
-- `frontend/src/hooks`: hooks de dados com TanStack Query.
-- `frontend/src/providers`: providers globais, incluindo autenticação e tema.
-- `frontend/src/features`: componentes de domínio, como partidas e palpites.
-- `frontend/src/components`: componentes compartilhados e layout.
+- Após login, o JWT é armazenado no `localStorage` e também no cookie `matchpredict_token` com `SameSite=Lax` e validade de sete dias.
+- O middleware do Next.js usa a presença do cookie para redirecionar rotas privadas sem sessão e evitar login/cadastro quando há token.
+- O `AuthProvider` consulta `/users/me` para obter o estado real da conta.
+- A autorização final nunca depende somente do middleware: o backend valida assinatura, usuário, `disabledAt`, `authVersion` e papel.
+- O shell do Admin verifica `Role.ADMIN` no cliente para navegação, enquanto `/api/v1/admin` permanece protegido no servidor por guards.
 
-### Rotas de Interface
+### Áreas da interface
 
-O frontend possui telas para:
+A interface inclui landing page, jogos do dia, competições, autenticação, dashboard, fixtures, palpites, transparência, estatísticas, rodadas, perfil, participação mensal e Admin.
 
-- landing page;
-- login;
-- cadastro;
-- recuperação de senha;
-- redefinição de senha;
-- dashboard;
-- partidas;
-- meus palpites;
-- transparência;
-- estatísticas;
-- rodadas;
-- regras;
-- perfil.
-
----
+O layout administrativo compartilhado atende todas as rotas `/admin`: mantém sidebar no desktop e, abaixo de `lg`, combina atalhos horizontais com drawer completo. A configuração das rotas administrativas é centralizada e usada pelas três navegações.
 
 ## Backend
 
-O backend fica em `backend/` e usa NestJS.
+### Tecnologias e bootstrap
 
-### Principais tecnologias
+- NestJS 11 e TypeScript;
+- Prisma ORM 6 e PostgreSQL;
+- Passport JWT;
+- `class-validator` e `class-transformer`;
+- NestJS Throttler e Schedule;
+- Axios por `@nestjs/axios`;
+- Nodemailer;
+- Swagger fora de produção.
 
-- NestJS 11
-- TypeScript
-- Prisma ORM
-- PostgreSQL
-- JWT
-- Passport JWT
-- Class Validator
-- Class Transformer
-- Swagger
-- NestJS Throttler
-- NestJS Schedule
-- Axios via `@nestjs/axios`
-- Nodemailer
+O bootstrap aplica prefixo `/api/v1`, captura corpo bruto para validação de webhook, configura CORS, proxy confiável opcional, validação global e porta definida pelo ambiente.
 
-### Responsabilidades
+### Módulos
 
-- Expor API REST com prefixo global `/api/v1`.
-- Autenticar usuários com JWT.
-- Validar requisições com DTOs.
-- Aplicar regras de criação, edição, exclusão e bloqueio de palpites.
-- Sincronizar liga, temporada, times, partidas, jogadores e resultados a partir da ESPN.
-- Processar pontuação de palpites.
-- Atualizar standings.
-- Fornecer ranking, estatísticas por rodada, estatísticas individuais e transparência.
-- Enviar e-mails de recuperação de senha via SMTP.
+| Módulo | Responsabilidade |
+| --- | --- |
+| `AuthModule` | Cadastro, login, JWT e recuperação de senha |
+| `UsersModule` | Perfil e estatísticas pessoais |
+| `FootballModule` | Fixtures locais e sincronização esportiva |
+| `DailyGamesModule` | Jogos por data diretamente da ESPN, com cache em memória |
+| `CompetitionsModule` | Catálogo, temporada, standings esportivos e mata-mata |
+| `ParticipationsModule` | Períodos mensais e autorização de participação |
+| `PaymentsModule` | PIX, webhook, consulta e reconciliação |
+| `PredictionsModule` | Palpites, transparência, pontuação e scheduler |
+| `StandingsModule` | Classificação oficial e posição pessoal |
+| `RoundsModule` | Catálogo e estatísticas sob demanda por competição, temporada e rodada |
+| `AdminModule` | Consultas e ações administrativas auditadas |
+| `EmailModule` | Envio de recuperação por SMTP |
+| `PrismaModule` | Cliente de acesso ao banco |
 
-### Módulos principais
+## Persistência
 
-- `AuthModule`: cadastro, login, recuperação e redefinição de senha.
-- `UsersModule`: perfil e estatísticas do usuário autenticado.
-- `FootballModule`: fixtures e sincronização com ESPN.
-- `PredictionsModule`: palpites, transparência, cálculo e processamento.
-- `StandingsModule`: ranking e posição do usuário.
-- `RoundsModule`: catálogo e agregações sob demanda por competição, temporada e rodada.
-- `EmailModule`: envio de e-mails.
-- `PrismaModule`: acesso ao banco.
+O Prisma mapeia o domínio para PostgreSQL. O schema fica em `backend/prisma/schema.prisma` e as migrations em `backend/prisma/migrations`.
 
----
+Os grupos centrais são:
 
-## Banco de dados
+- identidade: `User` e `AdminAuditLog`;
+- participação financeira: `ParticipationPeriod`, `Participation` e `Payment`;
+- futebol: `League`, `Season`, `Team`, `Player` e `Fixture`;
+- jogo de palpites: `Prediction` e `Standing`;
+- modelo reservado: `SyncLog`, atualmente sem gravação funcional.
 
-O banco usado pela aplicação é PostgreSQL, acessado via Prisma ORM.
+O banco usa FKs restritivas, unicidades de domínio e índices voltados às consultas de palpites, ranking, pagamentos e Admin. A conexão é fornecida exclusivamente por `DATABASE_URL`.
 
-### Entidades Principais
+## Fluxo de autenticação
 
-- `User`
-- `League`
-- `Season`
-- `Team`
-- `Fixture`
-- `Prediction`
-- `Standing`
-- `Player`
-- `SyncLog`
+```mermaid
+sequenceDiagram
+    participant U as Usuário
+    participant F as Frontend
+    participant A as API
+    participant D as PostgreSQL
 
-### Fluxo das estatísticas por rodada
+    U->>F: informa e-mail e senha
+    F->>A: POST /auth/login
+    A->>D: consulta conta e hash
+    A-->>F: JWT com role e authVersion
+    F->>A: requisição com Bearer JWT
+    A->>D: valida estado atual da conta
+    A-->>F: resposta ou 401/403
+```
+
+Contas desativadas são recusadas. A desativação incrementa `authVersion`, fazendo tokens anteriores falharem na próxima requisição protegida. Cadastro público não recebe papel e cria sempre `USER`.
+
+## Fluxo de palpites e classificação
+
+1. O frontend consulta fixtures locais autenticadas.
+2. Ao criar ou editar, a API valida proprietário, kickoff, status e `Participation ACTIVE` no período da fixture.
+3. A transparência mantém palpites alheios ocultos até o fechamento.
+4. Resultados sincronizados levam a fixture a `FT` com placar final.
+5. O processador calcula pontos em transação, preenche `processedAt` e recompõe os standings afetados.
+6. O recálculo preserva `adjustmentPoints` e materializa `totalPoints`.
+7. A classificação ordena os standings pela política compartilhada e deriva `position = index + 1`; o campo legado `Standing.position` não é consultado como posição oficial.
+
+## Fluxo das estatísticas por rodada
 
 ```text
 League
-  -> Season
-  -> Fixture.round
-  -> fixtures da rodada
-  -> Predictions
-  -> agregação sob demanda no RoundsModule
+  → Season
+  → Fixture.round
+  → fixtures da rodada
+  → Predictions
+  → agregação sob demanda no RoundsModule
 ```
 
-O módulo usa UUIDs persistidos de `League` e `Season`, evitando acoplamento ao slug ESPN da Premier League. Não há tabela derivada de vencedores, migration, cron novo ou polling de backend. Para cada rodada, o backend consulta as fixtures uma vez e os palpites correspondentes uma vez, agrega em memória um conjunto pequeno e aplica a transparência antes de serializar a resposta.
+O módulo usa UUIDs persistidos de `League` e `Season`, evitando acoplamento ao slug ESPN da Premier League. Não há tabela derivada de vencedores, migration, cron novo ou polling de backend. Para cada rodada, o backend consulta as fixtures e os palpites correspondentes, agrega os dados em memória e aplica a transparência antes de serializar a resposta.
 
-`Standing` não é consultado no cálculo por rodada: `adjustmentPoints` continua restrito ao ranking geral. Palpites de terceiros entram no ranking da rodada somente quando a fixture já está fechada pela regra existente de kickoff/status.
+`Standing` não é consultado no cálculo por rodada: `adjustmentPoints` continua restrito ao ranking geral. Palpites de terceiros entram no ranking da rodada somente quando a fixture já está fechada pela regra existente de kickoff e status.
 
-### Observações
+## Integração com a ESPN
 
-- A conexão é configurada por `DATABASE_URL`.
-- O schema atual está em `backend/prisma/schema.prisma`.
-- Migrations ficam em `backend/prisma/migrations`.
-- `SyncLog` está modelado, mas não há fluxo atual gravando logs nesse modelo.
-- Campos de MVP existem no schema, mas não estão ativos no fluxo atual de criação/edição de palpites.
+Há dois usos complementares:
 
----
+- `FootballModule` mantém no banco a liga de palpites, temporada, times, jogadores, fixtures e resultados;
+- `DailyGamesModule` e `CompetitionsModule` consultam scoreboards, resumos e standings para a experiência ampla de jogos e competições.
 
-## Integração com dados esportivos
+O cliente ESPN normaliza URLs, força referências HTTP para HTTPS e deduplica requisições simultâneas idênticas em memória. Jogos do dia possuem cache em memória com TTL adaptado: 30 segundos quando há jogo ao vivo, 60 segundos para o dia atual sem jogo ao vivo, 30 minutos para datas futuras e 6 horas para datas passadas.
 
-A integração esportiva atual usa APIs da ESPN.
+Falhas parciais de uma competição não impedem necessariamente a resposta das demais; os metadados informam quantas consultas tiveram sucesso.
 
-### Configurações relevantes
+## Scheduler e uso do Neon
 
-- `ESPN_API_URL`
-- `ESPN_CORE_API_URL`
-- `ESPN_LEAGUE`
-- `ESPN_COUNTRY`
-- `ESPN_LEAGUE_LOGO`
+O scheduler de resultados roda a cada cinco minutos com `waitForCompletion`, mas não começa cada ciclo consultando fixtures no PostgreSQL.
 
-### Fluxos de sincronização
+```mermaid
+flowchart TD
+    cron[Ciclo a cada 5 minutos] --> espn[Consulta jogos da Premier League na ESPN]
+    espn --> gate{Inicialização, nova data<br/>ou fingerprint alterado?}
+    gate -->|não| stop[Encerra sem consulta de fixtures no banco]
+    gate -->|sim, ciclo completo| syncAll[Sincroniza resultados pendentes]
+    gate -->|sim, mudança pontual| syncIds[Sincroniza somente IDs alterados]
+    syncAll --> db[Busca FT sem processedAt]
+    syncIds --> db
+    db --> process[Processa palpites e standings]
+```
 
-Administradores podem disparar:
+A estratégia usa:
 
-- sincronização de liga e temporada ativa;
-- sincronização de times;
-- sincronização de partidas;
-- sincronização de jogadores;
-- sincronização de resultados.
+- consulta à ESPN para hoje e datas próximas da competição `eng.1`;
+- fingerprint em memória composto por evento, kickoff, status, placar e pênaltis;
+- retorno antecipado sem leitura de fixtures quando nada mudou;
+- filtro por `apiFixtureId` nos ciclos com mudanças específicas;
+- uma tentativa de reconciliação completa ao iniciar o processo e, depois, no máximo uma por data civil em `America/Sao_Paulo`.
 
-O backend também possui um scheduler que executa a cada 5 minutos para:
+Se a consulta ESPN falhar no ciclo reservado à reconciliação completa, o backend ainda tenta reconciliar o estado local. Os fingerprints são memória do processo e são reconstruídos após reinicialização.
 
-1. sincronizar resultados pendentes;
-2. processar fixtures finalizadas ainda não processadas.
+Essa estratégia reduz atividade recorrente no Neon quando o estado esportivo permanece estável. Ela não elimina o acesso ao banco quando há mudança, inicialização, nova data ou sincronização manual.
 
----
+## Participação mensal e Asaas
 
-## E-mail
+O `ParticipationsModule` determina períodos mensais em `America/Sao_Paulo`. O `PaymentsModule` injeta o `AsaasPaymentProvider` por uma interface de provedor PIX.
 
-O backend envia e-mails de recuperação de senha via SMTP.
+### Criação
 
-### Configurações relevantes
+1. A API obtém ou cria o período vigente.
+2. Reserva ou reutiliza um `Payment PENDING` local em transação serializável.
+3. O provider solicita ao Asaas um QR PIX estático de uso único, com valor fixo, expiração e referência externa local.
+4. A API persiste referência, payload copia e cola, imagem do QR e expiração.
 
-- `EMAIL_PROVIDER`
-- `SMTP_HOST`
-- `SMTP_PORT`
-- `SMTP_SECURE`
-- `SMTP_USER`
-- `SMTP_PASSWORD`
-- `EMAIL_FROM`
-- `FRONTEND_URL`
+### Confirmação
 
-Nenhuma credencial deve ser versionada. Exemplos públicos devem usar apenas placeholders.
+O caminho principal é o webhook autenticado `PAYMENT_RECEIVED`. A API valida token, provedor, método, estado, valor, moeda e correlação. Em uma transação serializável, muda o pagamento para `PAID` e cria a `Participation ACTIVE` vinculada.
 
----
+O caminho de recuperação é a reconciliação pontual iniciada pelo usuário. Ela consulta o Asaas pela referência do QR, valida uma única correspondência e reutiliza a mesma rotina idempotente de confirmação.
 
-## Segurança
+Enquanto a página de participação exibe um PIX `PENDING`, o frontend consulta seu status a cada 30 segundos, sem execução em segundo plano, e agenda uma única reconciliação automática após 90 segundos quando a página está visível. O usuário também pode reconciliar manualmente. O backend aplica rate limit e cooldown de dois minutos. Não há scheduler ou job financeiro recorrente no servidor.
 
-### Autenticação
+## Administração
 
-- JWT é usado nos endpoints protegidos.
-- O backend valida o usuário a partir do token em cada requisição autenticada.
-- Endpoints administrativos exigem `role = ADMIN`.
+A API administrativa é protegida por `JwtAuthGuard`, `RolesGuard`, `ThrottlerGuard` e `@Roles(Role.ADMIN)`. Suas consultas são executadas somente quando requisitadas; não existe polling específico do Admin no backend.
 
-### Validação
+O painel fornece dashboard, usuários, detalhe, pagamentos, participações, pendências observacionais e auditoria. Desativação, reativação e exclusão válida usam transações e `AdminAuditLog`. O Admin não oferece mutações financeiras nem promoção de papel.
 
-A API usa `ValidationPipe` global com:
+## Segurança transversal
 
-- `whitelist: true`;
-- `transform: true`;
-- `forbidNonWhitelisted: true`.
+- validação global de DTOs com rejeição de campos extras;
+- throttling global de 60 requisições por minuto e limites menores em operações sensíveis;
+- JWT validado contra o estado atual da conta;
+- autorização por papel no backend;
+- webhook Asaas autenticado com token dedicado e comparação em tempo constante;
+- segredos obtidos por variáveis de ambiente;
+- CORS configurável por origem;
+- Swagger indisponível em produção;
+- chamadas externas com timeout e sem redirecionamentos no provider Asaas.
 
-### Rate Limit
+Nomes de configuração relevantes incluem `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, variáveis `ESPN_*`, `ASAAS_API_KEY`, `ASAAS_BASE_URL`, `ASAAS_PIX_ADDRESS_KEY`, `ASAAS_WEBHOOK_TOKEN`, variáveis `SMTP_*`, `EMAIL_FROM`, `FRONTEND_URL`, `CORS_ORIGINS` e `TRUST_PROXY_HOPS`. Valores não devem ser versionados ou incluídos na documentação.
 
-Há throttling global e limites específicos em endpoints de autenticação.
+## Containers e exposição
 
-### CORS e Proxy
+O `compose.yaml` define:
 
-- CORS é configurado por `CORS_ORIGINS` ou `FRONTEND_URL`.
-- Em produção, uma origem CORS precisa estar configurada.
-- `TRUST_PROXY_HOPS` permite configurar confiança em proxy reverso.
-
-### Swagger
-
-Swagger é habilitado apenas fora de produção.
-
----
-
-## Deploy e Infraestrutura
-
-O repositório possui `compose.yaml` para execução containerizada.
-
-### Serviços
-
-| Serviço | Container | Função |
+| Serviço | Porta/exposição | Função |
 | --- | --- | --- |
-| `backend` | `matchpredict-backend` | API NestJS |
-| `frontend` | `matchpredict-frontend` | Aplicação Next.js |
-| `cloudflared` | `cloudflared-production` | Cloudflare Tunnel |
+| `backend` | host `127.0.0.1:3001` → container `3000` | API NestJS |
+| `frontend` | host `3002` → container `3000` | aplicação Next.js |
+| `cloudflared` | `network_mode: host` | túnel para os serviços |
 
-### Portas Locais
+Backend e frontend usam Dockerfiles multi-stage baseados em Node.js 20 Alpine e executam como usuário `node`. O backend gera o Prisma Client no build e no estágio de produção; o frontend gera saída standalone e recebe `NEXT_PUBLIC_API_URL` como build arg.
 
-| Serviço | Porta no host | Porta no container |
-| --- | --- | --- |
-| Backend | `127.0.0.1:3001` | `3000` |
-| Frontend | `3002` | `3000` |
-
-O backend lê variáveis a partir de `backend/.env`.
-
-O frontend recebe `NEXT_PUBLIC_API_URL` como build arg no Docker.
-
-O serviço `cloudflared` usa `network_mode: host` e monta a pasta local `./cloudflared` como diretório de configuração do túnel. O conteúdo dessa pasta não deve expor credenciais em documentação pública.
-
----
-
-## Docker
-
-### Backend
-
-O `backend/Dockerfile` usa build multi-stage:
-
-1. instala dependências;
-2. gera Prisma Client;
-3. executa build NestJS;
-4. instala dependências de produção;
-5. executa `node dist/main`.
-
-### Frontend
-
-O `frontend/Dockerfile` usa build multi-stage:
-
-1. instala dependências;
-2. executa build Next.js;
-3. copia artefatos standalone;
-4. executa `node server.js`.
-
----
-
-## Testes e Qualidade
-
-### Backend
-
-Scripts relevantes:
-
-- `npm run lint`
-- `npm test`
-- `npm run test:e2e`
-- `npm run build`
-
-### Frontend
-
-Scripts relevantes:
-
-- `npm run lint`
-- `npm run build`
-- `npm run dev`
-- `npm run start`
-
----
-
-## Considerações
-
-A arquitetura atual já suporta separação clara entre frontend, backend e banco, mas ainda há pontos planejados que não estão implementados:
-
-- painel administrativo no frontend;
-- CRUD manual de ligas, temporadas, times e partidas;
-- endpoints públicos específicos para ligas, temporadas, times e jogadores;
-- uso funcional de MVP no fluxo de palpites;
-- gravação real de logs no modelo `SyncLog`.
-
-Esta documentação descreve o estado atual do código e da infraestrutura versionada no repositório.
+O arquivo de configuração do Cloudflare Tunnel é montado de `./cloudflared`; a documentação não deve registrar domínio, credencial ou token privado.

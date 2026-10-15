@@ -12,6 +12,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { toast } from "sonner";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -68,6 +69,8 @@ export default function ParticipationPage() {
   const refreshParticipationData = useRefreshParticipationData();
   const [pixPayment, setPixPayment] = useState<PixPayment | null>(null);
   const [pixError, setPixError] = useState<string | null>(null);
+  const [pixScrollRequest, setPixScrollRequest] = useState(0);
+  const pixPaymentPanelRef = useRef<HTMLElement>(null);
   const [reconciliationCooldownUntil, setReconciliationCooldownUntil] =
     useState(0);
   const automaticReconciliations = useRef(new Set<string>());
@@ -205,12 +208,37 @@ export default function ParticipationPage() {
     refreshParticipationData,
   ]);
 
+  useEffect(() => {
+    if (pixScrollRequest === 0) {
+      return;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      const panel = pixPaymentPanelRef.current;
+
+      if (!panel) {
+        return;
+      }
+
+      panel.focus({ preventScroll: true });
+      panel.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [pixScrollRequest]);
+
   async function handleCreatePix() {
     setPixError(null);
 
     try {
       const payment = await createPix.mutateAsync();
       setPixPayment(payment);
+      setPixScrollRequest((request) => request + 1);
       void refreshParticipationData();
     } catch (error) {
       setPixError(
@@ -276,6 +304,7 @@ export default function ParticipationPage() {
 
         {displayedPixPayment ? (
           <PixPaymentPanel
+            sectionRef={pixPaymentPanelRef}
             payment={displayedPixPayment}
             status={effectivePixStatus ?? displayedPixPayment.status}
             onCopy={handleCopyPix}
@@ -384,6 +413,7 @@ function CurrentParticipationCard({
 }
 
 type PixPaymentPanelProps = {
+  sectionRef: RefObject<HTMLElement | null>;
   payment: PixPayment;
   status: PaymentStatus;
   onCopy: () => void;
@@ -395,6 +425,7 @@ type PixPaymentPanelProps = {
 };
 
 function PixPaymentPanel({
+  sectionRef,
   payment,
   status,
   onCopy,
@@ -413,10 +444,18 @@ function PixPaymentPanel({
   const qrCodeImageSrc = toPixQrCodeImageSrc(payment.pixQrCode);
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm shadow-primary/5 sm:p-8">
+    <section
+      ref={sectionRef}
+      tabIndex={-1}
+      aria-labelledby="pix-payment-title"
+      className="scroll-mt-24 rounded-2xl border border-border bg-card p-6 shadow-sm shadow-primary/5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/20 sm:p-8"
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-extrabold text-card-foreground">
+          <h2
+            id="pix-payment-title"
+            className="text-2xl font-extrabold text-card-foreground"
+          >
             Pagamento via PIX
           </h2>
           <p className="mt-2 text-base leading-7 text-muted-foreground">

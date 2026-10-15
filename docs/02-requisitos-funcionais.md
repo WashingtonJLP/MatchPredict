@@ -1,213 +1,298 @@
-# Requisitos Funcionais
+# Requisitos funcionais
 
-Este documento descreve os requisitos funcionais implementados atualmente no MatchPredict. O código do backend e do frontend é a fonte de verdade para esta versão da documentação.
+Este documento descreve as capacidades implementadas no MatchPredict. O código atual do backend e do frontend é a fonte de verdade.
 
-## RF01 - Cadastro de usuário
+## Contas e autenticação
+
+### RF01 — Cadastro público
 
 O sistema deve permitir que um visitante crie uma conta informando nome, e-mail e senha.
 
-- O e-mail deve ter formato válido e ser único.
-- A senha deve ter entre 8 e 72 caracteres, com ao menos uma letra maiúscula, uma letra minúscula e um número.
-- A senha deve ser armazenada de forma criptografada.
-- A resposta de cadastro não deve retornar senha nem campos de recuperação de senha.
-- Novos usuários são criados com papel `USER`.
+- O e-mail deve ser válido, normalizado e único.
+- A senha deve ter de 8 a 72 caracteres, com ao menos uma letra maiúscula, uma letra minúscula e um número.
+- A senha deve ser armazenada como hash e nunca retornada pela API.
+- O cadastro público deve sempre criar a conta com `Role.USER`; o papel não pode ser escolhido na requisição.
 
-## RF02 - Login
+### RF02 — Login e sessão
 
-O sistema deve permitir login com e-mail e senha.
+O sistema deve autenticar contas ativas por e-mail e senha e, em caso de sucesso, emitir um JWT.
 
-- O e-mail deve ser normalizado antes da autenticação.
-- Credenciais inválidas devem ser recusadas.
-- Em caso de sucesso, a API retorna um token JWT.
-- As rotas autenticadas devem usar `Authorization: Bearer <token>`.
+- Credenciais inválidas e contas desativadas devem ser recusadas sem revelar qual condição falhou.
+- Rotas protegidas devem exigir `Authorization: Bearer <token>`.
+- O JWT deve carregar a versão de autenticação da conta.
+- A validação de cada requisição protegida deve recusar conta inexistente, desativada ou com `authVersion` diferente do token.
 
-## RF03 - Recuperação de senha
+### RF03 — Recuperação de senha
 
-O sistema deve permitir que um usuário solicite recuperação de senha por e-mail.
+O sistema deve permitir a solicitação e a conclusão da recuperação de senha.
 
-- A solicitação recebe um e-mail e retorna uma mensagem genérica, exista ou não usuário com aquele e-mail.
-- Quando o usuário existe, o backend gera um token, armazena apenas o hash do token e define prazo de expiração.
-- O link de recuperação e enviado por SMTP.
-- A redefinição exige token, nova senha e confirmacao da senha.
-- Token inexistente, expirado ou ja consumido deve ser recusado.
-- Após redefinir a senha, o token e a expiração são removidos.
+- A solicitação deve retornar uma mensagem genérica, exista ou não uma conta ativa para o e-mail.
+- O backend deve gerar um token, persistir somente seu hash e aplicar expiração de 30 minutos.
+- O link deve ser enviado por e-mail pelo provedor SMTP configurado.
+- A redefinição deve exigir token, nova senha e confirmação idêntica.
+- Tokens inexistentes, expirados, consumidos ou associados a conta desativada devem ser recusados.
+- Após a redefinição, token e expiração devem ser removidos.
 
-## RF04 - Perfil do usuário
+### RF04 — Perfil
 
-O sistema deve permitir que o usuário autenticado consulte e atualize seu próprio perfil.
+O usuário autenticado deve poder consultar e atualizar o próprio perfil.
 
-- A consulta retorna os dados públicos do usuário autenticado.
-- A atualização permite alterar nome e, quando aplicável, senha.
-- Para troca de senha pelo perfil, a senha atual deve ser validada.
-- A nova senha deve seguir a mesma política de segurança do cadastro.
+- A consulta deve retornar somente dados seguros da conta autenticada.
+- A atualização deve permitir alterar o nome.
+- A troca de senha deve exigir a senha atual e aplicar a mesma política do cadastro à nova senha.
 
-## RF05 - Visualizacao de partidas
+## Futebol e competições
 
-O sistema deve permitir que usuários autenticados visualizem partidas sincronizadas.
+### RF05 — Jogos do dia
 
-- A listagem de partidas suporta filtros por status, rodada, time e intervalo de datas.
-- A listagem suporta paginação por `page` e `limit`.
-- As partidas são ordenadas por kickoff em ordem crescente.
-- Cada partida inclui dados dos times mandante e visitante, campeonato, temporada, rodada, status, kickoff, placar quando disponível e indicador se ainda aceita palpite.
+O sistema deve disponibilizar publicamente os jogos de futebol por data civil em `America/Sao_Paulo`.
 
-## RF06 - Criação de palpites
+- A consulta deve aceitar data e competição opcionais.
+- O retorno deve agrupar os jogos pelas competições suportadas e informar seus estados normalizados.
+- A integração com a ESPN deve ser tratada pelo backend, sem expor essa dependência ao frontend.
 
-O sistema deve permitir que o usuário autenticado registre um palpite para uma partida.
+### RF06 — Catálogo de competições
 
-- O palpite contém partida, gols do mandante e gols do visitante.
-- Os gols devem ser números inteiros não negativos.
-- Cada usuário pode ter apenas um palpite por partida.
-- O usuário só pode criar palpite antes do kickoff e enquanto a partida não estiver `LIVE` nem `FT`.
-- Não há campo funcional de MVP no contrato atual de criação de palpite.
+O sistema deve disponibilizar publicamente o catálogo de competições suportadas e suas capacidades.
 
-## RF07 - Edição de palpites
+- Deve ser possível consultar a temporada atual de uma competição.
+- Competições compatíveis devem oferecer classificação esportiva.
+- Competições de mata-mata devem oferecer a estrutura do torneio por fases.
 
-O sistema deve permitir que o usuário autenticado edite um palpite próprio.
+### RF07 — Fixtures sincronizadas
 
-- Somente o dono do palpite pode edita-lo.
-- A edição segue a mesma regra de bloqueio da criação: kickoff futuro e status diferente de `LIVE` e `FT`.
-- A edição permite alterar apenas o placar previsto.
-- Palpites de partidas iniciadas, ao vivo ou encerradas não podem ser editados.
+O usuário autenticado deve poder consultar as fixtures armazenadas localmente.
 
-## RF08 - Exclusão de palpites
+- A listagem deve aceitar filtros por status, rodada, time e intervalo de datas.
+- Deve haver paginação por `page` e `limit` e ordenação por kickoff crescente.
+- Cada item deve informar times, temporada, rodada, kickoff, status, placar disponível, palpite do usuário e se ainda aceita alteração.
+- O frontend deve poder consultar a página inicial recomendada para a rodada atual.
 
-O sistema deve permitir que o usuário autenticado exclua um palpite próprio.
+## Participação mensal e pagamentos
 
-- Somente o dono do palpite pode exclui-lo.
-- A exclusão segue a mesma regra de bloqueio da criação e edição.
-- Palpites de partidas iniciadas, ao vivo ou encerradas não podem ser excluidos.
+### RF08 — Situação da participação vigente
 
-## RF09 - Meus Palpites
+O usuário autenticado deve poder consultar sua participação no mês corrente.
 
-O sistema deve permitir que o usuário autenticado consulte exclusivamente os palpites que ele ja registrou.
+- O período deve seguir o mês calendário em `America/Sao_Paulo`.
+- A resposta deve informar período, valor, situação e data de ativação quando existente.
+- A ausência de período persistido deve produzir a descrição do período corrente, sem conceder participação ativa.
 
-- A página "Meus Palpites" usa a rota `GET /api/v1/predictions/my`.
-- A API retorna apenas palpites do usuário autenticado.
-- A página não deve buscar nem exibir partidas sem palpite do usuário.
-- No frontend atual, os palpites são organizados em "Seus palpites ativos" e "Histórico de palpites".
-- Palpites ativos são aqueles que ainda podem ser alterados pela regra atual.
-- O histórico contém os palpites que não podem mais ser alterados e pode ser filtrado por rodada no frontend.
+### RF09 — Autorização para palpitar
 
-## RF10 - Transparência de palpites
+O sistema deve exigir uma `Participation` com status `ACTIVE` em um `ParticipationPeriod` aberto que contenha o kickoff da fixture.
 
-O sistema deve permitir consultar palpites associados a uma partida respeitando a regra de transparência.
+- A verificação deve ocorrer na criação e na edição do palpite.
+- Um `Payment` com status `PENDING`, isoladamente, não deve autorizar palpites.
+- O período aplicável deve ser determinado pelo kickoff da fixture, não apenas pela data da requisição.
 
-- Antes do kickoff, um usuário autenticado deve ver apenas o próprio palpite naquela partida.
-- Antes do kickoff, se o usuário não fez palpite, a resposta deve ocultar palpites de outros usuários.
-- Após o kickoff ou quando a partida estiver `LIVE`, os palpites da partida podem ser exibidos.
-- Para partidas encerradas, o retorno pode incluir resultado final e pontuação calculada quando disponível.
+### RF10 — Criação e retomada do PIX
 
-## RF11 - Resultados das partidas
+O usuário autenticado deve poder criar ou retomar a cobrança PIX do período mensal vigente.
 
-O sistema deve armazenar e exibir resultados sincronizados das partidas.
+- O valor atual deve ser R$ 25,00, persistido como 2.500 centavos.
+- O sistema deve reutilizar um PIX pendente ainda válido quando disponível.
+- Cobranças pendentes vencidas devem assumir o estado efetivo `EXPIRED` no fluxo aplicável.
+- Se já existir participação ativa no período, uma nova cobrança deve ser recusada.
+- A criação deve possuir limitação de frequência e mecanismos contra duplicidade concorrente.
 
-- Partidas encerradas possuem status `FT` e placar final quando a fonte de dados fornece o resultado.
-- O frontend pode mostrar resultado final em cards de palpites e transparência quando a partida está encerrada e há placar disponível.
-- O processamento de resultados depende de fixtures encerradas com placar final.
+### RF11 — Consulta de pagamentos
 
-## RF12 - Cálculo de pontuação
+O usuário autenticado deve poder:
 
-O sistema deve calcular pontuação dos palpites de partidas finalizadas.
+- consultar o histórico dos próprios pagamentos confirmados;
+- retomar o PIX pendente e válido do período atual;
+- consultar o status de uma cobrança própria;
+- solicitar uma reconciliação pontual de cobrança própria elegível.
 
-- Placar exato vale 3 pontos.
-- Acerto do vencedor ou empate sem placar exato vale 1 ponto.
-- Erro do resultado vale 0 ponto.
-- Palpites sem partida encerrada ou sem placar final não recebem pontuação.
-- A pontuação atual é baseada apenas no placar previsto; não há pontuação funcional por MVP.
+O usuário não deve consultar nem reconciliar pagamentos de outra conta.
 
-## RF13 - Processamento de resultados e ranking
+### RF12 — Confirmação e reconciliação do pagamento
 
-O sistema deve processar partidas encerradas e atualizar os rankings.
+O backend deve receber eventos autenticados do provedor PIX e reconciliar pagamentos elegíveis.
 
-- O processamento considera partidas com status `FT` e ainda não processadas.
-- Cada palpite da partida recebe pontuação de placar, total, indicador de placar exato e indicador de vencedor correto.
-- A fixture processada recebe `processedAt`.
-- Os standings dos usuários são recalculados com base nos palpites processados da temporada ativa.
-- O processamento deve ser idempotente para evitar reprocessar fixtures já marcadas como processadas.
+- O evento `PAYMENT_RECEIVED` do Asaas deve ser correlacionado com o pagamento local.
+- A transição válida para `PAID` deve registrar as referências do provedor e `paidAt`.
+- A confirmação deve criar a `Participation ACTIVE` vinculada ao pagamento na mesma transação.
+- Eventos repetidos e confirmações concorrentes devem ser tratados de modo idempotente.
+- A reconciliação iniciada pelo usuário deve respeitar elegibilidade, cooldown e limites de requisição.
+- Estados locais possíveis são `PENDING`, `PAID`, `EXPIRED`, `CANCELLED` e `FAILED`.
 
-## RF14 - Ranking geral
+## Palpites, transparência e pontuação
 
-O sistema deve disponibilizar ranking da temporada ativa.
+### RF13 — Criação de palpite
 
-- O ranking geral é público.
-- A ordenação considera total de pontos, placares exatos, vencedores corretos, palpites errados e data de criação do standing.
-- A resposta inclui posição, usuário e estatísticas acumuladas.
+O usuário autenticado e habilitado para o período deve poder registrar um palpite de placar.
 
-## RF15 - Ranking do usuário autenticado
+- O palpite deve conter fixture, gols do mandante e gols do visitante.
+- Os gols devem ser inteiros não negativos.
+- Cada usuário deve possuir no máximo um palpite por fixture.
+- A criação deve ser bloqueada no kickoff ou quando a fixture estiver `LIVE` ou `FT`.
+- O contrato atual não deve exigir palpite de MVP.
 
-O sistema deve permitir que o usuário autenticado consulte sua própria posição no ranking.
+### RF14 — Edição de palpite
 
-- A consulta retorna os dados do standing do usuário na temporada ativa.
-- Quando o usuário ainda não possui standing, a resposta representa pontuação zerada conforme a regra do backend.
+O usuário autenticado deve poder alterar somente o placar de um palpite próprio.
 
-## RF16 - Estatísticas do usuário
+- A edição deve exigir participação ativa no período da fixture.
+- Deve aplicar o mesmo fechamento por kickoff e status usado na criação.
+- Palpites de outras contas não podem ser editados.
 
-O sistema deve permitir que o usuário autenticado consulte suas estatísticas.
+### RF15 — Exclusão de palpite
 
-- As estatísticas incluem pontos, quantidade de palpites, placares exatos, vencedores corretos, erros e aproveitamento.
-- O retorno considera os palpites e standings da temporada ativa.
-- A página de estatísticas do frontend consome esses dados para apresentar o desempenho do usuário.
+O usuário autenticado deve poder excluir um palpite próprio enquanto a fixture estiver aberta.
 
-## RF17 - Sincronização de dados esportivos
+- A exclusão deve aplicar o mesmo fechamento por kickoff e status.
+- Palpites de outras contas não podem ser excluídos.
+- A exclusão não exige uma nova validação de participação ativa.
 
-O sistema deve permitir que administradores sincronizem dados esportivos.
+### RF16 — Meus palpites
 
-- Apenas usuários `ADMIN` podem acionar rotas de sincronização.
-- A sincronização atual usa APIs da ESPN.
-- Existem rotas administrativas para sincronizar liga, times, partidas, jogadores e resultados.
-- A sincronização de resultados também pode acionar processamento de fixtures finalizadas.
+O sistema deve listar exclusivamente os palpites da conta autenticada.
 
-## RF18 - Tarefas automáticas
+- O frontend deve separar palpites ainda alteráveis do histórico.
+- O histórico pode ser filtrado por rodada na interface.
+- Fixtures sem palpite do usuário não devem aparecer nessa listagem.
 
-O sistema deve executar rotina automática para manter resultados e pontuação atualizados.
+### RF17 — Transparência dos palpites
 
-- O backend possui scheduler que periodicamente sincroniza resultados.
-- A rotina processa fixtures encerradas ainda não processadas.
-- Falhas devem ser registradas em logs da aplicação sem expor credenciais.
+O sistema deve expor os palpites de uma fixture conforme a regra de fechamento.
 
-## RF19 - Permissoes administrativas
+- Antes do kickoff, o usuário deve ver somente o próprio palpite, quando existente.
+- Antes do kickoff, a ausência de palpite próprio não deve revelar os palpites alheios.
+- No kickoff ou quando a fixture estiver `LIVE` ou `FT`, os palpites da fixture podem ser exibidos.
+- Quando disponível, o retorno deve incluir resultado final, processamento e pontos calculados.
 
-O sistema deve diferenciar usuários comuns e administradores.
+### RF18 — Processamento e pontuação
 
-- Usuários `USER` podem usar as funcionalidades autenticadas comuns.
-- Usuários `ADMIN` podem acessar endpoints de sincronização e processamento administrativo.
-- A verificação administrativa é feita no backend com base no papel presente no usuário autenticado.
-- Não há interface administrativa completa implementada no frontend atual.
+O sistema deve processar fixtures `FT` com placar final e ainda não processadas.
 
-## RF20 - Paginas do frontend
+- Placar exato deve valer 3 pontos.
+- Acerto do vencedor ou do empate, sem placar exato, deve valer 1 ponto.
+- Erro deve valer 0 ponto.
+- O processamento deve atualizar os indicadores do palpite e marcar a fixture com `processedAt`.
+- O fluxo deve ser idempotente.
+- A pontuação funcional atual é baseada somente no placar; MVP não acrescenta pontos.
 
-O frontend deve oferecer as principais telas de uso do produto.
+### RF19 — Classificação
 
-- Landing page pública.
-- Cadastro, login, esqueci minha senha e redefinição de senha.
-- Dashboard autenticado.
-- Partidas.
-- Meus Palpites.
-- Transparência.
-- Ranking e estatísticas.
-- Rodadas.
-- Perfil.
-- Regras.
+O sistema deve disponibilizar publicamente a classificação da temporada ativa e, para o usuário autenticado, sua posição individual.
 
-## RF21 - Estatísticas por rodada
+- A posição deve ser calculada pela ordem oficial, não pelo campo legado `Standing.position`.
+- A ordem deve considerar, nesta sequência: `totalPoints` decrescente, `exactScores` decrescente, `correctWinners` decrescente, `wrongPredictions` crescente e `createdAt` crescente.
+- A resposta deve incluir posição, usuário e estatísticas acumuladas.
+- Quando não houver standing para o usuário autenticado, a consulta individual deve retornar `404 Not Found`.
+- Ajustes administrativos já materializados em `totalPoints` devem participar normalmente da ordenação.
+
+### RF20 — Estatísticas pessoais
+
+O usuário autenticado deve poder consultar pontos, quantidade de palpites, placares exatos, vencedores corretos, erros e aproveitamento na temporada ativa.
+
+## Sincronização e automação
+
+### RF21 — Sincronização esportiva administrativa
+
+O backend deve permitir que somente `ADMIN` acione as sincronizações locais de liga, temporada, times, fixtures, jogadores e resultados provenientes da ESPN.
+
+### RF22 — Atualização automática de resultados
+
+O backend deve executar a rotina agendada de atualização e processamento de resultados.
+
+- A rotina deve consultar a fonte esportiva antes de decidir se há trabalho local necessário.
+- Fixtures encerradas e ainda não processadas devem ser processadas.
+- Falhas devem ser registradas nos logs da aplicação sem expor credenciais.
+
+## Administração
+
+### RF23 — Controle de acesso administrativo
+
+As rotas sob `/api/v1/admin` devem exigir JWT válido e `Role.ADMIN`, por meio de `JwtAuthGuard`, `RolesGuard` e do decorator de papéis.
+
+- Contas `USER` não devem acessar a área administrativa.
+- O produto não deve oferecer promoção ou rebaixamento de administradores pela interface.
+- A interface administrativa deve estar disponível em todas as páginas sob `/admin`.
+
+### RF24 — Dashboard administrativo
+
+O administrador deve poder consultar, sob demanda, indicadores de usuários, participação vigente, pagamentos recebidos, valor recebido, pendências financeiras e atividade administrativa recente.
+
+### RF25 — Gestão e detalhe de usuários
+
+O administrador deve poder listar, pesquisar, filtrar e paginar usuários e abrir um detalhe sem dados sensíveis.
+
+- O detalhe deve apresentar conta, contagens relacionadas, participações, pagamentos e classificação/desempenho por temporada.
+- A posição apresentada deve usar a mesma ordenação dinâmica da classificação oficial.
+- Filtros devem permitir distinguir papel, situação da conta e participação vigente.
+
+### RF26 — Consulta administrativa financeira
+
+O administrador deve poder consultar, com paginação e filtros:
+
+- pagamentos;
+- participações;
+- períodos recentes;
+- pagamentos `PAID` sem participação ativa correspondente, como pendências de revisão observacional.
+
+A área administrativa não deve editar valores, marcar pagamentos manualmente como pagos, estornar ou ativar participações manualmente.
+
+### RF27 — Auditoria administrativa
+
+O sistema deve registrar e listar ações administrativas de desativação, reativação e exclusão de usuário por meio de `AdminAuditLog`.
+
+- Cada registro deve identificar o administrador, a ação, o alvo e os metadados necessários.
+- A listagem deve ser paginada e ordenada da atividade mais recente para a mais antiga.
+
+### RF28 — Desativação e reativação
+
+O administrador deve poder desativar e reativar contas `USER`.
+
+- A desativação deve preservar palpites, pagamentos, participações e demais históricos.
+- A desativação deve preencher `disabledAt`, incrementar `authVersion` e remover tokens pendentes de recuperação de senha.
+- A alteração de `authVersion` deve invalidar sessões JWT já emitidas.
+- A reativação deve limpar `disabledAt` sem apagar o histórico.
+- A interface deve exigir confirmação antes da desativação.
+- Contas `ADMIN` não podem ser alteradas por esses endpoints.
+
+### RF29 — Exclusão segura de conta de teste
+
+O administrador deve poder analisar o impacto e excluir definitivamente somente uma conta elegível.
+
+- A interface deve exigir a confirmação literal `EXCLUIR`.
+- O fluxo deve impedir autoexclusão e exclusão de qualquer `ADMIN`.
+- A exclusão deve ser bloqueada quando houver pagamento `PAID`, `PENDING` ou `EXPIRED`, participação vinculada a pagamento, participação ativa ou histórico do alvo como ator administrativo.
+- Quando permitida, a remoção dos dados dependentes e do usuário deve ocorrer em uma transação e gerar auditoria.
+- Quando a exclusão estiver bloqueada para um `USER`, a desativação deve ser indicada como alternativa.
+
+## Interface web
+
+### RF30 — Páginas do produto
+
+O frontend deve oferecer:
+
+- página inicial pública, jogos do dia, competições e regras;
+- cadastro, login, recuperação e redefinição de senha;
+- dashboard, fixtures, meus palpites, transparência, estatísticas e perfil;
+- participação mensal com PIX, status e histórico;
+- área administrativa com visão geral, usuários, pagamentos, participações, pendências e auditoria.
+
+### RF31 — Estatísticas por rodada
 
 O sistema deve permitir que o usuário autenticado acompanhe uma rodada dentro de uma competição e temporada persistidas.
 
 - A seleção deve seguir a hierarquia competição, temporada e rodada.
-- O ranking da rodada inclui somente usuários com ao menos um palpite já público para a rodada; antes do kickoff, a existência de palpites de terceiros permanece oculta.
-- A pontuação da rodada é a soma de `Prediction.scorePoints` em fixtures avaliadas e não inclui `Standing.adjustmentPoints`.
-- A resposta inclui destaques, desempenho do usuário autenticado e classificação completa da rodada.
-- O pior desempenho usa os mesmos participantes avaliados do ranking, sem exigir que tenham palpitado todos os jogos; usuários sem palpites continuam excluídos.
-- A consulta é feita sob demanda, sem cron, polling de backend ou alteração no scheduler de resultados.
-- A rota e os contratos recebem identificadores de competição e temporada para permitir expansão futura sem habilitar novas ligas de palpites nesta versão.
+- O ranking da rodada deve incluir somente usuários com ao menos um palpite já público; antes do kickoff, a existência de palpites de terceiros permanece oculta.
+- A pontuação da rodada deve somar `Prediction.scorePoints` de fixtures avaliadas e não incluir `Standing.adjustmentPoints`.
+- A resposta deve incluir destaques, desempenho do usuário autenticado e classificação completa da rodada.
+- O pior desempenho deve usar os mesmos participantes avaliados do ranking, sem exigir que tenham palpitado todos os jogos; usuários sem palpites continuam excluídos.
+- A consulta deve ser feita sob demanda, sem cron, polling de backend ou alteração no scheduler de resultados.
+- A rota e os contratos devem receber identificadores de competição e temporada para permitir expansão futura sem habilitar novas ligas de palpites nesta versão.
 
-## Funcionalidades fora do escopo atual
+## Fora do escopo implementado
 
-Os itens abaixo podem existir parcialmente na modelagem ou no roadmap, mas não estão implementados como fluxo funcional completo nesta versão:
-
-- Palpite de MVP e pontuação por MVP.
-- Interface administrativa completa.
-- CRUD manual de ligas, temporadas, times e partidas pelo frontend.
-- Histórico navegável de temporadas anteriores.
-- Ligas privadas, convites, notificações, OAuth, aplicativo mobile e internacionalização.
-- Uso efetivo do model `SyncLog` para registrar cada sincronização.
+- pontuação funcional por MVP;
+- promoção ou rebaixamento de `ADMIN` pela interface;
+- edição manual de pagamentos, marcação manual como pago, estorno ou alteração de valor;
+- ativação financeira manual de participação;
+- ligas privadas, convites, notificações e OAuth;
+- premiações, rateio, carteira, saques, odds ou apostas;
+- aplicativo móvel nativo e internacionalização.

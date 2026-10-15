@@ -1,95 +1,176 @@
 # Endpoints da API
 
-## Visão Geral
+## Convenções
 
-A API do MatchPredict é uma API REST implementada em NestJS.
-
-Base URL local:
+A API REST é implementada em NestJS e usa o prefixo global:
 
 ```text
-http://localhost:3000/api/v1
+/api/v1
 ```
 
-No `compose.yaml`, o backend é exposto na máquina host em `127.0.0.1:3001`, apontando para a porta `3000` do container.
+No ambiente local do backend, a base padrão é `http://localhost:3000/api/v1`. Pelo `compose.yaml`, a porta do container é exposta no host como `127.0.0.1:3001`.
 
-Todas as rotas abaixo já incluem o prefixo global `/api/v1`.
-
-## Autenticação
-
-Endpoints protegidos usam JWT no header:
+Rotas marcadas como **Autenticado** exigem:
 
 ```http
 Authorization: Bearer <token>
 ```
 
-Os endpoints de autenticação usam rate limit específico:
+Rotas marcadas como **ADMIN** exigem JWT válido e `Role.ADMIN`. A validação global usa `whitelist`, transformação de tipos e rejeição de campos não declarados. Não existe envelope global obrigatório para as respostas.
 
-| Endpoint | Limite |
-| --- | --- |
-| `POST /auth/register` | 3 requisições a cada 10 minutos |
-| `POST /auth/login` | 5 requisições a cada 1 minuto |
-| `POST /auth/forgot-password` | 3 requisições a cada 15 minutos |
-| `POST /auth/reset-password` | 5 requisições a cada 15 minutos |
+Swagger fica disponível somente fora de produção em `/api/docs`.
 
-A aplicação usa validação global com `whitelist`, `transform` e `forbidNonWhitelisted`. Campos extras no corpo ou query são rejeitados.
-
-## Swagger
-
-Swagger é habilitado somente fora de produção:
-
-```text
-/api/docs
-```
-
-## Visão Geral Dos Endpoints
+## Autenticação
 
 | Método | Rota | Acesso | Finalidade |
 | --- | --- | --- | --- |
-| `POST` | `/api/v1/auth/register` | Público | Registrar usuário |
-| `POST` | `/api/v1/auth/login` | Público | Autenticar usuário |
-| `POST` | `/api/v1/auth/forgot-password` | Público | Solicitar redefinição de senha |
-| `POST` | `/api/v1/auth/reset-password` | Público | Redefinir senha com token |
-| `GET` | `/api/v1/users/me` | Autenticado | Obter perfil autenticado |
-| `PATCH` | `/api/v1/users/me` | Autenticado | Atualizar perfil/senha |
-| `GET` | `/api/v1/users/me/statistics` | Autenticado | Obter estatísticas do usuário |
-| `GET` | `/api/v1/football/fixtures` | Autenticado | Listar partidas sincronizadas |
+| `POST` | `/api/v1/auth/register` | Público | Criar uma conta `USER` |
+| `POST` | `/api/v1/auth/login` | Público | Validar credenciais e emitir JWT |
+| `POST` | `/api/v1/auth/forgot-password` | Público | Solicitar link de recuperação com resposta não enumerável |
+| `POST` | `/api/v1/auth/reset-password` | Público | Redefinir senha com token válido |
+
+### Corpos e limites
+
+`POST /auth/register` recebe `name`, `email` e `password`. Não recebe `role`. Nome tem de 3 a 80 caracteres, e-mail tem no máximo 254 e senha tem de 8 a 72 caracteres, com maiúscula, minúscula e número.
+
+`POST /auth/login` recebe `email` e `password` e devolve `accessToken`. Conta desativada é recusada como credencial inválida.
+
+`POST /auth/forgot-password` recebe `email`. `POST /auth/reset-password` recebe `token`, `password` e `confirmPassword`.
+
+| Endpoint | Rate limit específico |
+| --- | --- |
+| `POST /auth/register` | 3 a cada 10 minutos |
+| `POST /auth/login` | 5 por minuto |
+| `POST /auth/forgot-password` | 3 a cada 15 minutos |
+| `POST /auth/reset-password` | 5 a cada 15 minutos |
+
+## Usuários
+
+| Método | Rota | Acesso | Finalidade |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/users/me` | Autenticado | Consultar o perfil seguro da conta atual |
+| `PATCH` | `/api/v1/users/me` | Autenticado | Alterar nome e, opcionalmente, senha |
+| `GET` | `/api/v1/users/me/statistics` | Autenticado | Consultar estatísticas na temporada ativa |
+
+No `PATCH /users/me`, todos os campos são opcionais: `name`, `currentPassword` e `newPassword`. A nova senha exige a senha atual correta.
+
+As estatísticas incluem totais, média, acurácia, placares exatos, vencedores corretos, erros, melhor/pior rodada e posição atual quando disponível.
+
+## Futebol
+
+### Jogos do dia e competições públicas
+
+| Método | Rota | Acesso | Finalidade |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/football/daily-games` | Público | Listar jogos por data civil em `America/Sao_Paulo` |
+| `GET` | `/api/v1/football/competitions` | Público | Listar competições configuradas e suas capacidades |
+| `GET` | `/api/v1/football/competitions/:id/seasons/current` | Público | Consultar temporada corrente e fases |
+| `GET` | `/api/v1/football/competitions/:id/standings` | Público | Consultar classificação esportiva |
+| `GET` | `/api/v1/football/competitions/:id/tournament` | Público | Consultar mata-mata organizado por fases |
+
+`GET /football/daily-games` exige `date=YYYY-MM-DD` e aceita `competition` com um identificador configurado, por exemplo `eng.1`.
+
+As consultas de standings e tournament aceitam `season` opcional, inteiro de 2000 a 2100. A existência de cada recurso depende das capacidades da competição.
+
+### Fixtures locais
+
+| Método | Rota | Acesso | Finalidade |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/football/fixtures/current-page` | Autenticado | Calcular a página inicial recomendada para a rodada atual |
+| `GET` | `/api/v1/football/fixtures` | Autenticado | Listar fixtures sincronizadas, incluindo o palpite do usuário |
+
+`GET /football/fixtures/current-page` aceita `limit` de 1 a 100, com default 20.
+
+`GET /football/fixtures` aceita:
+
+| Query | Tipo/validação | Efeito |
+| --- | --- | --- |
+| `status` | `FixtureStatus` | Filtra estado |
+| `round` | inteiro de 0 a 100 | Filtra rodada |
+| `teamId` | UUID v4 | Filtra mandante ou visitante |
+| `from`, `to` | datas ISO | Delimitam kickoff |
+| `page` | inteiro de 1 a 1000, default 1 | Página |
+| `limit` | inteiro de 1 a 100, default 20 | Tamanho da página |
+
+A resposta paginada usa `{ data, meta }`; `meta` informa página, limite, total e total de páginas.
+
+### Sincronização esportiva
+
+| Método | Rota | Acesso | Finalidade |
+| --- | --- | --- | --- |
 | `POST` | `/api/v1/football/sync/league` | ADMIN | Sincronizar liga e temporada ativa da ESPN |
 | `POST` | `/api/v1/football/sync/teams` | ADMIN | Sincronizar times |
-| `POST` | `/api/v1/football/sync/fixtures` | ADMIN | Sincronizar partidas |
+| `POST` | `/api/v1/football/sync/fixtures` | ADMIN | Sincronizar fixtures |
 | `POST` | `/api/v1/football/sync/players` | ADMIN | Sincronizar jogadores |
-| `POST` | `/api/v1/football/sync/results` | ADMIN | Sincronizar resultados |
-| `POST` | `/api/v1/predictions` | Autenticado | Criar palpite |
-| `GET` | `/api/v1/predictions/my` | Autenticado | Listar meus palpites |
-| `GET` | `/api/v1/predictions/fixture/:fixtureId/transparency` | Autenticado | Consultar transparência de palpites da partida |
-| `GET` | `/api/v1/predictions/fixture/:fixtureId` | Autenticado | Listar palpites de uma partida |
-| `PATCH` | `/api/v1/predictions/:id` | Autenticado | Atualizar palpite próprio |
+| `POST` | `/api/v1/football/sync/results` | ADMIN | Atualizar resultados das fixtures pendentes |
+
+Esses endpoints usam a verificação administrativa do `FootballController`. Não fazem parte do CRUD do painel administrativo.
+
+## Palpites
+
+| Método | Rota | Acesso | Finalidade |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/predictions` | Autenticado | Criar palpite próprio |
+| `GET` | `/api/v1/predictions/my` | Autenticado | Listar palpites da conta atual |
+| `GET` | `/api/v1/predictions/fixture/:fixtureId/transparency` | Autenticado | Consultar fixture, resultado e palpites visíveis |
+| `GET` | `/api/v1/predictions/fixture/:fixtureId` | Autenticado | Listar palpites visíveis de uma fixture |
+| `PATCH` | `/api/v1/predictions/:id` | Autenticado | Alterar placar de palpite próprio |
 | `DELETE` | `/api/v1/predictions/:id` | Autenticado | Excluir palpite próprio |
-| `POST` | `/api/v1/predictions/calculate/:predictionId` | ADMIN | Calcular pontuação de um palpite |
-| `POST` | `/api/v1/predictions/process/:fixtureId` | ADMIN | Processar palpites de uma partida |
-| `GET` | `/api/v1/standings` | Público | Listar ranking da temporada ativa |
-| `GET` | `/api/v1/standings/me` | Autenticado | Obter posição do usuário autenticado |
+| `POST` | `/api/v1/predictions/calculate/:predictionId` | ADMIN | Recalcular um palpite específico |
+| `POST` | `/api/v1/predictions/process/:fixtureId` | ADMIN | Processar a fixture e atualizar standings |
+
+### Contratos principais
+
+Criação:
+
+```json
+{
+  "fixtureId": "<uuid-v4>",
+  "homeGoals": 2,
+  "awayGoals": 1
+}
+```
+
+Atualização:
+
+```json
+{
+  "homeGoals": 1,
+  "awayGoals": 1
+}
+```
+
+Os gols devem ser inteiros de 0 a 20. A atualização exige ao menos um dos dois campos. Criação e edição exigem participação ativa no período da fixture e fixture aberta; exclusão exige propriedade e fixture aberta.
+
+Antes do fechamento, os dois endpoints por fixture retornam somente o palpite da conta atual, quando existente. Após o fechamento, podem retornar todos os palpites. O endpoint `transparency` também informa dados normalizados da fixture, `isClosedForPrediction` e `finalResult` quando aplicável.
+
+IDs de fixture e palpite são validados como UUID v4. Os erros de domínio mais comuns são `403` para palpite de outro usuário, `404` para recurso inexistente e `409` para duplicidade ou fixture fechada.
+
+## Classificação
+
+| Método | Rota | Acesso | Finalidade |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/standings` | Público | Listar a classificação da temporada ativa |
+| `GET` | `/api/v1/standings/me` | Autenticado | Consultar a posição da conta atual |
+
+O ranking devolve a posição calculada dinamicamente pela ordem oficial. `GET /standings/me` retorna `404` se não houver temporada ativa ou standing para o usuário.
+
+## Rodadas
+
+| Método | Rota | Acesso | Finalidade |
+| --- | --- | --- | --- |
 | `GET` | `/api/v1/rounds/catalog` | Autenticado | Listar competições, temporadas e rodadas persistidas |
 | `GET` | `/api/v1/rounds/:competitionId/seasons/:seasonId/:round` | Autenticado | Obter estatísticas de uma rodada |
 
----
+### Catálogo de rodadas
 
-# Rounds
+`GET /rounds/catalog` lista somente competições e temporadas com fixtures persistidas. Para cada temporada, retorna todas as rodadas iniciadas, somente a próxima rodada futura disponível e a seleção padrão para a navegação inicial.
 
-## GET /api/v1/rounds/catalog
+A consulta não acessa a ESPN nem cria processamento em background. A janela é derivada das datas dos fixtures persistidos, sem quantidade total de rodadas fixa no código.
 
-Lista somente competições e temporadas que já possuem fixtures no banco. Para cada temporada, retorna todas as rodadas que já começaram e somente a próxima rodada futura disponível. Retorna também a seleção padrão calculada para a navegação inicial.
+### Estatísticas da rodada
 
-Acesso: autenticado.
-
-Não consulta a ESPN e não cria processamento em background. A resposta é obtida sob demanda com agregação por `seasonId`, `round` e status.
-
-A janela de rodadas é derivada das datas dos fixtures persistidos; não há quantidade total de rodadas hardcoded.
-
-## GET /api/v1/rounds/:competitionId/seasons/:seasonId/:round
-
-Retorna o estado da rodada, contadores de fixtures, destaques, desempenho do usuário autenticado e ranking.
-
-Acesso: autenticado.
+`GET /rounds/:competitionId/seasons/:seasonId/:round` retorna estado, contadores de fixtures, destaques, desempenho do usuário autenticado e ranking.
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
@@ -100,919 +181,117 @@ Acesso: autenticado.
 Regras relevantes:
 
 - usa apenas `Prediction.scorePoints` de fixtures avaliadas;
-- expõe `correctWinnersOnly` somente para vencedor/empate correto sem placar exato; `exactScores`, `correctWinnersOnly` e `wrongPredictions` são categorias mutuamente exclusivas;
+- trata `exactScores`, `correctWinnersOnly` e `wrongPredictions` como categorias mutuamente exclusivas;
 - não lê nem retorna `Standing.adjustmentPoints`;
-- exclui usuários sem palpites públicos da classificação;
-- não retorna placares previstos;
-- antes do kickoff, oculta ranking, destaques e qualquer informação de terceiros;
-- o destaque `best` representa o primeiro colocado do ranking e inclui `exactScores`, `correctWinnersOnly` e `evaluatedPredictions` desse participante;
-- `lowestScore` retorna o menor valor e a quantidade de participantes empatados; inclui `participant` somente quando existe um único participante com essa pontuação;
-- o melhor desempenho informa `tieBreakCriterion` somente quando a igualdade de pontos foi resolvida por um critério determinístico.
+- exclui usuários sem palpites públicos e não retorna placares previstos;
+- antes do kickoff, oculta ranking, destaques e informações de terceiros;
+- `best` representa o primeiro colocado do ranking e inclui suas métricas;
+- `lowestScore` inclui `participant` somente quando existe um único participante com a menor pontuação;
+- `tieBreakCriterion` é informado somente quando um critério determinístico resolve a igualdade de pontos.
 
-Erros relevantes: `400` para parâmetros inválidos, `401` para JWT ausente/inválido e `404` para competição, temporada ou rodada inexistente.
+Erros relevantes: `400` para parâmetros inválidos, `401` para JWT ausente ou inválido e `404` para competição, temporada ou rodada inexistente.
 
----
+## Participação mensal
 
-# Auth
-
-## POST /api/v1/auth/register
-
-Registra um novo usuário.
-
-Acesso: público.
-
-### Corpo
-
-```json
-{
-  "name": "Ada Lovelace",
-  "email": "ada@example.com",
-  "password": "Senha123"
-}
-```
-
-### Validações
-
-- `name`: texto obrigatório, mínimo 3 e máximo 80 caracteres.
-- `email`: e-mail válido, máximo 254 caracteres.
-- `password`: texto obrigatório, mínimo 8 e máximo 72 caracteres, com ao menos uma letra maiúscula, uma letra minúscula e um número.
-- E-mail é normalizado para minúsculas e deve ser único.
-
-### Resposta 201
-
-```json
-{
-  "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-  "name": "Ada Lovelace",
-  "email": "ada@example.com",
-  "role": "USER",
-  "avatarUrl": null,
-  "createdAt": "2026-08-23T12:00:00.000Z",
-  "updatedAt": "2026-08-23T12:00:00.000Z"
-}
-```
-
-### Erros relevantes
-
-- `409 Conflict`: e-mail já cadastrado.
-- `400 Bad Request`: dados inválidos, conforme validação global.
-- `429 Too Many Requests`: limite de requisições excedido.
-
-## POST /api/v1/auth/login
-
-Autentica um usuário e emite JWT.
-
-Acesso: público.
-
-### Corpo
-
-```json
-{
-  "email": "ada@example.com",
-  "password": "Senha123"
-}
-```
-
-### Validações
-
-- `email`: e-mail válido, máximo 254 caracteres.
-- `password`: texto obrigatório, máximo 72 caracteres.
-
-### Resposta 200
-
-```json
-{
-  "accessToken": "<token>"
-}
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: e-mail ou senha inválidos.
-- `400 Bad Request`: dados inválidos.
-- `429 Too Many Requests`: limite de requisições excedido.
-
-## POST /api/v1/auth/forgot-password
-
-Solicita envio de link para redefinição de senha. A resposta é genérica para não revelar se o e-mail existe.
-
-Acesso: público.
-
-### Corpo
-
-```json
-{
-  "email": "ada@example.com"
-}
-```
-
-### Validações
-
-- `email`: e-mail válido, máximo 254 caracteres.
-
-### Resposta 200
-
-```json
-{
-  "message": "Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha."
-}
-```
-
-### Erros relevantes
-
-- `400 Bad Request`: dados inválidos.
-- `429 Too Many Requests`: limite de requisições excedido.
-
-## POST /api/v1/auth/reset-password
-
-Redefine a senha usando token de recuperação.
-
-Acesso: público.
-
-### Corpo
-
-```json
-{
-  "token": "<token-de-64-caracteres>",
-  "password": "NovaSenha123",
-  "confirmPassword": "NovaSenha123"
-}
-```
-
-### Validações
-
-- `token`: texto com exatamente 64 caracteres.
-- `password`: texto obrigatório, mínimo 8 e máximo 72 caracteres, com ao menos uma letra maiúscula, uma letra minúscula e um número.
-- `confirmPassword`: texto obrigatório, máximo 72 caracteres.
-- `password` e `confirmPassword` devem ser iguais.
-- Token deve existir e não estar expirado.
-
-### Resposta 200
-
-```json
-{
-  "message": "Senha alterada com sucesso."
-}
-```
-
-### Erros relevantes
-
-- `400 Bad Request`: senhas diferentes, token inválido ou token expirado.
-- `400 Bad Request`: dados inválidos.
-- `429 Too Many Requests`: limite de requisições excedido.
-
----
-
-# Users
-
-## GET /api/v1/users/me
-
-Retorna o usuário autenticado.
-
-Acesso: autenticado.
-
-### Resposta 200
-
-```json
-{
-  "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-  "name": "Ada Lovelace",
-  "email": "ada@example.com",
-  "role": "USER",
-  "createdAt": "2026-08-23T12:00:00.000Z",
-  "updatedAt": "2026-08-23T12:00:00.000Z"
-}
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente, inválido ou usuário não encontrado.
-
-## PATCH /api/v1/users/me
-
-Atualiza o perfil do usuário autenticado. Pode alterar nome e, opcionalmente, senha.
-
-Acesso: autenticado.
-
-### Corpo
-
-```json
-{
-  "name": "Ada Byron",
-  "currentPassword": "SenhaAtual123",
-  "newPassword": "NovaSenha123"
-}
-```
-
-Todos os campos são opcionais. Para alterar senha, `currentPassword` é obrigatório.
-
-### Validações
-
-- `name`: texto, mínimo 3 e máximo 80 caracteres.
-- `currentPassword`: texto, máximo 72 caracteres.
-- `newPassword`: texto, mínimo 8 e máximo 72 caracteres, com ao menos uma letra maiúscula, uma letra minúscula e um número.
-
-### Resposta 200
-
-```json
-{
-  "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-  "name": "Ada Byron",
-  "email": "ada@example.com",
-  "role": "USER",
-  "createdAt": "2026-08-23T12:00:00.000Z",
-  "updatedAt": "2026-08-23T12:10:00.000Z"
-}
-```
-
-### Erros relevantes
-
-- `400 Bad Request`: `newPassword` enviado sem `currentPassword`.
-- `401 Unauthorized`: JWT ausente/inválido ou senha atual incorreta.
-- `400 Bad Request`: dados inválidos.
-
-## GET /api/v1/users/me/statistics
-
-Retorna estatísticas do usuário autenticado na temporada ativa.
-
-Acesso: autenticado.
-
-### Resposta 200
-
-```json
-{
-  "totalPredictions": 24,
-  "totalPoints": 42,
-  "averagePoints": 1.75,
-  "accuracy": 62.5,
-  "correctWinners": 15,
-  "exactScores": 6,
-  "wrongPredictions": 9,
-  "bestRound": {
-    "round": 12,
-    "points": 18
-  },
-  "worstRound": {
-    "round": 8,
-    "points": 0
-  },
-  "currentPosition": 4
-}
-```
-
-`bestRound` e `worstRound` podem ser `null`.
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `404 Not Found`: temporada ativa não encontrada.
-
----
-
-# Football
-
-## GET /api/v1/football/fixtures
-
-Lista partidas sincronizadas da base local, com paginação, filtros e o palpite do usuário autenticado quando existir.
-
-Acesso: autenticado.
-
-### Query Parameters
-
-| Parâmetro | Tipo | Validação | Descrição |
+| Método | Rota | Acesso | Finalidade |
 | --- | --- | --- | --- |
-| `status` | string | `NS`, `LIVE`, `FT`, `POSTPONED`, `CANCELLED` | Filtra por status da partida |
-| `round` | number | inteiro entre 0 e 100 | Filtra por rodada |
-| `teamId` | UUID v4 | UUID válido | Filtra partidas em que o time é mandante ou visitante |
-| `from` | ISO date string | data válida | Data/hora inicial do kickoff |
-| `to` | ISO date string | data válida | Data/hora final do kickoff |
-| `page` | number | inteiro entre 1 e 1000 | Página, padrão `1` |
-| `limit` | number | inteiro entre 1 e 100 | Itens por página, padrão `20` |
+| `GET` | `/api/v1/participations/me/current` | Autenticado | Consultar participação e período vigentes |
 
-### Exemplo
+A resposta informa `active`, status e data de ativação da participação, além de ano, mês, início, fim, valor em centavos e moeda do período.
 
-```http
-GET /api/v1/football/fixtures?round=12&status=NS&page=1&limit=20
-Authorization: Bearer <token>
-```
+## Pagamentos
 
-### Resposta 200
+| Método | Rota | Acesso | Finalidade |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/payments/me` | Autenticado | Listar pagamentos `PAID` da conta atual |
+| `GET` | `/api/v1/payments/me/current-pix` | Autenticado | Retomar o PIX `PENDING` válido do período atual |
+| `GET` | `/api/v1/payments/:paymentId/status` | Autenticado | Consultar o estado de uma cobrança própria |
+| `POST` | `/api/v1/payments/pix` | Autenticado | Criar ou retomar a cobrança PIX mensal |
+| `POST` | `/api/v1/payments/:paymentId/reconcile` | Autenticado | Verificar pontualmente a cobrança própria no Asaas |
+| `POST` | `/api/v1/payments/webhook/:provider` | Provedor autenticado | Receber evento de pagamento |
 
-```json
-{
-  "data": [
-    {
-      "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-      "round": 12,
-      "kickoff": "2026-08-14T19:00:00.000Z",
-      "status": "NS",
-      "homeGoals": null,
-      "awayGoals": null,
-      "winnerType": null,
-      "homeTeam": {
-        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        "name": "Arsenal",
-        "logo": "https://example.com/arsenal.png"
-      },
-      "awayTeam": {
-        "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        "name": "Chelsea",
-        "logo": "https://example.com/chelsea.png"
-      },
-      "canPredict": true,
-      "userPrediction": null
-    }
-  ],
-  "meta": {
-    "page": 1,
-    "limit": 20,
-    "total": 380,
-    "totalPages": 19
-  }
-}
-```
+Observações:
 
-### Erros relevantes
+- `paymentId` deve ser UUID v4.
+- `POST /payments/pix` permite 5 requisições por minuto.
+- `POST /payments/:paymentId/reconcile` permite 3 requisições por minuto e o serviço aplica cooldown adicional de dois minutos por pagamento.
+- O webhook permite 120 requisições por minuto, valida o provedor e autentica o token recebido no header do Asaas.
+- Somente `PAYMENT_RECEIVED` elegível conclui o fluxo; outros eventos são reconhecidos e ignorados.
+- Nenhuma dessas rotas aceita valor, status ou ativação manual enviados pelo cliente.
 
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `400 Bad Request`: query inválida.
+## Administração
 
-## POST /api/v1/football/sync/league
+Todos os endpoints desta seção usam `JwtAuthGuard`, `RolesGuard`, `ThrottlerGuard` e `@Roles(Role.ADMIN)` no controller.
 
-Sincroniza a liga configurada e a temporada ativa a partir das APIs da ESPN.
+### Dashboard e períodos
 
-Acesso: ADMIN.
-
-### Resposta 201
-
-```json
-{
-  "league": {
-    "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    "apiLeagueId": 23,
-    "name": "English Premier League",
-    "country": "England",
-    "logo": "https://example.com/league.png",
-    "isActive": true,
-    "createdAt": "2026-08-23T12:00:00.000Z",
-    "updatedAt": "2026-08-23T12:00:00.000Z"
-  },
-  "season": {
-    "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-    "leagueId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    "year": 2026,
-    "name": "2026",
-    "isActive": true,
-    "startDate": "2026-08-01T00:00:00.000Z",
-    "endDate": "2027-05-31T00:00:00.000Z",
-    "createdAt": "2026-08-23T12:00:00.000Z",
-    "updatedAt": "2026-08-23T12:00:00.000Z"
-  }
-}
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `403 Forbidden`: usuário não é ADMIN.
-- `404 Not Found`: liga da ESPN não encontrada.
-- `502 Bad Gateway`: resposta inválida das APIs da ESPN.
-- `500 Internal Server Error`: configuração obrigatória ausente.
-
-## POST /api/v1/football/sync/teams
-
-Sincroniza os times da temporada ativa.
-
-Acesso: ADMIN.
-
-### Resposta 201
-
-```json
-{
-  "created": 2,
-  "updated": 18,
-  "total": 20
-}
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `403 Forbidden`: usuário não é ADMIN.
-- `404 Not Found`: temporada ativa não encontrada.
-- `502 Bad Gateway`: resposta inválida das APIs da ESPN.
-
-## POST /api/v1/football/sync/fixtures
-
-Sincroniza as partidas da temporada ativa.
-
-Acesso: ADMIN.
-
-### Resposta 201
-
-```json
-{
-  "fixturesFound": 380,
-  "created": 20,
-  "updated": 360,
-  "skipped": 0
-}
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `403 Forbidden`: usuário não é ADMIN.
-- `404 Not Found`: temporada ativa não encontrada.
-- `502 Bad Gateway`: resposta inválida das APIs da ESPN.
-
-## POST /api/v1/football/sync/players
-
-Sincroniza jogadores dos times cadastrados.
-
-Acesso: ADMIN.
-
-### Resposta 201
-
-```json
-{
-  "created": 30,
-  "updated": 480
-}
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `403 Forbidden`: usuário não é ADMIN.
-- `502 Bad Gateway`: resposta inválida das APIs da ESPN.
-
-## POST /api/v1/football/sync/results
-
-Atualiza resultados e status das partidas ainda não finalizadas.
-
-Acesso: ADMIN.
-
-### Resposta 201
-
-```json
-{
-  "checked": 120,
-  "updated": 4,
-  "finished": 2,
-  "unchanged": 116
-}
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `403 Forbidden`: usuário não é ADMIN.
-- `502 Bad Gateway`: resposta inválida das APIs da ESPN.
-
----
-
-# Predictions
-
-## POST /api/v1/predictions
-
-Cria um palpite para uma partida.
-
-Acesso: autenticado.
-
-### Corpo
-
-```json
-{
-  "fixtureId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-  "homeGoals": 2,
-  "awayGoals": 1
-}
-```
-
-### Validações
-
-- `fixtureId`: UUID v4 obrigatório.
-- `homeGoals`: inteiro entre 0 e 20.
-- `awayGoals`: inteiro entre 0 e 20.
-- O usuário só pode ter um palpite por partida.
-- A partida deve estar aberta para palpite: `kickoff > agora`, status diferente de `LIVE` e diferente de `FT`.
-
-### Resposta 201
-
-Retorna o palpite criado com a fixture e os times relacionados.
-
-```json
-{
-  "id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-  "userId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-  "fixtureId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-  "homeGoals": 2,
-  "awayGoals": 1,
-  "mvpPlayerId": null,
-  "scorePoints": 0,
-  "mvpPoints": 0,
-  "totalPoints": 0,
-  "exactScore": false,
-  "correctWinner": false,
-  "correctMvp": false,
-  "createdAt": "2026-08-23T12:00:00.000Z",
-  "updatedAt": "2026-08-23T12:00:00.000Z",
-  "fixture": {
-    "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-    "round": 12,
-    "kickoff": "2026-08-24T19:00:00.000Z",
-    "status": "NS",
-    "homeGoals": null,
-    "awayGoals": null,
-    "homeTeam": {
-      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-      "name": "Arsenal",
-      "logo": "https://example.com/arsenal.png",
-      "country": "England"
-    },
-    "awayTeam": {
-      "id": "ffffffff-ffff-4fff-8fff-ffffffffffff",
-      "name": "Chelsea",
-      "logo": "https://example.com/chelsea.png",
-      "country": "England"
-    }
-  }
-}
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `404 Not Found`: partida não encontrada.
-- `409 Conflict`: palpite duplicado ou partida fechada para palpite.
-- `400 Bad Request`: corpo inválido.
-
-## GET /api/v1/predictions/my
-
-Lista todos os palpites do usuário autenticado.
-
-Acesso: autenticado.
-
-Não há filtros ou paginação neste endpoint.
-
-Ordenação: `createdAt` descendente.
-
-### Resposta 200
-
-```json
-[
-  {
-    "id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-    "userId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    "fixtureId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-    "homeGoals": 2,
-    "awayGoals": 1,
-    "scorePoints": 3,
-    "mvpPoints": 0,
-    "totalPoints": 3,
-    "exactScore": true,
-    "correctWinner": true,
-    "correctMvp": false,
-    "fixture": {
-      "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-      "round": 12,
-      "kickoff": "2026-08-24T19:00:00.000Z",
-      "status": "FT",
-      "homeGoals": 2,
-      "awayGoals": 1,
-      "homeTeam": {
-        "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-        "name": "Arsenal",
-        "logo": "https://example.com/arsenal.png",
-        "country": "England"
-      },
-      "awayTeam": {
-        "id": "ffffffff-ffff-4fff-8fff-ffffffffffff",
-        "name": "Chelsea",
-        "logo": "https://example.com/chelsea.png",
-        "country": "England"
-      }
-    }
-  }
-]
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-
-## GET /api/v1/predictions/fixture/:fixtureId/transparency
-
-Consulta a transparência de palpites de uma partida.
-
-Acesso: autenticado.
-
-Antes do fechamento dos palpites, retorna apenas o palpite do usuário autenticado, se existir. Após o fechamento, retorna os palpites de todos os usuários para a fixture.
-
-### Parâmetros de rota
-
-| Parâmetro | Tipo | Descrição |
+| Método | Rota | Finalidade |
 | --- | --- | --- |
-| `fixtureId` | UUID v4 | ID da partida |
+| `GET` | `/api/v1/admin/dashboard` | Indicadores atuais e atividade administrativa recente |
+| `GET` | `/api/v1/admin/periods` | Até 24 períodos recentes para filtros |
 
-### Resposta 200
+O dashboard informa período corrente, usuários cadastrados, participações ativas, quantidade e valor de pagamentos recebidos no mês, pendências financeiras e as oito ações administrativas mais recentes.
+
+### Usuários
+
+| Método | Rota | Finalidade |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/users` | Listar, buscar, filtrar e paginar usuários |
+| `GET` | `/api/v1/admin/users/:id` | Consultar detalhe seguro, históricos e desempenho |
+| `GET` | `/api/v1/admin/users/:id/deletion-impact` | Avaliar bloqueadores antes da exclusão |
+| `PATCH` | `/api/v1/admin/users/:id/disable` | Desativar conta `USER` e revogar sessões |
+| `PATCH` | `/api/v1/admin/users/:id/reactivate` | Reativar conta `USER` |
+| `DELETE` | `/api/v1/admin/users/:id` | Excluir definitivamente conta elegível |
+
+Filtros de `GET /admin/users`:
+
+- `search`: nome ou e-mail, até 100 caracteres;
+- `role`: `USER` ou `ADMIN`;
+- `accountStatus`: `ACTIVE` ou `DISABLED`;
+- paginação comum do Admin.
+
+O corpo da exclusão é estrito:
 
 ```json
 {
-  "fixture": {
-    "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-    "round": 12,
-    "kickoff": "2026-08-24T19:00:00.000Z",
-    "status": "FT",
-    "processedAt": "2026-08-24T21:10:00.000Z",
-    "homeTeam": {
-      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-      "name": "Arsenal",
-      "logo": "https://example.com/arsenal.png"
-    },
-    "awayTeam": {
-      "id": "ffffffff-ffff-4fff-8fff-ffffffffffff",
-      "name": "Chelsea",
-      "logo": "https://example.com/chelsea.png"
-    }
-  },
-  "isClosedForPrediction": true,
-  "finalResult": {
-    "homeGoals": 2,
-    "awayGoals": 1
-  },
-  "predictions": [
-    {
-      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-      "homeGoals": 2,
-      "awayGoals": 1,
-      "totalPoints": 3,
-      "user": {
-        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        "name": "Ada Lovelace",
-        "avatarUrl": null
-      }
-    }
-  ]
+  "confirmation": "EXCLUIR"
 }
 ```
 
-`finalResult` será `null` se a fixture não estiver `FT` ou ainda não tiver placar final.
+A exclusão e as mudanças de estado estão sujeitas às restrições descritas nas regras de negócio. `DELETE` permite 3 tentativas a cada 10 minutos; desativação e reativação, 5 a cada 10 minutos.
 
-### Erros relevantes
+### Pagamentos, participações e revisão
 
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `400 Bad Request`: `fixtureId` não é UUID v4.
-- `404 Not Found`: partida não encontrada.
-
-## GET /api/v1/predictions/fixture/:fixtureId
-
-Lista palpites de uma partida.
-
-Acesso: autenticado.
-
-Antes do fechamento dos palpites, retorna apenas o palpite do usuário autenticado, se existir. Após o fechamento, retorna todos os palpites da fixture.
-
-### Parâmetros de rota
-
-| Parâmetro | Tipo | Descrição |
+| Método | Rota | Finalidade |
 | --- | --- | --- |
-| `fixtureId` | UUID v4 | ID da partida |
+| `GET` | `/api/v1/admin/payments` | Listar pagamentos com filtros |
+| `GET` | `/api/v1/admin/participations` | Listar participações com filtros |
+| `GET` | `/api/v1/admin/financial-reviews` | Listar pagamentos `PAID` sem participação ativa correspondente |
 
-### Resposta 200
+Pagamentos aceitam `status`, `periodId` e `user` (nome ou e-mail). Participações aceitam `status`, `periodId` e `user`. A revisão financeira aceita somente paginação e é observacional.
 
-```json
-[
-  {
-    "id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-    "userId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    "fixtureId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-    "homeGoals": 2,
-    "awayGoals": 1,
-    "totalPoints": 3,
-    "user": {
-      "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      "name": "Ada Lovelace"
-    }
-  }
-]
-```
+### Auditoria
 
-Ordenação: `createdAt` descendente.
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `400 Bad Request`: `fixtureId` não é UUID v4.
-- `404 Not Found`: partida não encontrada.
-
-## PATCH /api/v1/predictions/:id
-
-Atualiza um palpite próprio.
-
-Acesso: autenticado.
-
-### Parâmetros de rota
-
-| Parâmetro | Tipo | Descrição |
+| Método | Rota | Finalidade |
 | --- | --- | --- |
-| `id` | UUID v4 | ID do palpite |
+| `GET` | `/api/v1/admin/audit-logs` | Listar ações administrativas auditadas |
 
-### Corpo
+### Paginação administrativa
 
-```json
-{
-  "homeGoals": 1,
-  "awayGoals": 1
-}
-```
+As listagens administrativas paginadas aceitam:
 
-### Validações
+| Query | Regra |
+| --- | --- |
+| `page` | inteiro de 1 a 10.000, default 1 |
+| `limit` | inteiro de 1 a 50, default 20 |
 
-- Pelo menos um dos campos `homeGoals` ou `awayGoals` deve ser enviado.
-- `homeGoals`: inteiro entre 0 e 20, se enviado.
-- `awayGoals`: inteiro entre 0 e 20, se enviado.
-- O palpite deve pertencer ao usuário autenticado.
-- A partida deve estar aberta para palpite: `kickoff > agora`, status diferente de `LIVE` e diferente de `FT`.
+As respostas usam `{ data, meta }` com total e total de páginas.
 
-### Resposta 200
+## Códigos e formatos relevantes
 
-Retorna o palpite atualizado com a fixture e os times relacionados.
-
-### Erros relevantes
-
-- `400 Bad Request`: nenhum campo atualizável enviado ou `id` inválido.
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `403 Forbidden`: palpite pertence a outro usuário.
-- `404 Not Found`: palpite não encontrado.
-- `409 Conflict`: partida já iniciada ou fechada.
-- `400 Bad Request`: corpo inválido.
-
-## DELETE /api/v1/predictions/:id
-
-Exclui um palpite próprio.
-
-Acesso: autenticado.
-
-### Parâmetros de rota
-
-| Parâmetro | Tipo | Descrição |
-| --- | --- | --- |
-| `id` | UUID v4 | ID do palpite |
-
-### Regras
-
-- O palpite deve pertencer ao usuário autenticado.
-- A partida deve estar aberta para palpite: `kickoff > agora`, status diferente de `LIVE` e diferente de `FT`.
-
-### Resposta 200
-
-```json
-{
-  "message": "Palpite excluído com sucesso."
-}
-```
-
-### Erros relevantes
-
-- `400 Bad Request`: `id` não é UUID v4.
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `403 Forbidden`: palpite pertence a outro usuário.
-- `404 Not Found`: palpite não encontrado.
-- `409 Conflict`: partida já iniciada ou fechada.
-
-## POST /api/v1/predictions/calculate/:predictionId
-
-Calcula a pontuação de um palpite específico.
-
-Acesso: ADMIN.
-
-### Parâmetros de rota
-
-| Parâmetro | Tipo | Descrição |
-| --- | --- | --- |
-| `predictionId` | UUID v4 | ID do palpite |
-
-### Resposta 201
-
-Retorna o palpite atualizado com a fixture e os times relacionados.
-
-### Erros relevantes
-
-- `400 Bad Request`: `predictionId` não é UUID v4.
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `403 Forbidden`: usuário não é ADMIN.
-- `404 Not Found`: palpite não encontrado.
-
-## POST /api/v1/predictions/process/:fixtureId
-
-Processa todos os palpites de uma partida finalizada e atualiza standings dos usuários afetados.
-
-Acesso: ADMIN.
-
-### Parâmetros de rota
-
-| Parâmetro | Tipo | Descrição |
-| --- | --- | --- |
-| `fixtureId` | UUID v4 | ID da partida |
-
-### Regras
-
-- A partida deve existir.
-- A partida deve estar com status `FT`.
-- A partida deve possuir placar final.
-- Se a partida já tiver `processedAt`, o endpoint retorna `alreadyProcessed: true`.
-
-### Resposta 201
-
-```json
-{
-  "fixtureId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-  "alreadyProcessed": false,
-  "predictionsProcessed": 42,
-  "standingsUpdated": 18
-}
-```
-
-### Erros relevantes
-
-- `400 Bad Request`: `fixtureId` não é UUID v4, partida não finalizada ou sem placar final.
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `403 Forbidden`: usuário não é ADMIN.
-- `404 Not Found`: partida não encontrada.
-
----
-
-# Standings
-
-## GET /api/v1/standings
-
-Lista o ranking da temporada ativa.
-
-Acesso: público.
-
-### Resposta 200
-
-```json
-[
-  {
-    "position": 1,
-    "userId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    "name": "Ada Lovelace",
-    "avatarUrl": null,
-    "scorePoints": 39,
-    "totalPoints": 42,
-    "exactScores": 6,
-    "correctWinners": 17,
-    "wrongPredictions": 5
-  }
-]
-```
-
-Ordenação real do ranking:
-
-1. `totalPoints` descendente.
-2. `exactScores` descendente.
-3. `correctWinners` descendente.
-4. `wrongPredictions` ascendente.
-5. `createdAt` ascendente.
-
-### Erros relevantes
-
-- `404 Not Found`: temporada ativa não encontrada.
-
-## GET /api/v1/standings/me
-
-Retorna a posição do usuário autenticado no ranking da temporada ativa.
-
-Acesso: autenticado.
-
-### Resposta 200
-
-```json
-{
-  "position": 4,
-  "totalPlayers": 18,
-  "totalPoints": 42,
-  "exactScores": 6,
-  "correctWinners": 17
-}
-```
-
-### Erros relevantes
-
-- `401 Unauthorized`: JWT ausente ou inválido.
-- `404 Not Found`: temporada ativa não encontrada ou usuário não possui classificação na temporada ativa.
-
----
-
-# Observações De Contrato
-
-- A API retorna objetos diretamente; não há envelope global `{ "success": true, "data": ... }`.
-- Datas são serializadas em formato ISO.
-- IDs são UUID v4 no banco local.
+- Datas são serializadas em ISO 8601.
+- Identificadores locais são UUID v4, salvo IDs textuais de competições e referências externas.
 - Estados de fixture: `NS`, `LIVE`, `FT`, `POSTPONED`, `CANCELLED`.
-- Tipos de vencedor: `HOME`, `AWAY`, `DRAW`.
-- Os dados esportivos são sincronizados a partir das APIs da ESPN.
-- O fluxo atual de palpite aceita apenas placar previsto. MVP existe no modelo de dados, mas não faz parte dos DTOs atuais de criação/edição de palpite.
+- Estados de pagamento: `PENDING`, `PAID`, `EXPIRED`, `CANCELLED`, `FAILED`.
+- Estados de participação: `ACTIVE`, `CANCELLED`.
+- O fluxo de palpite recebe somente placar; campos de MVP do schema não fazem parte dos DTOs atuais.

@@ -1,6 +1,6 @@
 ---
 name: MatchPredict
-description: A clean Premier League prediction product with fast score entry, transparent rankings, and field-green status cues.
+description: Um produto de palpites de futebol claro, com entrada rápida de placar, classificação transparente e estados em verde de campo.
 colors:
   pitch-ink: "#0f172a"
   pitch-ink-dark: "#020617"
@@ -97,153 +97,221 @@ components:
     height: "56px"
 ---
 
-# Design System: MatchPredict
+# Sistema de design do MatchPredict
 
-## Overview
+## Direção visual
 
-**Creative North Star: "The Matchday Control Room"**
+**Norte criativo: “A central do dia de jogo”.**
 
-MatchPredict should feel like a calm, trustworthy football operations surface: clear enough for a casual fan, structured enough for a competitive ranking product. The existing system uses crisp slate framing, field-green confirmation states, compact cards, and direct Portuguese product copy to keep the prediction loop easy to scan.
+O MatchPredict deve transmitir calma, confiança e leitura operacional. A interface precisa ser simples para o torcedor casual e estruturada o bastante para um produto competitivo de classificação. O sistema atual combina molduras em slate, estados de confirmação em verde, cards compactos e texto direto em português do Brasil.
 
-The interface is functional before it is decorative. Visual energy comes from score emphasis, ranking movement, trophy and football-adjacent icons, and restrained hover lift rather than large illustrations or ornamental effects. Public pages can be more persuasive, but logged-in surfaces should stay dense, predictable, and work-focused.
+A função vem antes da decoração. A energia visual está nos placares, posições, troféus, ícones relacionados ao futebol e elevações discretas de interação. Páginas públicas podem ser mais persuasivas; superfícies autenticadas e administrativas devem permanecer previsíveis e orientadas à tarefa.
 
-**Key Characteristics:**
-- Slate authority with green match-state highlights.
-- White card surfaces over a pale app canvas.
-- Large, bold score and ranking numerals.
-- Rounded, touch-friendly controls with visible focus rings.
-- Responsive layouts that collapse into stacked cards and horizontal mobile navigation.
+Características principais:
 
-## Colors
+- autoridade em slate e realces de estado em verde;
+- cards claros sobre canvas suave, com equivalentes coerentes no tema escuro;
+- placares, pontos e posições com forte peso tipográfico;
+- controles arredondados, alvos de toque confortáveis e foco visível;
+- layouts responsivos que empilham conteúdo e preservam navegação completa no mobile.
 
-The palette is a light, product-led football system: deep slate provides authority, field green marks progress and action, and soft blue-gray surfaces keep repeated prediction tasks quiet.
+## Cores
 
-### Primary
-- **Pitch Ink**: The main brand and command color for navigation marks, default buttons, hero backgrounds, overlays, and selected sidebar states.
-- **Night Pitch**: The dark-mode page background and deepest contrast layer.
+A paleta é orientada ao produto: slate estabelece autoridade, verde de campo comunica ação e sucesso, e azuis acinzentados reduzem o ruído de tarefas repetitivas.
 
-### Secondary
-- **Field Green**: The accent for calls to action, live/status pills, focus rings, success states, registered predictions, score totals, and key chart data.
-- **Deep Field Green**: The stronger success/toast green and secondary chart green.
+### Primárias
 
-### Tertiary
-- **Goal Amber**: Warning and caution color, especially toast warnings and chart status.
-- **Result Red**: Destructive actions, errors, and negative status.
-- **Fixture Info Blue**: Informational toast treatment.
+- **Pitch Ink (`#0f172a`)**: marca, navegação, comandos padrão, overlays e estados selecionados.
+- **Night Pitch (`#020617`)**: fundo mais profundo do tema escuro.
 
-### Neutral
-- **Match Paper**: Main application background.
-- **Card White**: Cards, popovers, navigation bars, and sidebar surfaces in light mode.
-- **Score Text**: Default foreground, headings, labels, and strong table content.
-- **Quiet Line**: Borders, dividers, table rows, and container outlines.
-- **Muted Turf**: Soft panels, skeletons, table headers, hover backgrounds, and closed status pills.
-- **Muted Commentary**: Secondary copy, metadata, labels, and inactive navigation.
+### Secundárias
 
-### Named Rules
+- **Field Green (`#22c55e`)**: ação, foco, sucesso, partidas ao vivo, palpites registrados e dados importantes.
+- **Deep Field Green (`#16a34a`)**: sucesso forte, toast e apoio aos gráficos.
 
-**The Green Means Action Rule.** Field Green is reserved for action, success, focus, live status, registered predictions, and important score feedback; do not use it as general decoration.
+### Estados
 
-**The Slate Owns Authority Rule.** Pitch Ink carries brand, navigation selection, hero authority, and primary commands. Avoid introducing another dominant brand hue.
+- **Goal Amber (`#f59e0b`)**: aviso e cautela.
+- **Result Red (`#dc2626`)**: erro, estado negativo e ação destrutiva.
+- **Fixture Info Blue (`#0284c7`)**: informação contextual e toast informativo.
 
-## Typography
+### Neutras
 
-**Display Font:** Arial with sans-serif fallback.
-**Body Font:** Arial with sans-serif fallback.
-**Label/Mono Font:** Arial with sans-serif fallback.
-**Navigation Font:** Arial with sans-serif fallback.
+- **Match Paper (`#f8fafc`)**: fundo principal claro.
+- **Card White (`#ffffff`)**: cards, popovers e barras claras.
+- **Score Text (`#1e293b`)**: texto, títulos e dados fortes.
+- **Quiet Line (`#e2e8f0`)**: bordas e divisores.
+- **Muted Turf (`#f1f5f9`)**: painéis secundários, skeletons, cabeçalhos e hover.
+- **Muted Commentary (`#64748b`)**: metadados, ajuda e navegação inativa.
 
-**Character:** Arial gives MatchPredict a clear, familiar, and consistent product voice across every surface. The system relies on weight contrast rather than multiple families: very bold scores and headings, medium labels, and relaxed body text.
+Regras:
 
-### Hierarchy
-- **Display** (800, 48px to 60px, 1.1): Hero product name and major page titles.
-- **Headline** (700, 30px to 36px, 1.2): Section titles and dashboard page headers.
-- **Title** (600, 20px, 1.3): Card titles, ranking module titles, and compact section headings.
-- **Body** (400, 16px, 1.75): Supporting explanation, fixture descriptions, and empty/error copy. Keep readable prose around 650px.
-- **Label** (700, 12px, 0.025em, uppercase when categorical): Table headers, status labels, eyebrow text, score labels, and metadata.
+- **Verde significa ação ou estado.** Não usar Field Green como decoração genérica.
+- **Slate representa autoridade.** Não introduzir outra cor dominante de marca.
+- **Tema escuro mantém semântica.** As variáveis mudam contraste, mas preservam a função das cores.
 
-### Named Rules
+## Tipografia
 
-**The Score Weight Rule.** Scores, points, positions, and stat values should use the boldest weights available because they are the product's fastest-scanned facts.
+Arial, com fallback `sans-serif`, é a família única para conteúdo, navegação, dados, controles e overlays. A hierarquia depende de peso, tamanho e espaçamento, não de múltiplas famílias.
 
-**The One Typeface Rule.** Arial, with the generic sans-serif fallback, is the only type family for interface content, navigation, data, controls, charts, overlays, desktop, and mobile.
+| Nível | Especificação | Uso |
+| --- | --- | --- |
+| Display | 800, 48–60 px, `line-height: 1.1` | Hero e títulos de maior destaque |
+| Headline | 700, 30–36 px, `line-height: 1.2` | Cabeçalhos de página e seção |
+| Title | 600, 20 px, `line-height: 1.3` | Cards e módulos compactos |
+| Body | 400, 16 px, `line-height: 1.75` | Explicações, estados vazios e erros |
+| Label | 700, 12 px, tracking `0.025em` | Status, tabelas e metadados |
+
+Regras:
+
+- **Peso do placar.** Pontos, posições, valores e placares usam os pesos mais fortes porque são os fatos de leitura mais rápida.
+- **Uma família.** Não carregar webfont enquanto Arial continuar sendo a família oficial.
+- Texto longo deve manter largura confortável, próxima de 650 px quando a composição permitir.
 
 ## Layout
 
-Pages use centered containers with `max-w-6xl` for public content and `max-w-7xl` for app dashboards. The common horizontal padding is 16px on mobile, 24px on small screens, and 32px on large screens. Major public sections use 64px to 96px vertical padding; app pages use tighter 24px to 40px vertical padding.
+- Conteúdo público usa em geral `max-w-6xl`; dashboards usam `max-w-7xl`.
+- Padding horizontal típico: 16 px no mobile, 24 px em telas pequenas e 32 px em telas grandes.
+- Seções públicas usam ritmo vertical mais amplo; áreas operacionais usam 24–40 px.
+- Grids passam de uma coluna para duas ou três conforme o espaço.
+- Cards de partida preservam colunas flexíveis para os times e uma coluna central estável para placar ou “VS”.
+- Tabelas administrativas viram cards com pares rótulo/valor abaixo de `md`; a tabela completa aparece a partir desse breakpoint.
 
-Grid layouts are pragmatic and responsive. Landing sections move from one column to two or three columns at tablet and desktop sizes. Match cards use a stable three-column score structure with flexible team columns and an auto-sized central score or "VS" block. Tables become card-style definition lists on mobile and full tables from medium screens upward.
+### Navegação autenticada
 
-Dashboard navigation is a fixed 288px sidebar on large screens, a sticky top bar with horizontal scrolling tabs on mobile, and a drawer for the full mobile menu.
+O shell principal usa sidebar fixa de 288 px a partir de `lg`. No mobile, mantém header sticky, faixa horizontal rolável de atalhos e drawer lateral com a navegação completa.
 
-## Elevation & Depth
+### Navegação administrativa
 
-The system is flat by default with light structural shadows. Depth appears on cards, navigation panels, drawers, dialogs, toast notifications, and hover states; it should support hierarchy and interaction, not create a glossy visual language.
+O Admin usa sidebar fixa de 256 px a partir de `lg`, sem substituir a experiência desktop. Abaixo de `lg`, mantém duas camadas complementares:
 
-### Shadow Vocabulary
-- **Quiet Surface** (`0 1px 2px rgb(15 23 42 / 0.05)`): Default cards, sidebar, brand marks, and compact containers.
-- **Interactive Lift** (`0 10px 15px -3px rgb(15 23 42 / 0.10), 0 4px 6px -4px rgb(15 23 42 / 0.10)`): Card hover and elevated action buttons.
-- **Overlay Panel** (`0 25px 50px -12px rgb(15 23 42 / 0.25)`): Drawers, modals, and ranking panel emphasis.
-- **Toast Lift** (`0 1.25rem 2.5rem -1rem rgb(15 23 42 / 0.35)`): High-priority notification layer.
+- faixa horizontal rolável para alternância rápida entre áreas administrativas;
+- botão de 44 × 44 px que abre drawer modal com todas as páginas, “Voltar ao produto” e “Sair”.
 
-### Named Rules
+A rota atual deve permanecer destacada e usar `aria-current="page"`. A faixa precisa indicar discretamente quando existe conteúdo fora do viewport sem provocar overflow global.
 
-**The Lift Confirms Interactivity Rule.** Translation and shadow growth should appear on clickable or scan-focused cards only; static sections stay flat.
+## Elevação e profundidade
 
-## Shapes
+O sistema é plano por padrão. Sombras aparecem em cards, navegação, drawers, dialogs, toasts e hover para comunicar hierarquia ou interação.
 
-The form language is rounded and touch-friendly. Small controls use 8px to 12px corners, while cards, dialogs, score panels, and icon containers use approximately 14px. Fully rounded pills are reserved for status chips and short metadata labels.
+- **Quiet Surface** — `0 1px 2px rgb(15 23 42 / 0.05)`: cards e containers compactos.
+- **Interactive Lift** — `0 10px 15px -3px rgb(15 23 42 / 0.10), 0 4px 6px -4px rgb(15 23 42 / 0.10)`: hover e ações elevadas.
+- **Overlay Panel** — `0 25px 50px -12px rgb(15 23 42 / 0.25)`: drawers e modais.
+- **Toast Lift** — `0 1.25rem 2.5rem -1rem rgb(15 23 42 / 0.35)`: notificações prioritárias.
 
-Borders are visible but quiet, usually a single 1px Quiet Line stroke. Accent borders appear only when a prediction is registered, a card is hovered, a focus state is active, or a status needs emphasis.
+Elevação e translação devem confirmar interatividade; conteúdo estático permanece discreto.
 
-## Components
+## Formas
 
-### Buttons
-- **Shape:** Rounded and touch-friendly, usually rounded-xl with a 44px to 48px minimum height.
-- **Primary:** Pitch Ink background with white text; used for default commands, account creation, saving predictions, and selected navigation.
-- **Accent:** Field Green background with dark green text; used for public calls to action and positive momentum.
-- **Hover / Focus:** Hover darkens the fill or introduces a muted background. Focus uses a 3px to 4px Field Green ring at reduced opacity.
-- **Secondary / Ghost / Destructive:** Outline and ghost buttons stay neutral until hover. Destructive buttons use red-tinted backgrounds rather than full red blocks unless the action must be unmistakable.
+Controles pequenos usam cantos de 8 a 12 px. Cards, dialogs, painéis de placar e ícones usam aproximadamente 14 px. Pills totalmente arredondadas ficam reservadas para status e metadados curtos.
 
-### Chips
-- **Style:** Compact rounded-full or rounded-lg labels with bold 12px text, uppercase for status semantics.
-- **State:** Field Green chips indicate live, registered, success, or actionable states. Muted chips indicate closed or inactive states.
+Bordas são visíveis, mas silenciosas: normalmente 1 px em Quiet Line. Borda verde aparece para foco, hover relevante ou palpite registrado.
 
-### Cards / Containers
-- **Corner Style:** Soft rounded containers, usually 14px.
-- **Background:** Card White on Match Paper; Muted Turf for lower-priority inner panels.
-- **Shadow Strategy:** Quiet Surface at rest, Interactive Lift on hover when the card is actionable or ranking-focused.
-- **Border:** Quiet Line by default; Field Green border only for hover or registered-prediction emphasis.
-- **Internal Padding:** 20px to 24px in app cards, 24px to 32px in public landing cards.
+## Componentes
 
-### Inputs / Fields
-- **Style:** Score fields are large, centered, and bold with a 56px height, pale background, visible border, and rounded-xl corners.
-- **Focus:** Border switches to Field Green and a soft green ring appears.
-- **Error / Disabled:** Error states use Result Red borders/rings; disabled controls reduce opacity and remove pointer interaction.
+### Botões
 
-### Navigation
-- **Style:** Navigation is sticky or fixed, card-white, and border-led. Desktop public navigation is horizontal and text-based; logged-in navigation uses a fixed sidebar with icon-plus-label links.
-- **States:** Active sidebar links use Pitch Ink fill and white text. Mobile tab links use muted backgrounds for active states and horizontal overflow for dense navigation.
+- altura mínima usual de 44 a 48 px;
+- ação primária em Pitch Ink com texto branco;
+- ação de destaque em Field Green com texto verde-escuro;
+- foco com anel verde de 3 a 4 px em baixa opacidade;
+- variantes outline e ghost permanecem neutras até a interação;
+- ações destrutivas usam tratamento vermelho e confirmação quando o efeito for difícil de reverter.
 
-### Dialogs
-- **Style:** Dialogs sit on a Pitch Ink translucent overlay with blur, use Card White popovers, rounded 14px corners, and Overlay Panel shadow.
-- **Behavior:** Escape closes the dialog, outer click dismisses it, and actions stack on mobile before aligning horizontally on larger screens.
+### Chips de estado
 
-### Tables
-- **Style:** Desktop tables live inside rounded card containers with muted uppercase headers and divided rows.
-- **Mobile:** Tables become bordered cards with label/value definition rows for readability.
+- texto de 12 px, forte e geralmente categórico;
+- verde para sucesso, ao vivo, ativo ou registrado;
+- neutro para fechado/inativo;
+- âmbar para revisão ou atenção;
+- vermelho para falha, desativação ou destruição.
 
-## Do's and Don'ts
+### Cards e containers
 
-### Do:
-- **Do** keep user-facing copy in Brazilian Portuguese.
-- **Do** use Field Green for prediction success, focus, ranking emphasis, and primary public momentum.
-- **Do** keep prediction entry controls large, centered, and obviously editable before lock.
-- **Do** preserve the slate/green/white identity when adding new screens.
-- **Do** use cards and tables for scan-heavy app workflows rather than marketing-style compositions.
+- fundo Card White sobre Match Paper no tema claro;
+- equivalentes definidos pelos tokens no tema escuro;
+- 20–24 px de padding em cards de aplicação e 24–32 px em cards públicos;
+- sombra leve em repouso;
+- elevação no hover somente quando houver ação ou relevância de varredura.
 
-### Don't:
-- **Don't** add betting, prize, commercial, testimonial, or press claims that the product context does not confirm.
-- **Don't** turn Field Green into a decorative background pattern or secondary brand world.
-- **Don't** replace the functional dashboard density with oversized hero treatments.
-- **Don't** introduce another typeface or load a webfont while Arial remains the official MatchPredict family.
-- **Don't** hide lock timing, prediction status, or ranking consequences behind vague labels.
+### Campos
+
+- inputs de placar são grandes, centralizados, fortes e têm 56 px de altura;
+- foco altera borda e anel para Field Green;
+- erro usa Result Red;
+- estado desabilitado reduz ênfase e remove interação;
+- formulários mobile não devem reduzir fonte ou alvo de toque para “fazer caber”.
+
+### Navegação
+
+- navegação pública desktop é horizontal e textual;
+- áreas autenticadas usam sidebar com ícone e rótulo em desktop;
+- faixas horizontais mobile usam overflow local, nunca overflow global da página;
+- drawers apresentam navegação completa e fecham ao selecionar uma opção;
+- itens ativos permanecem identificáveis por cor, fundo e semântica.
+
+### Dialogs e drawers
+
+- overlay em Pitch Ink translúcido;
+- painel com fundo de popover, cantos arredondados e sombra Overlay Panel;
+- Escape e clique no overlay fecham sem confirmar ações;
+- foco inicial deve ser explícito para operações destrutivas e permanecer na ação segura;
+- foco fica contido no modal e retorna ao acionador após fechar;
+- documento fica sem scroll enquanto o drawer modal está aberto;
+- conteúdo excedente usa scroll interno;
+- ações empilham no mobile e podem alinhar horizontalmente em telas maiores.
+
+O drawer do Admin usa a primitive `Dialog` do Base UI. O componente compartilhado de dialog mantém semântica modal, captura de foco e restauração para os demais fluxos.
+
+### Tabelas
+
+- desktop: container arredondado, cabeçalho muted em caixa alta e linhas divididas;
+- mobile: cards com `dl`, rótulos e valores;
+- tabelas largas podem usar overflow local com foco por teclado;
+- conteúdo, e-mail e IDs longos devem quebrar linha sem alargar a página.
+
+### Toasts
+
+- sucesso em Deep Field Green;
+- erro em Result Red;
+- aviso em Goal Amber;
+- informação em Fixture Info Blue;
+- em telas de até 600 px, largura calculada a partir do viewport e sem mínimo fixo.
+
+## Conteúdo e estados
+
+- Toda copy voltada ao usuário deve estar em português do Brasil.
+- Estados de participação e pagamento devem distinguir claramente `PENDING`, `PAID`, `EXPIRED`, `CANCELLED`, `FAILED`, `ACTIVE` e `CANCELLED` da participação.
+- A interface não pode sugerir que um pagamento `PENDING` autoriza palpites.
+- Ações destrutivas devem explicar o impacto e exigir decisão explícita.
+- Loading, vazio e erro devem usar os componentes compartilhados e não alterar a estrutura da página de forma abrupta.
+
+## Acessibilidade e responsividade
+
+- foco visível em todos os controles;
+- alvos de toque de pelo menos 44 × 44 px para ações principais e navegação;
+- navegação por teclado em dialogs, drawers e tabelas roláveis;
+- `aria-current="page"` para navegação ativa;
+- `aria-label` em botões apenas com ícone;
+- informação de status não depende somente de cor;
+- `prefers-reduced-motion` deve ser respeitado em movimentos programáticos quando aplicável;
+- layouts devem permanecer utilizáveis desde 320 px sem rolagem horizontal global.
+
+## Fazer
+
+- preservar a identidade slate/verde/branco;
+- manter entrada de placar grande e óbvia antes do fechamento;
+- usar cards e tabelas em fluxos de alta varredura;
+- deixar participação, fechamento, transparência e classificação explicáveis;
+- preservar densidade e hierarquia das áreas logada e administrativa;
+- validar estados claros e escuros ao alterar tokens ou componentes compartilhados.
+
+## Evitar
+
+- alegações de aposta, prêmio, comercialização, depoimentos ou imprensa sem evidência;
+- verde usado como padrão decorativo sem semântica;
+- hero oversized em páginas de trabalho;
+- nova família tipográfica enquanto Arial for a decisão vigente;
+- ocultar horário de fechamento, participação necessária ou efeito de ranking;
+- reduzir fontes e touch targets para acomodar mais ações;
+- transformar a navegação mobile em bottom navigation sem decisão de produto específica.
