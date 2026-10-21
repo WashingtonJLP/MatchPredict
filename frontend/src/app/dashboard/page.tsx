@@ -371,7 +371,7 @@ function RankingBoard({
               </div>
 
               <div className="mt-5 flex min-w-0 items-center gap-3">
-                <UserAvatar name={standing.name} />
+                <UserAvatar name={standing.name} avatarUrl={standing.avatarUrl} />
                 <div className="min-w-0">
                   <p className="truncate text-base font-extrabold text-foreground">
                     {standing.name}
@@ -481,7 +481,7 @@ function RankingTableRow({ standing, isCurrentUser }: RankingRowProps) {
       </td>
       <td className="px-5 py-5 align-middle">
         <div className="flex min-w-0 items-center gap-3">
-          <UserAvatar name={standing.name} size="sm" />
+          <UserAvatar name={standing.name} avatarUrl={standing.avatarUrl} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-base font-bold text-foreground">
               {standing.name}

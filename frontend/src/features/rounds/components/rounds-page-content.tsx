@@ -777,7 +777,7 @@ function RankingTableRow({
       </td>
       <td className="px-5 py-4">
         <div className="flex items-center gap-3">
-          <UserAvatar name={participant.name} />
+          <UserAvatar name={participant.name} avatarUrl={participant.avatarUrl} />
           <span className="font-bold text-card-foreground">
             {participant.name}
           </span>
@@ -811,9 +811,12 @@ function RankingMobileItem({
       <div className="grid grid-cols-[auto_minmax(0,1fr)_max-content] items-center gap-3">
         <PositionBadge position={participant.position} compact />
         <div className="min-w-0">
-          <p className="break-words text-sm font-extrabold leading-snug text-card-foreground sm:text-base">
-            {participant.name}
-          </p>
+          <div className="flex items-center gap-2">
+            <UserAvatar name={participant.name} avatarUrl={participant.avatarUrl} size="xs" />
+            <p className="min-w-0 break-words text-sm font-extrabold leading-snug text-card-foreground sm:text-base">
+              {participant.name}
+            </p>
+          </div>
           <p className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[0.6875rem] font-semibold leading-4 text-muted-foreground sm:text-xs">
             <span>
               {participant.predictionsCount}/{publicFixtures} palpites

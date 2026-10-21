@@ -99,6 +99,7 @@ O módulo `Rounds` fornece catálogo e estatísticas sob demanda por competiçã
 - [Arquitetura](docs/06-arquitetura.md)
 - [Roadmap](docs/07-roadmap.md)
 - [Participação mensal via PIX](docs/08-participacao-mensal-pix.md)
+- [Fotos de perfil e configuração do R2](docs/09-avatares.md)
 
 ## Execução local
 

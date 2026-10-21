@@ -10,7 +10,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
-import { UserAvatar } from "@/components/shared/user-avatar";
+import { AvatarEditor } from "@/features/profile/avatar-editor";
 import {
   profileSchema,
   type ProfileFormData,
@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const meQuery = useMe();
   const updateProfile = useUpdateProfile();
   const [success, setSuccess] = useState(false);
+  const profileName = meQuery.data?.name;
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
@@ -35,12 +36,12 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    if (meQuery.data) {
+    if (profileName !== undefined) {
       reset({
-        name: meQuery.data.name,
+        name: profileName,
       });
     }
-  }, [meQuery.data, reset]);
+  }, [profileName, reset]);
 
   async function onSubmit(data: ProfileFormData) {
     setSuccess(false);
@@ -74,7 +75,7 @@ export default function ProfilePage() {
         ) : meQuery.data ? (
           <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:gap-6">
             <aside className="rounded-2xl border border-border bg-card p-5 shadow-sm shadow-primary/5 sm:p-8">
-              <UserAvatar name={meQuery.data.name} size="lg" />
+              <AvatarEditor user={meQuery.data} />
               <h2 className="mt-5 break-words text-3xl font-extrabold leading-tight text-card-foreground">
                 {meQuery.data.name}
               </h2>

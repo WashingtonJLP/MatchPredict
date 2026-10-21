@@ -23,3 +23,23 @@ export async function getMyStatistics() {
 
   return data;
 }
+
+export async function uploadAvatar(file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  const { data } = await httpClient.put<{ avatarUrl: string }>(
+    "/users/me/avatar",
+    body,
+    {
+      headers: { "Content-Type": undefined },
+    },
+  );
+  return data;
+}
+
+export async function removeAvatar() {
+  const { data } = await httpClient.delete<{ avatarUrl: null }>(
+    "/users/me/avatar",
+  );
+  return data;
+}

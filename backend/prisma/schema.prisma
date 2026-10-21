@@ -64,6 +64,7 @@ model User {
   role Role @default(USER)
 
   avatarUrl   String?   @map("avatar_url")
+  avatarKey   String?   @map("avatar_key")
   disabledAt  DateTime? @map("disabled_at")
   authVersion Int       @default(0) @map("auth_version")
 

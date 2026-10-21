@@ -1,6 +1,21 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Patch,
+  Put,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UserAvatarService } from './avatar/user-avatar.service';
+import { AVATAR_MAX_BYTES } from './avatar/avatar-validation';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -17,7 +32,49 @@ import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 @ApiBearerAuth()
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly avatars: UserAvatarService,
+  ) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Put('me/avatar')
+  @ApiOperation({ summary: 'Alterar foto do usuário autenticado (até 5 MB)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Imagem ausente ou formato inválido.',
+  })
+  @ApiResponse({ status: 413, description: 'Imagem acima de 5 MB.' })
+  @ApiResponse({
+    status: 503,
+    description: 'Storage indisponível ou não configurado.',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: AVATAR_MAX_BYTES, files: 1, fields: 0 },
+    }),
+  )
+  uploadAvatar(
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.avatars.upload(user.id, file);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('me/avatar')
+  @ApiOperation({ summary: 'Remover foto do usuário autenticado' })
+  removeAvatar(@CurrentUser() user: AuthenticatedUser) {
+    return this.avatars.remove(user.id);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')

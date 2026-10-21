@@ -305,7 +305,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <UserAvatar name={user?.name} />
+              <UserAvatar name={user?.name} avatarUrl={user?.avatarUrl} />
               <div className="hidden text-right sm:block">
                 <p className="text-base font-bold leading-tight text-card-foreground">
                   {user?.name ?? "Usuário"}
