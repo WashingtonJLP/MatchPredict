@@ -78,6 +78,13 @@ export async function deleteAdminUser(userId: string) {
   return data;
 }
 
+export async function removeAdminUserAvatar(userId: string) {
+  const { data } = await httpClient.delete<{ avatarUrl: null }>(
+    `/admin/users/${userId}/avatar`,
+  );
+  return data;
+}
+
 export async function disableAdminUser(userId: string) {
   const { data } = await httpClient.patch<AdminUserDetail>(
     `/admin/users/${userId}/disable`,

@@ -2,9 +2,11 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { AdminAuditAction, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { AvatarStorage } from './avatar-storage';
 import { validateAvatar } from './avatar-validation';
@@ -71,9 +73,45 @@ export class UserAvatarService {
 
   async remove(userId: string) {
     const previous = await this.current(userId);
-    if (previous.avatarUrl === null && previous.avatarKey === null)
-      return { avatarUrl: null };
-    const result = await this.prisma.user.updateMany({
+    await this.detach(userId, previous, this.prisma);
+    await this.cleanup(userId, previous.avatarKey);
+    return { avatarUrl: null };
+  }
+
+  async removeByAdmin(adminUserId: string, userId: string) {
+    // Commit the reference removal and existing AuditLog atomically, before storage I/O.
+    const previousKey = await this.prisma.$transaction(async (tx) => {
+      const previous = await tx.user.findUnique({
+        where: { id: userId },
+        select: { avatarUrl: true, avatarKey: true },
+      });
+      if (!previous) throw new NotFoundException('Usuário não encontrado.');
+      await this.detach(userId, previous, tx);
+      await tx.adminAuditLog.create({
+        data: {
+          adminUserId,
+          action: AdminAuditAction.USER_AVATAR_REMOVED,
+          targetType: 'USER',
+          targetId: userId,
+          metadata: {
+            hadAvatar:
+              previous.avatarUrl !== null || previous.avatarKey !== null,
+          },
+        },
+      });
+      return previous.avatarKey;
+    });
+    await this.cleanup(userId, previousKey);
+    return { avatarUrl: null };
+  }
+
+  private async detach(
+    userId: string,
+    previous: { avatarUrl: string | null; avatarKey: string | null },
+    client: Pick<Prisma.TransactionClient, 'user'>,
+  ) {
+    if (previous.avatarUrl === null && previous.avatarKey === null) return;
+    const result = await client.user.updateMany({
       where: { id: userId, ...previous },
       data: { avatarUrl: null, avatarKey: null },
     });
@@ -81,7 +119,5 @@ export class UserAvatarService {
       throw new ConflictException(
         'A foto foi alterada em outra sessão. Tente novamente.',
       );
-    await this.cleanup(userId, previous.avatarKey);
-    return { avatarUrl: null };
   }
 }

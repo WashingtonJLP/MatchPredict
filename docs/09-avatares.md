@@ -24,7 +24,7 @@ Sem configuração R2 o backend inicia normalmente. Upload retorna HTTP 503 com 
 
 - `PUT /api/v1/users/me/avatar`: JWT obrigatório; multipart com um campo `file`, sem `userId`. Aceita JPEG, PNG ou WebP não vazios, até 5 MiB (5.242.880 bytes); valida MIME e assinatura básica do formato. Não decodifica/reprocessa a imagem nem remove metadados EXIF. O arquivo se torna público; evite fotos com conteúdo ou metadados sensíveis.
 - `DELETE /api/v1/users/me/avatar`: JWT obrigatório; remove a referência e retorna `{ "avatarUrl": null }`; é idempotente quando já está sem foto.
-- Respostas expõem somente `avatarUrl`. `avatarKey` nunca entra nos DTOs públicos. Não há gestão administrativa.
+- Respostas expõem somente `avatarUrl`. `avatarKey` nunca entra nos DTOs públicos.
 - Chaves `avatars/{id-do-usuário}/{uuid}.{extensão}` são geradas pelo servidor, sem usar o nome original. URLs novas evitam cache antigo. A substituição envia a imagem antes de persistir e só então limpa o objeto anterior. Atualização condicional evita sobrescrever uma alteração concorrente (409). Se o banco rejeitar a atualização, tenta limpar o upload recém-criado.
 - Limpeza é restrita ao prefixo do próprio usuário e ocorre na mesma ação explícita. Falhas são registradas sem credenciais e não desfazem estado válido. Podem restar objetos órfãos após falha de limpeza ou interrupção do processo; não há reconciliação, scheduler ou retry em background. URLs legadas sem chave são desassociadas sem tentativa de excluir objetos desconhecidos.
 - Perfil, header autenticado, classificação geral e Rodadas exibem foto ou iniciais, inclusive quando a imagem falha. No mobile de Rodadas o avatar tem 24 px e preserva a lista compacta.
@@ -38,3 +38,15 @@ Sem configuração R2 o backend inicia normalmente. Upload retorna HTTP 503 com 
 Esta implementação não executa migration em produção, não configura Cloudflare e não faz deploy. Testes automatizados usam exclusivamente storage/banco falsos e SDK mockado; QA usa interceptação de API no runtime externo, sem credenciais reais.
 
 Para repetir o QA, iniciar o frontend local em `http://127.0.0.1:3101` e executar `npm run test:avatar` em `frontend`. O script usa Playwright instalado em `%LOCALAPPDATA%\MatchPredict-Browser-QA`, intercepta todas as APIs e impede acesso externo fora dos mocks. `MATCHPREDICT_QA_RUNTIME` e `MATCHPREDICT_QA_URL` permitem ajustar runtime e URL local. Screenshots são gravadas somente na pasta externa `artifacts`.
+
+## Moderação administrativa
+
+`DELETE /api/v1/admin/users/:id/avatar` exige JWT e `Role.ADMIN`, usa UUID v4 do alvo e não aceita arquivo, corpo com campos ou query parameters. Não há upload ou substituição administrativa. No detalhe do usuário, **Remover foto de perfil** aparece somente quando há URL, com confirmação, loading e bloqueio de requisições concorrentes; ao concluir, exibe as iniciais.
+
+A operação reutiliza a desassociação e a limpeza de `UserAvatarService`. `avatarUrl` e `avatarKey` ficam `null`. Nenhum outro campo ou registro do usuário é alterado. Alvo inexistente retorna 404; UUID inválido retorna 400. Sem foto, retorna 200 idempotente sem tocar no storage. Alteração concorrente retorna 409 e preserva a nova foto.
+
+A referência e o `AdminAuditLog` são gravados na mesma transação. O evento é `USER_AVATAR_REMOVED`, com administrador responsável, `targetType: USER`, ID do alvo e metadata `{ hadAvatar: boolean }`; `createdAt` vem do mecanismo existente. Cada solicitação bem-sucedida é auditada, inclusive quando a foto já está ausente. Falha no banco/auditoria aborta a transação e não toca no storage. A exclusão no R2 ocorre somente após o commit: se falhar, a referência permanece removida e um warning é registrado pelo mecanismo já existente; o objeto pode continuar acessível pela URL antiga até limpeza operacional posterior. Não há retry, polling ou tarefa em background.
+
+**Necessidade de migration:** o AuditLog existente usa um enum PostgreSQL fechado. A migration aditiva `20261021010000_add_avatar_moderation_audit_action` apenas acrescenta `USER_AVATAR_REMOVED` ao enum; não modifica tabelas, imagens, dados ou a migration anterior. Deve ser revisada e aplicada pelo procedimento de deploy autorizado posteriormente, antes de usar a moderação. Nenhuma migration é executada por esta tarefa.
+
+QA administrativo: `npm run test:admin-avatar:browser` usa o mesmo runtime externo e APIs totalmente interceptadas, sem conta real. Captura detalhe com foto, confirmação e fallback nos três tamanhos em `artifacts/admin-avatar-*.png`.

@@ -20,7 +20,7 @@ export type AdminPeriod = {
 };
 
 export type AdminAuditAction =
-  "USER_DELETED" | "USER_DISABLED" | "USER_REACTIVATED";
+  "USER_DELETED" | "USER_DISABLED" | "USER_REACTIVATED" | "USER_AVATAR_REMOVED";
 
 export type AdminAuditLog = {
   id: string;

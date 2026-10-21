@@ -46,6 +46,7 @@ export const participationStatusLabel: Record<ParticipationStatus, string> = {
 };
 
 export const auditActionLabel: Record<AdminAuditAction, string> = {
+  USER_AVATAR_REMOVED: "Foto de perfil removida",
   USER_DELETED: "Usuário excluído",
   USER_DISABLED: "Conta desativada",
   USER_REACTIVATED: "Conta reativada",

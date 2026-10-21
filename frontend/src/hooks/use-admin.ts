@@ -12,10 +12,37 @@ import {
   getAdminUser,
   getAdminUsers,
   reactivateAdminUser,
+  removeAdminUserAvatar,
   type AdminParticipationsParams,
   type AdminPaymentsParams,
   type AdminUsersParams,
 } from "@/services/admin-service";
+import type { AdminUserDetail } from "@/types/admin";
+import type { User } from "@/types/auth";
+
+export function useRemoveAdminUserAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: removeAdminUserAvatar,
+    onSuccess: (result, userId) => {
+      queryClient.setQueryData<AdminUserDetail>(
+        ["admin", "users", userId],
+        (previous) => (previous ? { ...previous, ...result } : previous),
+      );
+      for (const key of [
+        ["auth", "me"],
+        ["users", "me"],
+      ]) {
+        queryClient.setQueryData<User>(key, (previous) =>
+          previous?.id === userId ? { ...previous, ...result } : previous,
+        );
+      }
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+      void queryClient.invalidateQueries({ queryKey: ["standings"] });
+      void queryClient.invalidateQueries({ queryKey: ["rounds", "stats"] });
+    },
+  });
+}
 
 export function useAdminDashboard() {
   return useQuery({

@@ -16,6 +16,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { ROLES_KEY } from '../../common/decorators/roles.decorator';
+import { UserAvatarService } from '../users/avatar/user-avatar.service';
 
 const targetId = '22222222-2222-4222-8222-222222222222';
 
@@ -69,6 +70,12 @@ describe('AdminController authorization', () => {
       providers: [
         RolesGuard,
         { provide: AdminService, useValue: adminService },
+        {
+          provide: UserAvatarService,
+          useValue: {
+            removeByAdmin: jest.fn().mockResolvedValue({ avatarUrl: null }),
+          },
+        },
       ],
     })
       .overrideGuard(ThrottlerGuard)

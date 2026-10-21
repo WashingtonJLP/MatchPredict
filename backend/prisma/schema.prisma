@@ -52,6 +52,7 @@ enum AdminAuditAction {
   USER_DELETED
   USER_DISABLED
   USER_REACTIVATED
+  USER_AVATAR_REMOVED
 }
 
 model User {

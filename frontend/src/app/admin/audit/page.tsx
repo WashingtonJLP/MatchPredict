@@ -86,7 +86,7 @@ export default function AdminAuditPage() {
         <EmptyState
           icon={ScrollText}
           title="Nenhuma ação registrada"
-          description="Desativações, reativações e exclusões concluídas aparecerão aqui."
+          description="Desativações, reativações, exclusões e remoções de fotos concluídas aparecerão aqui."
         />
       ) : (
         <>

@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { ErrorState } from "@/components/shared/error-state";
 import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
-import { UserAvatar } from "@/components/shared/user-avatar";
+import { AdminAvatarModeration } from "@/features/admin/components/admin-avatar-moderation";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogCloseButton } from "@/components/ui/dialog";
 import {
@@ -147,7 +147,7 @@ export default function AdminUserDetailPage() {
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <article className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <UserAvatar name={data.name} size="lg" />
+            <AdminAvatarModeration user={data} />
             <dl className="grid min-w-0 flex-1 gap-4 sm:grid-cols-2">
               <Detail label="E-mail" value={data.email} />
               <Detail label="Papel" value={data.role} />

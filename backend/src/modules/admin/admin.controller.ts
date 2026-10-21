@@ -1,8 +1,10 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -23,6 +25,7 @@ import { AdminParticipationsQueryDto } from './dto/admin-participations-query.dt
 import { AdminPaymentsQueryDto } from './dto/admin-payments-query.dto';
 import { AdminUsersQueryDto } from './dto/admin-users-query.dto';
 import { DeleteUserDto } from './dto/delete-user.dto';
+import { UserAvatarService } from '../users/avatar/user-avatar.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -30,7 +33,33 @@ import { DeleteUserDto } from './dto/delete-user.dto';
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 @Roles(Role.ADMIN)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly avatars: UserAvatarService,
+  ) {}
+
+  @Delete('users/:id/avatar')
+  @Throttle({ default: { limit: 5, ttl: 600_000 } })
+  @ApiOperation({ summary: 'Remover somente a foto de perfil, com auditoria' })
+  removeUserAvatar(
+    @CurrentUser() admin: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+    @Query() query: Record<string, unknown>,
+    @Headers('content-type') contentType?: string,
+  ) {
+    if (
+      (body != null &&
+        (typeof body !== 'object' || Object.keys(body).length > 0)) ||
+      Object.keys(query).length > 0 ||
+      (contentType && !contentType.startsWith('application/json'))
+    ) {
+      throw new BadRequestException(
+        'Informe somente o ID do usuário na URL, sem arquivo ou outros dados.',
+      );
+    }
+    return this.avatars.removeByAdmin(admin.id, id);
+  }
 
   @Get('dashboard')
   @ApiOperation({ summary: 'Resumo administrativo sob demanda' })

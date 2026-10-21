@@ -14,6 +14,6 @@ import { UserAvatarService } from './avatar/user-avatar.service';
     UserAvatarService,
     { provide: AvatarStorage, useClass: R2AvatarStorage },
   ],
-  exports: [UsersService],
+  exports: [UsersService, UserAvatarService],
 })
 export class UsersModule {}
