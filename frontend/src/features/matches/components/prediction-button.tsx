@@ -1,6 +1,7 @@
 import { Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { getFuturePredictionMessage } from "@/features/matches/prediction-availability";
 import type { MatchFixture } from "@/types/fixture";
 
 type PredictionButtonProps = {
@@ -18,6 +19,14 @@ export function PredictionButton({ fixture, onClick }: PredictionButtonProps) {
     return (
       <Button disabled className="h-10 rounded-xl px-4 text-sm font-bold">
         Encerrado
+      </Button>
+    );
+  }
+
+  if (getFuturePredictionMessage(fixture.kickoff)) {
+    return (
+      <Button disabled className="h-10 rounded-xl px-4 text-sm font-bold">
+        Em breve
       </Button>
     );
   }

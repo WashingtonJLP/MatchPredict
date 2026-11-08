@@ -12,6 +12,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
 import { MatchCard } from "@/features/matches/components/match-card";
 import { PredictionModal } from "@/features/matches/components/prediction-modal";
+import { canFixtureReceivePrediction } from "@/features/matches/prediction-availability";
 import { getDailyGameForFixture } from "@/features/transparency/transparency-live-game";
 import { useFixtures } from "@/hooks/use-fixtures";
 import { usePremierLeagueLiveGames } from "@/hooks/use-premier-league-live-games";
@@ -117,17 +118,6 @@ function buildDateRange(filter: DateFilter) {
   };
 }
 
-function canFixtureReceivePrediction(fixture: MatchFixture) {
-  const kickoff = new Date(fixture.kickoff);
-
-  return (
-    fixture.canPredict &&
-    kickoff.getTime() > Date.now() &&
-    fixture.status !== "LIVE" &&
-    fixture.status !== "FT"
-  );
-}
-
 function groupFixturesByRound(fixtures: MatchFixture[]) {
   const groups = new Map<number, MatchFixture[]>();
 
@@ -140,7 +130,7 @@ function groupFixturesByRound(fixtures: MatchFixture[]) {
   return Array.from(groups.entries()).map<RoundGroup>(([roundValue, items]) => ({
     round: roundValue,
     fixtures: items,
-    openCount: items.filter(canFixtureReceivePrediction).length,
+    openCount: items.filter((fixture) => canFixtureReceivePrediction(fixture)).length,
     liveCount: items.filter((fixture) => fixture.status === "LIVE").length,
     finishedCount: items.filter((fixture) => fixture.status === "FT").length,
   }));
@@ -193,7 +183,7 @@ export default function MatchesPage() {
   const liveGamesBySourceEventId = usePremierLeagueLiveGames(fixtures);
   const fixtureGroups = useMemo(() => groupFixturesByRound(fixtures), [fixtures]);
   const totalOpenFixtures = useMemo(
-    () => fixtures.filter(canFixtureReceivePrediction).length,
+    () => fixtures.filter((fixture) => canFixtureReceivePrediction(fixture)).length,
     [fixtures],
   );
 

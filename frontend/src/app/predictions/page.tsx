@@ -11,6 +11,7 @@ import { LoadingCard } from "@/components/shared/loading-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { PredictionFixtureCard } from "@/features/matches/components/prediction-fixture-card";
 import { PredictionModal } from "@/features/matches/components/prediction-modal";
+import { getFuturePredictionMessage } from "@/features/matches/prediction-availability";
 import { getDailyGameForFixture } from "@/features/transparency/transparency-live-game";
 import { usePremierLeagueLiveGames } from "@/hooks/use-premier-league-live-games";
 import { useMyPredictions } from "@/hooks/use-predictions";
@@ -114,8 +115,7 @@ export default function PredictionsPage() {
                     Seus palpites ativos
                   </h2>
                   <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
-                    Palpites que ainda podem ser alterados antes do início da
-                    partida.
+                    Consulte a disponibilidade de edição de cada partida.
                   </p>
                 </div>
 
@@ -253,7 +253,8 @@ function toMatchFixture(prediction: Prediction): MatchFixture {
     canPredict:
       kickoff.getTime() > Date.now() &&
       prediction.fixture.status !== "LIVE" &&
-      prediction.fixture.status !== "FT",
+      prediction.fixture.status !== "FT" &&
+      getFuturePredictionMessage(prediction.fixture.kickoff) === null,
     competition: "Premier League",
     league: "Premier League",
     userPrediction: {

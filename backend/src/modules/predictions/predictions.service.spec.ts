@@ -1,5 +1,5 @@
 import { ConflictException, ForbiddenException } from '@nestjs/common';
-import { Fixture, FixtureStatus, Prediction } from '@prisma/client';
+import { Fixture, FixtureStatus, Prediction, Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ScoreEngineService } from '../../common/score-engine/score-engine.service';
 import { ParticipationRequiredException } from '../participations/participation-required.exception';
@@ -15,6 +15,9 @@ describe('PredictionsService', () => {
   let predictionUpdate: jest.Mock;
   let predictionDelete: jest.Mock;
   let assertActiveForFixture: jest.Mock;
+  let transaction: jest.Mock;
+  let queryRaw: jest.Mock;
+  let tx: Record<string, unknown>;
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-08-20T15:00:00.000Z'));
@@ -40,6 +43,22 @@ describe('PredictionsService', () => {
       },
     } as unknown as PrismaService;
 
+    queryRaw = jest.fn(async () => {
+      const fixture = await fixtureFindUnique();
+      if (fixture) return [fixture];
+      const prediction = await predictionFindUnique();
+      return prediction ? [prediction.fixture] : [];
+    });
+    tx = {
+      prediction: prisma.prediction,
+      $queryRaw: queryRaw,
+      $executeRaw: jest.fn().mockResolvedValue(0),
+    };
+    transaction = jest.fn((callback: (client: unknown) => Promise<unknown>) =>
+      callback(tx),
+    );
+    prisma.$transaction = transaction;
+
     service = new PredictionsService(prisma, new ScoreEngineService(), {
       assertActiveForFixture,
     } as unknown as ParticipationsService);
@@ -47,6 +66,79 @@ describe('PredictionsService', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it('usa ReadCommitted, limites de espera e o mesmo tx depois do lock', async () => {
+    const fixture = createFixture();
+    fixtureFindUnique.mockResolvedValue(fixture);
+    predictionFindUnique.mockResolvedValue(null);
+    predictionCreate.mockResolvedValue(createPrediction());
+    await service.create(userId, { fixtureId, homeGoals: 1, awayGoals: 0 });
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'ReadCommitted',
+      maxWait: 2000,
+      timeout: 5000,
+    });
+    expect(queryRaw.mock.calls[0][0].join('?')).toContain(
+      'WHERE id = ?::uuid FOR SHARE',
+    );
+    expect(queryRaw.mock.calls[0][1]).toBe(fixtureId);
+    expect(queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      assertActiveForFixture.mock.invocationCallOrder[0],
+    );
+    expect(assertActiveForFixture.mock.invocationCallOrder[0]).toBeLessThan(
+      predictionCreate.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('avalia o kickoff com o relógio posterior à aquisição do lock', async () => {
+    const fixture = createFixture();
+    queryRaw.mockImplementationOnce(() => {
+      jest.setSystemTime(fixture.kickoff);
+      return Promise.resolve([fixture]);
+    });
+    await expect(
+      service.create(userId, { fixtureId, homeGoals: 1, awayGoals: 0 }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(assertActiveForFixture).not.toHaveBeenCalled();
+    expect(predictionCreate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['P2010', '55P03'],
+    ['P2010', '40P01'],
+    ['P2028', undefined],
+    ['P2034', undefined],
+  ])(
+    'converte %s/%s em conflito temporário sem retry',
+    async (code, sqlState) => {
+      queryRaw.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('internal database detail', {
+          code,
+          clientVersion: '6.19.3',
+          meta: { code: sqlState },
+        }),
+      );
+      await expect(
+        service.create(userId, { fixtureId, homeGoals: 1, awayGoals: 0 }),
+      ).rejects.toThrow('Partida em atualização. Tente novamente.');
+      expect(transaction).toHaveBeenCalledTimes(1);
+      expect(predictionCreate).not.toHaveBeenCalled();
+    },
+  );
+
+  it('mantém P2002 concorrente como conflito de duplicidade', async () => {
+    fixtureFindUnique.mockResolvedValue(createFixture());
+    predictionFindUnique.mockResolvedValue(null);
+    predictionCreate.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('duplicate', {
+        code: 'P2002',
+        clientVersion: '6.19.3',
+      }),
+    );
+    await expect(
+      service.create(userId, { fixtureId, homeGoals: 1, awayGoals: 0 }),
+    ).rejects.toThrow('Você já registrou um palpite para esta partida.');
   });
 
   it('permite criar palpite antes do início da partida', async () => {
@@ -79,6 +171,7 @@ describe('PredictionsService', () => {
     expect(assertActiveForFixture).toHaveBeenCalledWith(
       userId,
       fixture.kickoff,
+      tx,
     );
   });
 

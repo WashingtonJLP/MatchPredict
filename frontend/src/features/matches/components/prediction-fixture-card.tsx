@@ -4,6 +4,7 @@ import { MatchStatusBadge } from "@/features/matches/components/match-status-bad
 import { MatchLiveContextLabel } from "@/features/matches/components/match-live-context-label";
 import { MatchTeamsLayout } from "@/features/matches/components/match-teams-layout";
 import { PredictionButton } from "@/features/matches/components/prediction-button";
+import { getFuturePredictionMessage } from "@/features/matches/prediction-availability";
 import { getPredictionPointsState } from "@/features/matches/prediction-points-state";
 import { cn } from "@/lib/utils";
 import type { DailyGame } from "@/types/daily-game";
@@ -35,6 +36,7 @@ export function PredictionFixtureCard({
     minute: "2-digit",
   }).format(kickoff);
   const prediction = fixture.userPrediction;
+  const futureMessage = getFuturePredictionMessage(fixture.kickoff);
   const canEdit =
     kickoff.getTime() > Date.now() &&
     fixture.status !== "LIVE" &&
@@ -146,13 +148,14 @@ export function PredictionFixtureCard({
       ) : (
         <div className="mt-4 flex items-center gap-3">
           <p className="min-w-0 flex-1 text-sm font-semibold text-muted-foreground">
-            {prediction
-              ? canEdit
-                ? "Editável até o início"
-                : "Alteração encerrada"
-              : canCreate
-                ? "Aberta para palpite"
-                : "Indisponível"}
+            {futureMessage ??
+              (prediction
+                ? canEdit
+                  ? "Editável até o início"
+                  : "Alteração encerrada"
+                : canCreate
+                  ? "Aberta para palpite"
+                  : "Indisponível")}
           </p>
           <PredictionButton
             fixture={fixture}

@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { ParticipationPeriodStatus, ParticipationStatus } from '@prisma/client';
+import {
+  ParticipationPeriodStatus,
+  ParticipationStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import {
   MONTHLY_PARTICIPATION_FEE_CENTS,
@@ -7,6 +11,7 @@ import {
 } from './participation-period';
 import { ParticipationPeriodsService } from './participation-periods.service';
 import { ParticipationRequiredException } from './participation-required.exception';
+import { FutureParticipationPeriodException } from './future-participation-period.exception';
 
 @Injectable()
 export class ParticipationsService {
@@ -64,13 +69,26 @@ export class ParticipationsService {
     };
   }
 
-  async assertActiveForFixture(userId: string, kickoff: Date) {
-    const participation = await this.prisma.participation.findFirst({
+  async assertActiveForFixture(
+    userId: string,
+    kickoff: Date,
+    db: Pick<Prisma.TransactionClient, 'participation'> = this.prisma,
+  ) {
+    const fixturePeriod = this.periodsService.getDescriptor(kickoff);
+    const currentPeriod = this.periodsService.getDescriptor(new Date());
+
+    if (fixturePeriod.startsAt.getTime() > currentPeriod.startsAt.getTime()) {
+      throw new FutureParticipationPeriodException(kickoff);
+    }
+
+    const participation = await db.participation.findFirst({
       where: {
         userId,
         status: ParticipationStatus.ACTIVE,
         period: {
           status: ParticipationPeriodStatus.OPEN,
+          referenceYear: fixturePeriod.referenceYear,
+          referenceMonth: fixturePeriod.referenceMonth,
           startsAt: { lte: kickoff },
           endsAt: { gt: kickoff },
         },

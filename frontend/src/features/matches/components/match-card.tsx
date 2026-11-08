@@ -4,6 +4,7 @@ import { MatchHeader } from "@/features/matches/components/match-header";
 import { MatchLiveContextLabel } from "@/features/matches/components/match-live-context-label";
 import { MatchTeamsLayout } from "@/features/matches/components/match-teams-layout";
 import { PredictionButton } from "@/features/matches/components/prediction-button";
+import { getFuturePredictionMessage } from "@/features/matches/prediction-availability";
 import { cn } from "@/lib/utils";
 import type { DailyGame } from "@/types/daily-game";
 import type { MatchFixture } from "@/types/fixture";
@@ -65,6 +66,7 @@ export function MatchCard({ dailyGame, fixture, onPredict }: MatchCardProps) {
     fixture.status === "LIVE" ||
     fixture.status === "FT";
   const hasPrediction = Boolean(fixture.userPrediction);
+  const futureMessage = getFuturePredictionMessage(fixture.kickoff);
   const isFinished = fixture.status === "FT";
   const isLive = fixture.status === "LIVE";
   const date = new Intl.DateTimeFormat("pt-BR", {
@@ -124,6 +126,10 @@ export function MatchCard({ dailyGame, fixture, onPredict }: MatchCardProps) {
           {predictionClosed ? (
             <p className="text-sm font-semibold text-muted-foreground">
               Palpites encerrados
+            </p>
+          ) : futureMessage ? (
+            <p className="text-sm font-semibold text-muted-foreground">
+              {futureMessage}
             </p>
           ) : hasPrediction ? (
             <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">

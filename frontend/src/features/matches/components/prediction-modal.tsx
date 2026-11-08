@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { PredictionForm } from "@/features/matches/components/prediction-form";
+import { getFuturePredictionMessage } from "@/features/matches/prediction-availability";
 import {
   useCreatePrediction,
   useDeletePrediction,
@@ -32,15 +33,20 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
   > | null>(null);
   const [isRedirectingToParticipation, setIsRedirectingToParticipation] =
     useState(false);
+  const [serverFuturePeriod, setServerFuturePeriod] = useState<{
+    fixtureId: string;
+    message: string;
+  } | null>(null);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    setServerFuturePeriod(null);
+    setIsRedirectingToParticipation(false);
+    return () => {
       if (participationRedirectTimer.current) {
         clearTimeout(participationRedirectTimer.current);
       }
-    },
-    [],
-  );
+    };
+  }, [fixture?.id]);
 
   useEffect(() => {
     if (!fixture) {
@@ -67,6 +73,11 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
     updatePrediction.isPending ||
     deletePrediction.isPending ||
     isRedirectingToParticipation;
+  const futureMessage =
+    getFuturePredictionMessage(fixture.kickoff) ??
+    (serverFuturePeriod?.fixtureId === fixture.id
+      ? serverFuturePeriod.message
+      : null);
 
   function goToParticipation() {
     if (participationRedirectTimer.current) {
@@ -83,6 +94,13 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
     awayGoals: number;
   }) {
     if (!fixture || isRedirectingToParticipation) {
+      return;
+    }
+
+    const blockedMessage =
+      getFuturePredictionMessage(fixture.kickoff) ?? futureMessage;
+    if (blockedMessage) {
+      setServerFuturePeriod({ fixtureId: fixture.id, message: blockedMessage });
       return;
     }
 
@@ -103,6 +121,16 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
 
       onClose();
     } catch (err) {
+      if (getApiErrorCode(err) === "FUTURE_PARTICIPATION_PERIOD") {
+        setServerFuturePeriod({
+          fixtureId: fixture.id,
+          message: getApiErrorMessage(
+            err,
+            "O mês desta partida ainda não está disponível para palpites.",
+          ),
+        });
+        return;
+      }
       if (getApiErrorCode(err) === "PARTICIPATION_REQUIRED") {
         setIsRedirectingToParticipation(true);
         toast.error(
@@ -183,12 +211,21 @@ export function PredictionModal({ fixture, onClose }: PredictionModalProps) {
           </Button>
         </div>
 
-        <PredictionForm
-          fixture={fixture}
-          isSubmitting={isSubmitting}
-          onDelete={fixture.userPrediction ? handleDelete : undefined}
-          onSubmit={handleSubmit}
-        />
+        {futureMessage ? (
+          <p
+            role="status"
+            className="text-base leading-7 text-muted-foreground"
+          >
+            {futureMessage}
+          </p>
+        ) : (
+          <PredictionForm
+            fixture={fixture}
+            isSubmitting={isSubmitting}
+            onDelete={fixture.userPrediction ? handleDelete : undefined}
+            onSubmit={handleSubmit}
+          />
+        )}
       </div>
     </div>
   );

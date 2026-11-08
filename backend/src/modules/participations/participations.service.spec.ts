@@ -10,6 +10,7 @@ describe('ParticipationsService', () => {
   let periodFindUnique: jest.Mock;
 
   beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-11-08T15:00:00.000Z'));
     participationFindFirst = jest.fn();
     periodFindUnique = jest.fn();
 
@@ -26,6 +27,22 @@ describe('ParticipationsService', () => {
     service = new ParticipationsService(prisma, periodsService);
   });
 
+  afterEach(() => jest.useRealTimers());
+
+  it('consulta participação pelo cliente transacional recebido, sem usar o cliente raiz', async () => {
+    const txFindFirst = jest
+      .fn()
+      .mockResolvedValue({ id: 'transaction-participation' });
+    const tx = { participation: { findFirst: txFindFirst } };
+    await service.assertActiveForFixture(
+      userId,
+      new Date('2026-11-20T19:00:00Z'),
+      tx as unknown as PrismaService,
+    );
+    expect(txFindFirst).toHaveBeenCalledTimes(1);
+    expect(participationFindFirst).not.toHaveBeenCalled();
+  });
+
   it('permite quando existe Participation ACTIVE no período do kickoff', async () => {
     participationFindFirst.mockResolvedValue({ id: 'participation-id' });
     const kickoff = new Date('2026-10-12T19:00:00.000Z');
@@ -40,6 +57,8 @@ describe('ParticipationsService', () => {
         status: ParticipationStatus.ACTIVE,
         period: {
           status: 'OPEN',
+          referenceYear: 2026,
+          referenceMonth: 10,
           startsAt: { lte: kickoff },
           endsAt: { gt: kickoff },
         },

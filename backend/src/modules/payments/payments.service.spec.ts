@@ -3,7 +3,14 @@ import {
   ConflictException,
   HttpException,
   NotFoundException,
+  ExecutionContext,
+  ValidationPipe,
+  INestApplication,
 } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import * as request from 'supertest';
+import { App } from 'supertest/types';
 import {
   PaymentMethod,
   PaymentStatus,
@@ -16,6 +23,8 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { ParticipationPeriodsService } from '../participations/participation-periods.service';
 import { PaymentsService } from './payments.service';
+import { PaymentsController } from './payments.controller';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   PixPaymentProvider,
   PixProviderRequestError,
@@ -109,6 +118,138 @@ describe('PaymentsService', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it('PUNK: payload/query não selecionam competência, usuário ou valor da cobrança', async () => {
+    // Keep only Date frozen; HTTP needs real event-loop timers.
+    jest
+      .useFakeTimers({
+        doNotFake: [
+          'nextTick',
+          'setImmediate',
+          'setTimeout',
+          'clearTimeout',
+          'setInterval',
+          'clearInterval',
+        ],
+      })
+      .setSystemTime(now);
+    providerCreatePixCharge.mockResolvedValue(staticQrResult);
+    paymentUpdate.mockResolvedValue(paymentWithQr());
+    const module = await Test.createTestingModule({
+      controllers: [PaymentsController],
+      providers: [{ provide: PaymentsService, useValue: service }],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate(context: ExecutionContext) {
+          context
+            .switchToHttp()
+            .getRequest<{ user: AuthenticatedUser }>().user = user;
+          return true;
+        },
+      })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
+    const app: INestApplication<App> = module.createNestApplication();
+    app.setGlobalPrefix('api/v1');
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
+    await app.init();
+    const forged = {
+      periodId: retryPaymentId,
+      referenceMonth: 12,
+      referenceYear: 2027,
+      userId: retryPaymentId,
+      amountCents: 1,
+      status: 'PAID',
+    };
+    try {
+      await request(app.getHttpServer())
+        .post('/api/v1/payments/pix')
+        .query(forged)
+        .send(forged)
+        .expect(201);
+      expect(periodUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            referenceYear_referenceMonth: {
+              referenceYear: 2026,
+              referenceMonth: 10,
+            },
+          },
+        }),
+      );
+      expect(txPaymentCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId,
+            periodId,
+            amountCents: 2500,
+            status: PaymentStatus.PENDING,
+          }),
+        }),
+      );
+      expect(providerCreatePixCharge).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountCents: 2500,
+          description: expect.stringMatching(/10\/2026$/),
+        }),
+      );
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('PUNK: webhook tardio e campos extras não transferem a competência original', async () => {
+    jest.setSystemTime(new Date('2026-12-01T03:00:00Z'));
+    providerVerifyWebhook.mockResolvedValue({
+      ...receivedEvent,
+      paidAt: new Date(),
+      periodId: retryPaymentId,
+      referenceMonth: 12,
+      referenceYear: 2026,
+    });
+    paymentFindFirst.mockResolvedValue(webhookPayment());
+    txPaymentFindUniqueOrThrow.mockResolvedValue(pendingWebhookPayment());
+    await service.processWebhook('asaas', {
+      headers: {},
+      body: { periodId: retryPaymentId, referenceMonth: 12 },
+    });
+    expect(txParticipationCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId,
+        periodId,
+        paymentId,
+        status: ParticipationStatus.ACTIVE,
+      }),
+    });
+    expect(periodUpsert).not.toHaveBeenCalled();
+  });
+
+  it('PUNK: reconciliação de cobrança antiga ativa apenas seu periodId persistido', async () => {
+    jest.setSystemTime(new Date('2026-12-01T03:00:00Z'));
+    const local = reconciliationPayment({ status: PaymentStatus.EXPIRED });
+    paymentFindFirst.mockResolvedValueOnce(local).mockResolvedValueOnce(null);
+    providerFindPayments.mockResolvedValue([
+      {
+        ...providerReceivedPayment,
+        periodId: retryPaymentId,
+        referenceMonth: 12,
+      },
+    ]);
+    txPaymentFindUniqueOrThrow.mockResolvedValue(local);
+    await service.reconcile(userId, paymentId);
+    expect(txParticipationCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ userId, periodId, paymentId }),
+    });
+    expect(periodUpsert).not.toHaveBeenCalled();
   });
 
   it('cria QR individual de R$ 25 com referÃªncia opaca e sem providerPaymentId', async () => {

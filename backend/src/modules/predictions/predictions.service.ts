@@ -48,39 +48,37 @@ export class PredictionsService {
   ) {}
 
   async create(userId: string, createPredictionDto: CreatePredictionDto) {
-    const fixture = await this.findFixtureOrFail(createPredictionDto.fixtureId);
-
-    this.ensureFixtureIsOpenForPrediction(fixture);
-
-    await this.participationsService.assertActiveForFixture(
-      userId,
-      fixture.kickoff,
-    );
-
-    const existingPrediction = await this.prisma.prediction.findUnique({
-      where: {
-        userId_fixtureId: {
-          userId,
-          fixtureId: createPredictionDto.fixtureId,
-        },
-      },
-    });
-
-    if (existingPrediction) {
-      throw new ConflictException(
-        'Você já registrou um palpite para esta partida.',
-      );
-    }
-
     try {
-      return await this.prisma.prediction.create({
-        data: {
+      return await this.withFixtureTransaction(async (tx) => {
+        const fixture = await this.lockFixtureOrFail(
+          tx,
+          createPredictionDto.fixtureId,
+        );
+        this.ensureFixtureIsOpenForPrediction(fixture);
+        await this.participationsService.assertActiveForFixture(
           userId,
-          fixtureId: createPredictionDto.fixtureId,
-          homeGoals: createPredictionDto.homeGoals,
-          awayGoals: createPredictionDto.awayGoals,
-        },
-        include: predictionWithFixtureTeams.include,
+          fixture.kickoff,
+          tx,
+        );
+
+        const existingPrediction = await tx.prediction.findUnique({
+          where: { userId_fixtureId: { userId, fixtureId: fixture.id } },
+        });
+        if (existingPrediction) {
+          throw new ConflictException(
+            'Você já registrou um palpite para esta partida.',
+          );
+        }
+
+        return tx.prediction.create({
+          data: {
+            userId,
+            fixtureId: createPredictionDto.fixtureId,
+            homeGoals: createPredictionDto.homeGoals,
+            awayGoals: createPredictionDto.awayGoals,
+          },
+          include: predictionWithFixtureTeams.include,
+        });
       });
     } catch (error) {
       if (
@@ -237,27 +235,39 @@ export class PredictionsService {
       );
     }
 
-    const prediction = await this.findOwnedPredictionOrFail(
-      userId,
-      predictionId,
-    );
+    return this.withFixtureTransaction(async (tx) => {
+      // This lookup acquires no row lock. All write locks follow Fixture -> Prediction.
+      const prediction = await this.findOwnedPredictionOrFail(
+        userId,
+        predictionId,
+        tx,
+      );
+      const fixture = await this.lockFixtureOrFail(tx, prediction.fixtureId);
+      this.ensureFixtureIsOpenForPrediction(fixture);
+      await this.participationsService.assertActiveForFixture(
+        userId,
+        fixture.kickoff,
+        tx,
+      );
 
-    this.ensureFixtureIsOpenForPrediction(prediction.fixture);
-
-    await this.participationsService.assertActiveForFixture(
-      userId,
-      prediction.fixture.kickoff,
-    );
-
-    return this.prisma.prediction.update({
-      where: {
-        id: prediction.id,
-      },
-      data: {
-        homeGoals: updatePredictionDto.homeGoals,
-        awayGoals: updatePredictionDto.awayGoals,
-      },
-      include: predictionWithFixtureTeams.include,
+      try {
+        return await tx.prediction.update({
+          where: { id: prediction.id, userId, fixtureId: fixture.id },
+          data: {
+            homeGoals: updatePredictionDto.homeGoals,
+            awayGoals: updatePredictionDto.awayGoals,
+          },
+          include: predictionWithFixtureTeams.include,
+        });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2025'
+        ) {
+          throw new NotFoundException('Palpite não encontrado.');
+        }
+        throw error;
+      }
     });
   }
 
@@ -331,8 +341,9 @@ export class PredictionsService {
   private async findOwnedPredictionOrFail(
     userId: string,
     predictionId: string,
+    db: Pick<Prisma.TransactionClient, 'prediction'> = this.prisma,
   ) {
-    const prediction = await this.prisma.prediction.findUnique({
+    const prediction = await db.prediction.findUnique({
       where: {
         id: predictionId,
       },
@@ -350,6 +361,51 @@ export class PredictionsService {
     }
 
     return prediction;
+  }
+
+  private async withFixtureTransaction<T>(
+    operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  ) {
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          // Transaction-local only; a busy fixture must not occupy a connection indefinitely.
+          await tx.$executeRaw`SET LOCAL lock_timeout = '1500ms'`;
+          return operation(tx);
+        },
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+          maxWait: 2_000,
+          timeout: 5_000,
+        },
+      );
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        (error.code === 'P2034' ||
+          error.code === 'P2028' ||
+          (error.code === 'P2010' &&
+            ['55P03', '40P01', '57014'].includes(String(error.meta?.code))))
+      ) {
+        throw new ConflictException('Partida em atualização. Tente novamente.');
+      }
+      throw error;
+    }
+  }
+
+  private async lockFixtureOrFail(
+    tx: Prisma.TransactionClient,
+    fixtureId: string,
+  ) {
+    const [fixture] = await tx.$queryRaw<
+      Array<{ id: string; kickoff: Date; status: FixtureStatus }>
+    >`
+      SELECT id, kickoff, status FROM fixtures WHERE id = ${fixtureId}::uuid FOR SHARE
+    `;
+    if (!fixture) {
+      throw new NotFoundException('Partida não encontrada.');
+    }
+    return fixture;
   }
 
   private ensureFixtureIsOpenForPrediction(fixture: {
