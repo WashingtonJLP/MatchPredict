@@ -3,7 +3,7 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { AvatarStorage } from './avatar/avatar-storage';
-import { R2AvatarStorage } from './avatar/r2-avatar-storage';
+import { CloudinaryAvatarStorage } from './avatar/cloudinary-avatar-storage';
 import { UserAvatarService } from './avatar/user-avatar.service';
 
 @Module({
@@ -12,7 +12,7 @@ import { UserAvatarService } from './avatar/user-avatar.service';
   providers: [
     UsersService,
     UserAvatarService,
-    { provide: AvatarStorage, useClass: R2AvatarStorage },
+    { provide: AvatarStorage, useClass: CloudinaryAvatarStorage },
   ],
   exports: [UsersService, UserAvatarService],
 })

@@ -32,8 +32,8 @@ export class UserAvatarService {
     // Never derive deletion targets from a URL or a client-supplied filename.
     if (
       !key ||
-      !key.startsWith(`avatars/${userId}/`) ||
-      !/^avatars\/[a-f0-9-]+\/[a-f0-9-]+\.(jpg|png|webp)$/i.test(key)
+      !key.startsWith(`matchpredict/avatars/${userId}/`) ||
+      !/^matchpredict\/avatars\/[a-f0-9-]+\/[a-f0-9-]+$/i.test(key)
     )
       return;
     try {
@@ -46,9 +46,9 @@ export class UserAvatarService {
   }
 
   async upload(userId: string, file?: Express.Multer.File) {
-    const extension = validateAvatar(file);
+    validateAvatar(file);
     const previous = await this.current(userId);
-    const key = `avatars/${userId}/${randomUUID()}.${extension}`;
+    const key = `matchpredict/avatars/${userId}/${randomUUID()}`;
     const avatarUrl = await this.storage.upload(
       key,
       file!.buffer,

@@ -14,7 +14,7 @@ import { UserAvatarService } from './user-avatar.service';
 import { AVATAR_MAX_BYTES } from './avatar-validation';
 
 const userId = '11111111-1111-4111-8111-111111111111';
-const oldKey = `avatars/${userId}/22222222-2222-4222-8222-222222222222.png`;
+const oldKey = `matchpredict/avatars/${userId}/22222222-2222-4222-8222-222222222222`;
 const oldUrl = 'https://avatars.example.test/old.png';
 const png = Buffer.from('89504e470d0a1a0a00000000', 'hex');
 
@@ -90,17 +90,17 @@ describe('Authenticated avatar HTTP flow (fake storage and database)', () => {
       .auth(token, { type: 'bearer' });
 
   it.each([
-    ['image/png', png, 'png'],
-    ['image/jpeg', Buffer.from('ffd8ffe000000000', 'hex'), 'jpg'],
-    ['image/webp', Buffer.from('RIFF0000WEBP0000'), 'webp'],
+    ['image/png', png],
+    ['image/jpeg', Buffer.from('ffd8ffe000000000', 'hex')],
+    ['image/webp', Buffer.from('RIFF0000WEBP0000')],
   ])(
     'accepts authenticated %s and replaces only own reference',
-    async (contentType, body, extension) => {
+    async (contentType, body) => {
       const response = await put()
         .attach('file', body, { filename: '../../other-user.png', contentType })
         .expect(200);
       expect(response.body.avatarUrl).toMatch(
-        new RegExp(`avatars/${userId}/[a-f0-9-]+\\.${extension}$`),
+        new RegExp(`matchpredict/avatars/${userId}/[a-f0-9-]+$`),
       );
       expect(Object.keys(response.body as object)).toEqual(['avatarUrl']);
       expect(prisma.user.updateMany.mock.calls[0][0].where).toEqual({
@@ -110,6 +110,12 @@ describe('Authenticated avatar HTTP flow (fake storage and database)', () => {
       });
       expect(storage.delete).toHaveBeenCalledWith(oldKey);
       expect(state.avatarUrl).toBe(response.body.avatarUrl);
+      expect(state.avatarKey).toBe(storage.upload.mock.calls[0][0]);
+      expect(storage.upload).toHaveBeenCalledWith(
+        state.avatarKey,
+        body,
+        contentType,
+      );
     },
   );
   it('requires JWT on upload and removal', async () => {
@@ -209,10 +215,31 @@ describe('Authenticated avatar HTTP flow (fake storage and database)', () => {
     expect(state.avatarUrl).toBeNull();
   });
   it('never deletes another user object or a legacy URL', async () => {
-    state.avatarKey = 'avatars/33333333-3333-4333-8333-333333333333/file.png';
+    state.avatarKey =
+      'matchpredict/avatars/33333333-3333-4333-8333-333333333333/44444444-4444-4444-8444-444444444444';
     await remove().expect(200);
     state = { avatarKey: null, avatarUrl: oldUrl };
     await remove().expect(200);
     expect(storage.delete).not.toHaveBeenCalled();
   });
+  it('never sends an old R2 key to Cloudinary when replacing an avatar', async () => {
+    state.avatarKey = `avatars/${userId}/22222222-2222-4222-8222-222222222222.png`;
+    await put().attach('file', png, 'test.png').expect(200);
+    expect(state.avatarKey).toMatch(
+      new RegExp(`^matchpredict/avatars/${userId}/`),
+    );
+    expect(storage.delete).not.toHaveBeenCalled();
+  });
+  it.each([
+    `avatars/${userId}/22222222-2222-4222-8222-222222222222.png`,
+    `matchpredict/avatars/${userId}/../another-user`,
+    `matchpredict/avatars/${userId}/22222222-2222-4222-8222-222222222222.png`,
+  ])(
+    'detaches unsupported key %s without deleting an unknown asset',
+    async (key) => {
+      state.avatarKey = key;
+      await remove().expect(200, { avatarUrl: null });
+      expect(storage.delete).not.toHaveBeenCalled();
+    },
+  );
 });

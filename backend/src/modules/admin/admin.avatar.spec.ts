@@ -22,7 +22,7 @@ import { AdminService } from './admin.service';
 
 const adminId = '11111111-1111-4111-8111-111111111111';
 const userId = '22222222-2222-4222-8222-222222222222';
-const key = `avatars/${userId}/33333333-3333-4333-8333-333333333333.png`;
+const key = `matchpredict/avatars/${userId}/33333333-3333-4333-8333-333333333333`;
 const url = 'https://avatars.example.test/photo.png';
 const path = `/api/v1/admin/users/${userId}/avatar`;
 type State = {
@@ -207,7 +207,7 @@ describe('Admin avatar moderation (real JWT/role guards, fake database/storage)'
     });
   });
   it('keeps reference removed and audit committed when storage fails, and logs the failure', async () => {
-    storage.delete.mockRejectedValueOnce(new Error('fake R2 failure'));
+    storage.delete.mockRejectedValueOnce(new Error('fake Cloudinary failure'));
     await remove().expect(200, { avatarUrl: null });
     expect(state.avatarKey).toBeNull();
     expect(state.avatarUrl).toBeNull();
@@ -242,12 +242,22 @@ describe('Admin avatar moderation (real JWT/role guards, fake database/storage)'
     expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
   it('never deletes a foreign persisted key or guesses a key from a legacy URL', async () => {
-    state.avatarKey = `avatars/${adminId}/33333333-3333-4333-8333-333333333333.png`;
+    state.avatarKey = `matchpredict/avatars/${adminId}/33333333-3333-4333-8333-333333333333`;
     await remove().expect(200);
     state.avatarKey = null;
     state.avatarUrl = url;
     await remove().expect(200);
     expect(storage.delete).not.toHaveBeenCalled();
+  });
+  it('audits removal of an old R2 reference without sending its key to Cloudinary', async () => {
+    state.avatarKey = `avatars/${userId}/33333333-3333-4333-8333-333333333333.png`;
+    await remove().expect(200, { avatarUrl: null });
+    expect(state.avatarKey).toBeNull();
+    expect(storage.delete).not.toHaveBeenCalled();
+    expect(committedAudits).toHaveLength(1);
+    expect(prisma.adminAuditLog.create.mock.calls[0][0].data.metadata).toEqual({
+      hadAvatar: true,
+    });
   });
   it('rejects client keys, query parameters and multipart files', async () => {
     await remove().send({ avatarKey: 'avatars/other/key.png' }).expect(400);

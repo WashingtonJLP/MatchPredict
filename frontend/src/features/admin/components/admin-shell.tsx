@@ -104,7 +104,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 </p>
               </div>
               <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-                <UserAvatar name={user.name} size="sm" />
+                <UserAvatar name={user.name} avatarUrl={user.avatarUrl} size="sm" />
                 <div className="hidden min-w-0 text-right sm:block">
                   <p className="max-w-44 truncate text-sm font-bold text-card-foreground">
                     {user.name}

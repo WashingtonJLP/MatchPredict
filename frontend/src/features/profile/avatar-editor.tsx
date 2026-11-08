@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Camera, LoaderCircle, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/shared/user-avatar";
@@ -96,24 +97,39 @@ export function AvatarEditor({ user }: { user: User }) {
           if (file) void change(file);
         }}
       />
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
-          className="min-h-11"
-          variant="outline"
+          className="h-11 min-w-36 gap-2 rounded-xl px-3 font-semibold motion-reduce:transition-none"
           disabled={Boolean(action)}
           onClick={() => input.current?.click()}
         >
+          {action === "upload" ? (
+            <LoaderCircle
+              className="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden
+            />
+          ) : (
+            <Camera className="size-4" aria-hidden />
+          )}
           {action === "upload" ? "Enviando..." : "Alterar foto"}
         </Button>
         {user.avatarUrl ? (
           <Button
             type="button"
-            className="min-h-11"
-            variant="ghost"
+            className="h-11 min-w-36 gap-2 rounded-xl border-destructive/25 bg-transparent px-3 font-semibold text-destructive hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive focus-visible:border-destructive focus-visible:ring-destructive/25 motion-reduce:transition-none dark:bg-transparent dark:hover:bg-destructive/10"
+            variant="outline"
             disabled={Boolean(action)}
             onClick={() => void change()}
           >
+            {action === "remove" ? (
+              <LoaderCircle
+                className="size-4 animate-spin motion-reduce:animate-none"
+                aria-hidden
+              />
+            ) : (
+              <Trash2 className="size-4" aria-hidden />
+            )}
             {action === "remove" ? "Removendo..." : "Remover foto"}
           </Button>
         ) : null}

@@ -373,7 +373,11 @@ function PredictionsTable({
               <tr key={prediction.id} className="transition hover:bg-muted/70">
                 <td className="px-5 py-5 align-middle first:pl-6">
                   <div className="flex min-w-0 items-center gap-3">
-                    <UserAvatar name={prediction.user.name} size="sm" />
+                    <UserAvatar
+                      name={prediction.user.name}
+                      avatarUrl={prediction.user.avatarUrl}
+                      size="sm"
+                    />
                     <span className="truncate font-medium text-foreground">
                       {prediction.user.name}
                     </span>
@@ -406,7 +410,11 @@ function PredictionMobileRow({
   return (
     <div className="grid min-h-16 grid-cols-[minmax(0,1fr)_4rem_3.75rem] items-center gap-2 border-b border-border px-3 py-3 last:border-b-0 sm:px-4">
       <div className="flex min-w-0 items-center gap-2.5">
-        <UserAvatar name={prediction.user.name} size="sm" />
+        <UserAvatar
+          name={prediction.user.name}
+          avatarUrl={prediction.user.avatarUrl}
+          size="sm"
+        />
         <span className="line-clamp-2 min-w-0 break-words text-sm font-bold leading-5 text-foreground">
           {prediction.user.name}
         </span>
